@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản Lý Đơn Hàng</title>
+  <link rel="stylesheet" href="/assets/css/DanhMuc.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Quản Lý Đơn Hàng</h2>
+
+    <!-- Tìm kiếm & Lọc -->
+    <div class="search-filter">
+      <input type="text" placeholder="Tìm theo mã đơn / tên / SĐT" />
+      <select>
+        <option value="">-- Trạng thái --</option>
+        <option>Mới</option>
+        <option>Đang xử lý</option>
+        <option>Đang giao</option>
+        <option>Đã giao</option>
+        <option>Đã hủy</option>
+      </select>
+      <input type="date" />
+      <input type="date" />
+      <button class="btn-export">Xuất Dữ Liệu</button>
+    </div>
+
+    <!-- Danh sách đơn hàng -->
+    <table>
+      <thead>
+        <tr>
+          <th>Mã Đơn</th>
+          <th>Người Mua</th>
+          <th>Ngày Đặt</th>
+          <th>Trạng Thái</th>
+          <th>Tổng Tiền</th>
+          <th>Hành Động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>DH001</td>
+          <td>Nguyễn Văn A</td>
+          <td>2025-05-27</td>
+          <td>Mới</td>
+          <td>500.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td>DH002</td>
+          <td>Trần Thị B</td>
+          <td>2025-05-26</td>
+          <td>Đang xử lý</td>
+          <td>750.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td>DH003</td>
+          <td>Phạm Văn C</td>
+          <td>2025-05-25</td>
+          <td>Đang giao</td>
+          <td>1.200.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td>DH004</td>
+          <td>Lê Thị D</td>
+          <td>2025-05-24</td>
+          <td>Đã giao</td>
+          <td>650.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td>DH005</td>
+          <td>Đặng Văn E</td>
+          <td>2025-05-23</td>
+          <td>Đã hủy</td>
+          <td>300.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td>DH006</td>
+          <td>Ngô Thị F</td>
+          <td>2025-05-22</td>
+          <td>Đang xử lý</td>
+          <td>870.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -1,0 +1,182 @@
+body {
+  background-color: #0f0f0f;
+  color: white;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  font-size: 18px; /* Tăng cỡ chữ chung */
+}
+
+.container {
+  background-color: #1e1e1e;
+  padding: 30px;
+  border-radius: 10px;
+  width: 100%;
+  margin: auto;
+  overflow-x: auto;
+}
+
+h1 {
+  color: red;
+  text-align: center;
+  font-size: 40px;
+  margin-bottom: 30px;
+}
+
+.top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+input[type="text"],
+select {
+  padding: 15px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  flex: 1;
+  min-width: 200px;
+}
+
+.add-btn {
+  background-color: red;
+  color: white;
+  padding: 15px 20px;
+  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+  min-width: 700px;
+}
+
+th,
+td {
+  padding: 20px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+  vertical-align: middle;
+}
+
+th {
+  color: red;
+  font-size: 20px;
+  white-space: nowrap;
+}
+
+img.thumb {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.action-btn {
+  padding: 10px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 90px;
+  white-space: nowrap;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+.edit-btn {
+  background-color: #007bff;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #dc3545;
+  color: white;
+}
+
+.hide-btn {
+  background-color: orange;
+  color: white;
+}
+
+/* Đảm bảo nút thẳng hàng và không xuống dòng */
+td.actions {
+  white-space: nowrap;
+}
+
+.pagination {
+  text-align: center;
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pagination button {
+  background-color: #2a2a2a;
+  color: white;
+  padding: 12px 18px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 45px;
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  table {
+    min-width: 100%;
+    font-size: 16px;
+  }
+
+  img.thumb {
+    width: 80px;
+    height: 80px;
+  }
+
+  /* Giữ nguyên table truyền thống (không block) để nút thẳng hàng */
+  thead tr {
+    display: table-row;
+  }
+
+  tbody tr {
+    display: table-row;
+    border: none;
+    margin-bottom: 0;
+    padding: 0;
+  }
+
+  td,
+  th {
+    display: table-cell;
+    padding: 12px 10px;
+  }
+
+  /* Giảm padding và size nút */
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 14px;
+    min-width: 70px;
+    margin-right: 6px;
+  }
+
+  /* Đảm bảo td chứa nút không xuống dòng */
+  td.actions {
+    white-space: nowrap;
+  }
+}
