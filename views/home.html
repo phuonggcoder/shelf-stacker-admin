@@ -7,37 +7,67 @@
   <link rel="stylesheet" href="/assets/css/home.css">
 </head>
 <body>
-  <header class="header">My Dashboard</header>
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Enter keywords..." />
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
+
   <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Jonathan Clarke</h3>
+      <p>UI/UX Designer</p>
+    </div>
     <nav>
       <ul>
-        <li><a href="#">Trang chủ</a></li>
-        <li><a href="#">Báo cáo</a></li>
-        <li><a href="#">Thống kê</a></li>
-        <li><a href="#">Cài đặt</a></li>
+        <li><a href="#">QUẢN LÝ DANH MỤC </a></li>
+        <li><a href="#">ĐÁNH GIÁ SẢN PHẨM </a></li>
+        <li><a href="#">QUẢNG LÝ NGƯỜI DÙNGDÙNG</a></li>
+        <li><a href="#">DANH MỤC ĐƠN HÀNG </a></li>
+        <li><a href="#"> ĐÁNH GIÁ </a></li>
+
       </ul>
     </nav>
   </aside>
-  <main class="content">
-    <h1>Chào mừng bạn đến Dashboard</h1>
-    <div class="cards">
-      <div class="card">
-        <h2>Doanh thu</h2>
-        <p>150 triệu</p>
+
+  <main class="main">
+    <div class="stats">
+      <div class="stat-card blue">
+        <h3>INCOME</h3>
+        <p>$36,500</p>
       </div>
-      <div class="card">
-        <h2>Người dùng</h2>
-        <p>1,200</p>
+      <div class="stat-card red">
+        <h3>EXPENSES</h3>
+        <p>$10,850</p>
       </div>
-      <div class="card">
-        <h2>Đơn hàng</h2>
-        <p>320</p>
+      <div class="stat-card green">
+        <h3>GROSS PROFIT</h3>
+        <p>$25,650</p>
       </div>
-      <div class="card">
-        <h2>Phản hồi</h2>
-        <p>85</p>
+    </div>
+
+    <div class="analytics">
+      <img src="https://www.chartjs.org/media/logo-title.svg" alt="Analytics Chart" />
+    </div>
+
+    <div class="overview">
+      <div class="card circle blue">
+        <h4>Visitors</h4>
+        <p>2,367</p>
+      </div>
+      <div class="card circle red">
+        <h4>Transactions</h4>
+        <p>15,367</p>
+      </div>
+      <div class="card circle green">
+        <h4>Tasks</h4>
+        <p>585</p>
       </div>
     </div>
   </main>
 </body>
 </html>
+ 
