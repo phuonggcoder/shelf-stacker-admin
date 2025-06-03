@@ -4,7 +4,7 @@ body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 20px;
-  font-size: 18px; /* Tăng cỡ chữ chung */
+  font-size: 18px;
 }
 
 .container {
@@ -16,35 +16,38 @@ body {
   overflow-x: auto;
 }
 
-h1 {
-  color: red;
+h2 {
   text-align: center;
+  color: red;
   font-size: 40px;
   margin-bottom: 30px;
 }
 
-.top-bar {
+/* Tìm kiếm & lọc */
+.search-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 15px;
-  justify-content: space-between;
   margin-bottom: 30px;
 }
 
-input[type="text"],
-select {
+.search-filter input[type="text"],
+.search-filter select,
+.search-filter input[type="date"] {
   padding: 15px 20px;
   font-size: 18px;
   border-radius: 6px;
   border: none;
-  flex: 1;
+  background-color: #2a2a2a;
+  color: white;
   min-width: 200px;
+  flex: 1;
 }
 
-.add-btn {
-  background-color: red;
+.btn-export {
+  background-color: #007bff;
   color: white;
-  padding: 15px 20px;
+  padding: 15px 25px;
   font-size: 18px;
   border: none;
   border-radius: 6px;
@@ -52,11 +55,12 @@ select {
   white-space: nowrap;
 }
 
+/* Bảng */
 table {
   width: 100%;
   border-collapse: collapse;
   font-size: 18px;
-  min-width: 700px;
+  min-width: 800px;
 }
 
 th,
@@ -73,6 +77,7 @@ th {
   white-space: nowrap;
 }
 
+/* Ảnh sản phẩm */
 img.thumb {
   width: 100px;
   height: 100px;
@@ -81,6 +86,7 @@ img.thumb {
   transition: width 0.3s ease, height 0.3s ease;
 }
 
+/* Nút hành động */
 .action-btn {
   padding: 10px 16px;
   font-size: 16px;
@@ -93,26 +99,33 @@ img.thumb {
   display: inline-block;
 }
 
-.edit-btn {
-  background-color: #007bff;
+/* Màu riêng từng nút */
+.btn-detail {
+  background-color: #17a2b8; /* xanh ngọc */
   color: white;
 }
 
-.delete-btn {
-  background-color: #dc3545;
+.btn-update {
+  background-color: #28a745; /* xanh lá */
   color: white;
 }
 
-.hide-btn {
-  background-color: orange;
+.btn-confirm {
+  background-color: #ffc107; /* vàng */
+  color: black;
+}
+
+.btn-return {
+  background-color: #dc3545; /* đỏ */
   color: white;
 }
 
-/* Đảm bảo nút thẳng hàng và không xuống dòng */
+/* Đảm bảo nút không xuống dòng */
 td.actions {
   white-space: nowrap;
 }
 
+/* Phân trang */
 .pagination {
   text-align: center;
   margin-top: 30px;
@@ -133,15 +146,16 @@ td.actions {
   min-width: 45px;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
-  .top-bar {
+  .search-filter {
     flex-direction: column;
     align-items: stretch;
   }
 
   table {
-    min-width: 100%;
     font-size: 16px;
+    min-width: 100%;
   }
 
   img.thumb {
@@ -149,25 +163,11 @@ td.actions {
     height: 80px;
   }
 
-  /* Giữ nguyên table truyền thống (không block) để nút thẳng hàng */
-  thead tr {
-    display: table-row;
-  }
-
-  tbody tr {
-    display: table-row;
-    border: none;
-    margin-bottom: 0;
-    padding: 0;
-  }
-
-  td,
-  th {
-    display: table-cell;
+  th,
+  td {
     padding: 12px 10px;
   }
 
-  /* Giảm padding và size nút */
   .action-btn {
     padding: 6px 10px;
     font-size: 14px;
@@ -175,7 +175,6 @@ td.actions {
     margin-right: 6px;
   }
 
-  /* Đảm bảo td chứa nút không xuống dòng */
   td.actions {
     white-space: nowrap;
   }

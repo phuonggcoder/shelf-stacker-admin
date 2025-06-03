@@ -12,9 +12,13 @@ app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'r
 app.get('/detail', (req, res) => res.sendFile(path.join(__dirname, 'views', 'detail.html')));
 
 app.get('/danhgia', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhgia.html')));
+
 app.get('/danhgiasanpham', (req, res) =>
   res.sendFile(path.join(__dirname, 'views', 'danhgiasanpham.html'))
 );
+app.get('/quanlynguoidung', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlynguoidung.html')));
+app.get('/quanlydanhmuc', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlydanhmuc.html')));
+app.get('/danhmucdonhang', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdonhang.html')));
 
 
 const PORT = 3000;
