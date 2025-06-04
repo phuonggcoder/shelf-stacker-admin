@@ -1,4 +1,19 @@
-/* Reset & base */
+/* ==========================================
+   0. RESET BOX-SIZING VÀ TẮT OVERFLOW XUỐNG
+   ========================================== */
+html, body {
+  overflow-x: hidden;      /* Không cho tràn ngang toàn trang */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* ==========================
+   1. BASE STYLES CHUNG
+   ========================== */
 body {
   font-family: 'Segoe UI', sans-serif;
   background-color: #f8f9fa;
@@ -7,11 +22,18 @@ body {
 }
 
 .container {
-  max-width: 1200px;
-  margin: 30px auto;
-  padding: 20px;
+  margin-left: 250px;                    /* Đẩy nội dung sang phải bằng chiều rộng sidebar */
+  width: calc(100% - 250px);             /* Chiều rộng = 100% - 250px */
+  max-width: none;                       /* Loại bỏ max-width nếu có */
+  background: none;                      /* Xóa background cũ nếu không cần */
+  padding: 30px 20px;                    /* Padding bên trong container */
+  box-sizing: border-box;
+  overflow-x: auto;                      /* Cho phép cuộn ngang nội bộ nếu cần */
 }
 
+/* ==========================
+   2. SECTION QUẢN LÝ NGƯỜI DÙNG
+   ========================== */
 .management-section {
   background: #fff;
   padding: 30px;
@@ -26,6 +48,9 @@ body {
   color: #333;
 }
 
+/* ==========================
+   3. TÌM KIẾM & LỌC
+   ========================== */
 .search-filter {
   display: flex;
   flex-wrap: wrap;
@@ -33,7 +58,8 @@ body {
   margin-bottom: 25px;
 }
 
-.input, .select {
+.input,
+.select {
   padding: 10px 14px;
   border: 1px solid #ccc;
   border-radius: 8px;
@@ -60,19 +86,23 @@ body {
   background-color: #0056b3;
 }
 
+/* ==========================
+   4. KHUNG BẢNG
+   ========================== */
 .table-wrapper {
-  overflow-x: auto;
+  overflow-x: auto; /* Nếu bảng rộng, cuộn ngang nội bộ */
 }
 
 .user-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 900px;
+  min-width: 900px; /* Đảm bảo tối thiểu 900px, nhưng con tràn thì cuộn */
   background-color: #fff;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
-.user-table th, .user-table td {
+.user-table th,
+.user-table td {
   padding: 12px 16px;
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
@@ -87,6 +117,13 @@ body {
   background-color: #f9f9f9;
 }
 
+.user-table th {
+  white-space: nowrap;
+}
+
+/* ==========================
+   5. NÚT HÀNH ĐỘNG TRONG BẢNG
+   ========================== */
 .actions .btn {
   margin-right: 6px;
 }
@@ -113,4 +150,89 @@ body {
 
 .btn:hover {
   opacity: 0.9;
+}
+
+/* ==========================
+   6. RESPONSIVE CHO MOBILE
+   ========================== */
+@media (max-width: 768px) {
+  .search-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .user-table {
+    font-size: 12px;
+    min-width: 0; /* Cho phép mở rộng tự do khi cần */
+  }
+
+  .user-table th,
+  .user-table td {
+    padding: 8px 10px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* ==========================
+   7. SIDEBAR CỐ ĐỊNH
+   ========================== */
+.sidebar {
+  width: 250px;
+  background-color: #1a2238;
+  color: #fff;
+  padding: 20px 20px 0 20px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.sidebar .profile {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar .profile img {
+  width: 80px;
+  border-radius: 50%;
+}
+
+.sidebar .profile h3 {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.sidebar .profile p {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar nav ul li {
+  margin: 15px 0;
+}
+
+.sidebar nav ul li a {
+  color: #ccc;
+  text-decoration: none;
+  padding: 10px;
+  display: block;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar nav ul li a:hover {
+  background-color: #2c365d;
+  color: #fff;
 }

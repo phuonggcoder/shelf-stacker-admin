@@ -1,12 +1,35 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
   <meta charset="UTF-8" />
   <title>Quản Lý Người Dùng</title>
-  <link rel="stylesheet" href="/assets/css/QuanLyKH.css" />
+  <link rel="stylesheet" href="../public/assets/css/QuanLyKH.css" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
+
 <body>
+
+  <!-- ========== SIDEBAR CỐ ĐỊNH ========== -->
+  <div class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Jonathan Clarke</h3>
+      <p>UI/UX Designer</p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="home.html">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+       
+        <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+      </ul>
+    </nav>
+  </div>
+
+  <!-- ========== PHẦN NỘI DUNG (container) ĐƯỢC ĐẨY SANG PHẢI 250px ========== -->
   <div class="container">
     <section class="management-section">
       <h1 class="title">Quản Lý Người Dùng</h1>
@@ -29,104 +52,166 @@
       <div class="table-wrapper">
         <table class="user-table">
           <thead>
-            <tbody>
-  <tr>
-    <td data-label="ID">U011</td>
-    <td data-label="Tên">Tô Thị L</td>
-    <td data-label="Email">tothil@example.com</td>
-    <td data-label="Số điện thoại">0905667788</td>
-    <td data-label="Ngày đăng ký">2025-06-03</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-  <!-- Dữ liệu cũ giữ nguyên từ đây -->
-  <tr>
-    <td data-label="ID">U001</td>
-    <td data-label="Tên">Nguyễn Văn A</td>
-    <td data-label="Email">nguyenvana@example.com</td>
-    <td data-label="Số điện thoại">0987654321</td>
-    <td data-label="Ngày đăng ký">2024-01-15</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-   <tr>
-    <td data-label="ID">U001</td>
-    <td data-label="Tên">Nguyễn Văn A</td>
-    <td data-label="Email">nguyenvana@example.com</td>
-    <td data-label="Số điện thoại">0987654321</td>
-    <td data-label="Ngày đăng ký">2024-01-15</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-   <tr>
-    <td data-label="ID">U001</td>
-    <td data-label="Tên">Nguyễn Văn A</td>
-    <td data-label="Email">nguyenvana@example.com</td>
-    <td data-label="Số điện thoại">0987654321</td>
-    <td data-label="Ngày đăng ký">2024-01-15</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-   <tr>
-    <td data-label="ID">U001</td>
-    <td data-label="Tên">Nguyễn Văn A</td>
-    <td data-label="Email">nguyenvana@example.com</td>
-    <td data-label="Số điện thoại">0987654321</td>
-    <td data-label="Ngày đăng ký">2024-01-15</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-   <tr>
-    <td data-label="ID">U001</td>
-    <td data-label="Tên">Nguyễn Văn A</td>
-    <td data-label="Email">nguyenvana@example.com</td>
-    <td data-label="Số điện thoại">0987654321</td>
-    <td data-label="Ngày đăng ký">2024-01-15</td>
-    <td data-label="Vai trò">Khách hàng</td>
-    <td data-label="Trạng thái">Hoạt động</td>
-    <td data-label="Hành động" class="actions">
-      <button class="btn btn-detail">Xem chi tiết</button>
-      <button class="btn btn-edit">Chỉnh sửa</button>
-      <button class="btn btn-lock">Khóa</button>
-    </td>
-  </tr>
-  <!-- ...các dòng khác vẫn giữ nguyên -->
-</tbody>
-
+            <tr>
+              <th>ID</th>
+              <th>Tên</th>
+              <th>Email</th>
+              <th>Số điện thoại</th>
+              <th>Ngày đăng ký</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
+              <th class="actions">Hành động</th>
+            </tr>
           </thead>
           <tbody>
-            <!-- Các hàng người dùng giữ nguyên -->
-            <!-- Bạn đã có đủ 10 hàng người dùng -->
-            <!-- ... -->
+            <tr>
+              <td data-label="ID">U011</td>
+              <td data-label="Tên">Tô Thị L</td>
+              <td data-label="Email">tothil@example.com</td>
+              <td data-label="Số điện thoại">0905667788</td>
+              <td data-label="Ngày đăng ký">2025-06-03</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <!-- Dữ liệu cũ giữ nguyên từ đây -->
+            <tr>
+              <td data-label="ID">U001</td>
+              <td data-label="Tên">Nguyễn Văn A</td>
+              <td data-label="Email">nguyenvana@example.com</td>
+              <td data-label="Số điện thoại">0987654321</td>
+              <td data-label="Ngày đăng ký">2024-01-15</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U002</td>
+              <td data-label="Tên">Trần Thị B</td>
+              <td data-label="Email">tranthib@example.com</td>
+              <td data-label="Số điện thoại">0912345678</td>
+              <td data-label="Ngày đăng ký">2024-02-10</td>
+              <td data-label="Vai trò">Admin</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U003</td>
+              <td data-label="Tên">Lê Văn C</td>
+              <td data-label="Email">levanc@example.com</td>
+              <td data-label="Số điện thoại">0901122334</td>
+              <td data-label="Ngày đăng ký">2024-03-05</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Khóa</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-unlock">Mở khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U004</td>
+              <td data-label="Tên">Phạm Thị D</td>
+              <td data-label="Email">phamthid@example.com</td>
+              <td data-label="Số điện thoại">0988776655</td>
+              <td data-label="Ngày đăng ký">2024-04-20</td>
+              <td data-label="Vai trò">Admin</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U005</td>
+              <td data-label="Tên">Trần Văn E</td>
+              <td data-label="Email">tranvane@example.com</td>
+              <td data-label="Số điện thoại">0911223344</td>
+              <td data-label="Ngày đăng ký">2024-05-12</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U006</td>
+              <td data-label="Tên">Ngô Thị F</td>
+              <td data-label="Email">ngothif@example.com</td>
+              <td data-label="Số điện thoại">0901234432</td>
+              <td data-label="Ngày đăng ký">2024-06-18</td>
+              <td data-label="Vai trò">Admin</td>
+              <td data-label="Trạng thái">Khóa</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-unlock">Mở khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U007</td>
+              <td data-label="Tên">Lê Thị G</td>
+              <td data-label="Email">lethig@example.com</td>
+              <td data-label="Số điện thoại">0987665544</td>
+              <td data-label="Ngày đăng ký">2024-07-03</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U008</td>
+              <td data-label="Tên">Phạm Văn H</td>
+              <td data-label="Email">phamvanh@example.com</td>
+              <td data-label="Số điện thoại">0909988776</td>
+              <td data-label="Ngày đăng ký">2024-08-29</td>
+              <td data-label="Vai trò">Khách hàng</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <tr>
+              <td data-label="ID">U009</td>
+              <td data-label="Tên">Trần Thị I</td>
+              <td data-label="Email">tranthiI@example.com</td>
+              <td data-label="Số điện thoại">0912233445</td>
+              <td data-label="Ngày đăng ký">2024-09-15</td>
+              <td data-label="Vai trò">Admin</td>
+              <td data-label="Trạng thái">Hoạt động</td>
+              <td data-label="Hành động" class="actions">
+                <button class="btn btn-detail">Xem chi tiết</button>
+                <button class="btn btn-edit">Chỉnh sửa</button>
+                <button class="btn btn-lock">Khóa</button>
+              </td>
+            </tr>
+            <!-- ...các dòng khác vẫn giữ nguyên -->
           </tbody>
         </table>
       </div>
     </section>
   </div>
+
 </body>
+
 </html>

@@ -1,0 +1,310 @@
+/* ==========================================
+   0. RESET BOX-SIZING VÀ TẮT OVERFLOW XUỐNG
+   ========================================== */
+html, body {
+  overflow-x: hidden;      /* Không cho tràn ngang toàn trang */
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+/* ==========================
+   1. BODY VÀ CÁC THIẾT LẬP CHUNG
+   ========================== */
+body {
+  background-color: #0f0f0f;
+  color: white;
+  font-family: Arial, sans-serif;
+  margin: 0;               /* Đảm bảo margin gốc bằng 0 */
+  padding: 20px;           /* Padding chung nếu cần */
+  font-size: 18px;
+}
+
+/* ==========================
+   2. SIDEBAR (CỐ ĐỊNH NGANG 250px)
+   ========================== */
+.sidebar {
+  width: 250px;
+  background-color: #1a2238;
+  color: #fff;
+  padding: 20px 20px 0 20px; /* padding-top để dành chỗ cho header nếu có */
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+}
+
+.sidebar .profile {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar .profile img {
+  width: 80px;
+  border-radius: 50%;
+}
+
+.sidebar .profile h3 {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.sidebar .profile p {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0; /* Reset margin-pading để liên kết không bị thừa khoảng trắng */
+}
+
+.sidebar nav ul li {
+  margin: 15px 0;
+}
+
+.sidebar nav ul li a {
+  color: #ccc;
+  text-decoration: none;
+  padding: 10px;
+  display: block;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar nav ul li a:hover {
+  background-color: #2c365d;
+  color: #fff;
+}
+
+/* ==========================
+   3. CONTAINER CHÍNH (NỘI DUNG) 
+      — ĐẨY SANG PHẢI 250px ĐỂ ĐỠ SIDEBAR
+   ========================== */
+.container {
+  margin-left: 250px;                    /* Đẩy nội dung sang phải đúng bằng chiều rộng sidebar */
+  width: calc(100% - 250px);             /* Chiều rộng container vừa khít còn lại */
+  background-color: #1e1e1e;
+  padding: 30px;
+  border-radius: 10px;
+  overflow-x: auto;                      /* Nếu bảng quá rộng, chỉ scroll trong nội dung */
+}
+
+/* ==========================
+   4. TIÊU ĐỀ VÀ H2
+   ========================== */
+h1, h2 {
+  color: red;
+  text-align: center;
+  margin: 0 0 30px 0;
+}
+
+h1 {
+  font-size: 36px;
+}
+
+h2 {
+  font-size: 40px;
+}
+
+/* ==========================
+   5. TOP BAR (TÌM KIẾM, SẮP XẾP, NÚT THÊM)
+   ========================== */
+.top-bar,
+.search-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.top-bar input[type="text"],
+.search-filter input[type="text"],
+.search-filter select,
+.search-filter input[type="date"] {
+  padding: 15px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background-color: #2a2a2a;
+  color: white;
+  min-width: 200px;
+  flex: 1;
+}
+
+.top-bar select {
+  padding: 15px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background-color: #2a2a2a;
+  color: white;
+  min-width: 200px;
+  flex: none;
+}
+
+.top-bar button.add-btn,
+.search-filter .btn-export {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 25px;
+  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* ==========================
+   6. BẢNG (TABLE)
+   ========================== */
+.table-wrapper {
+  overflow-x: auto;  /* Nếu bảng vẫn quá rộng, scroll nội bộ */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+  /* Nếu muốn giới hạn cho responsive: 
+     bỏ hoặc giảm min-width: 800px; */
+  min-width: 0;
+}
+
+th, td {
+  padding: 20px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+  vertical-align: middle;
+}
+
+th {
+  color: red;
+  font-size: 20px;
+  white-space: nowrap; /* Giữ tiêu đề không xuống dòng */
+}
+
+/* Ảnh thumb */
+img.thumb {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+/* ==========================
+   7. NÚT HÀNH ĐỘNG
+   ========================== */
+.action-btn {
+  padding: 10px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 90px;
+  white-space: nowrap;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+/* MÀU RIÊNG TỪNG NÚT */
+.btn-detail {
+  background-color: #17a2b8; /* xanh ngọc */
+  color: white;
+}
+
+.btn-update {
+  background-color: #28a745; /* xanh lá */
+  color: white;
+}
+
+.btn-confirm {
+  background-color: #ffc107; /* vàng */
+  color: black;
+}
+
+.btn-return {
+  background-color: #dc3545; /* đỏ */
+  color: white;
+}
+
+.delete-btn {
+  background-color: #e74c3c; /* đỏ đậm */
+  color: white;
+}
+
+.hide-btn {
+  background-color: #f39c12; /* cam */
+  color: white;
+}
+
+/* Giữ nút không xuống dòng */
+td.actions {
+  white-space: nowrap;
+}
+
+/* ==========================
+   8. PHÂN TRANG
+   ========================== */
+.pagination {
+  text-align: center;
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pagination button {
+  background-color: #2a2a2a;
+  color: white;
+  padding: 12px 18px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 45px;
+}
+
+/* ==========================
+   9. RESPONSIVE
+   ========================== */
+@media (max-width: 768px) {
+  .top-bar,
+  .search-filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  table {
+    font-size: 16px;
+    /* Bỏ min-width để co gọn */
+    min-width: 0;
+  }
+
+  img.thumb {
+    width: 80px;
+    height: 80px;
+  }
+
+  th, td {
+    padding: 12px 10px;
+  }
+
+  .action-btn {
+    padding: 6px 10px;
+    font-size: 14px;
+    min-width: 70px;
+    margin-right: 6px;
+  }
+
+  td.actions {
+    white-space: nowrap;
+  }
+}

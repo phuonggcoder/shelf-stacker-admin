@@ -1,3 +1,7 @@
+/* ===========================
+   PHẦN CHUNG (giữ nguyên)
+   =========================== */
+
 body {
   background-color: #0f0f0f;
   color: white;
@@ -5,15 +9,6 @@ body {
   margin: 0;
   padding: 20px;
   font-size: 18px;
-}
-
-.container {
-  background-color: #1e1e1e;
-  padding: 30px;
-  border-radius: 10px;
-  width: 100%;
-  margin: auto;
-  overflow-x: auto;
 }
 
 h2 {
@@ -179,3 +174,138 @@ td.actions {
     white-space: nowrap;
   }
 }
+
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: #007bff;
+}
+
+/* ===============================
+   PHẦN SIDEBAR (giữ gần như nguyên)
+   =============================== */
+
+.sidebar {
+  width: 250px;
+  background-color: #1a2238;
+  color: #fff;
+  padding: 20px;
+  padding-top: 80px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
+}
+
+.sidebar .profile {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.sidebar .profile img {
+  width: 80px;
+  border-radius: 50%;
+}
+
+.sidebar .profile h3 {
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.sidebar .profile p {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.sidebar nav ul {
+  list-style: none;
+}
+
+.sidebar nav ul li {
+  margin: 15px 0;
+}
+
+.sidebar nav ul li a {
+  color: #ccc;
+  text-decoration: none;
+  padding: 10px;
+  display: block;
+  border-radius: 5px;
+  transition: 0.3s;
+}
+
+.sidebar nav ul li a:hover {
+  background-color: #2c365d;
+  color: #fff;
+}
+
+/* =====================================================
+   CHỈ THÊM DÒNG NÀY ĐỂ ĐẨY NỘI DUNG CHÍNH SANG BÊN PHẢI
+   ===================================================== */
+.container {
+  display: flex;
+  /* KHOẢNG CÁCH BẢO ĐẢM NỘI DUNG KHÔNG BỊ CHE */
+  margin-left: 250px;  
+  /* Bạn có thể chỉnh padding/margin-left tuỳ ý */
+  padding: 30px;
+  background-color: #1e1e1e;
+  border-radius: 10px;
+  width: calc(100% - 250px);
+  overflow-x: auto;
+}
+
+/* Nếu bạn đóng gói phần nội dung chính trong .main-content */
+.main-content {
+  flex: 1;
+  /* không cần margin-left ở đây nếu đã đặt trên .container */
+  /* padding: 20px; */
+}
+  .container {
+      display: flex;
+    }
+
+    .sidebar {
+      width: 250px;
+      height: 100vh;
+      background-color: #2c3e50;
+      color: #fff;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      border-radius: 50%;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .sidebar nav ul li {
+      margin: 10px 0;
+    }
+
+    .sidebar nav ul li a {
+      color: #ecf0f1;
+      text-decoration: none;
+      display: block;
+      padding: 8px;
+      border-radius: 4px;
+    }
+
+    .sidebar nav ul li a:hover {
+      background-color: #34495e;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 20px;
+    }
