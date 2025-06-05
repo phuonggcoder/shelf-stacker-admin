@@ -1,217 +1,188 @@
 <!DOCTYPE html>
 <html lang="vi">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quản Lý Đơn Hàng</title>
-
-  <link rel="stylesheet" href="../public/assets/css/DanhMuc.css" />
-  
+  <link rel="stylesheet" href="../public/assets/css/DANHMUC1.css" />
 </head>
-
 <body>
-  <div class="container">
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Enter keywords..." />
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
 
-    <!-- SIDEBAR DÙNG CHUNG -->
-    <div class="sidebar">
-      <div class="profile">
-        <img src="https://i.pravatar.cc/100" alt="User" />
-        <h3>Jonathan Clarke</h3>
-        <p>UI/UX Designer</p>
-      </div>
-      <nav>
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User" />
+      <h3>Jonathan Clarke</h3>
+      <p>UI/UX Designer</p>
+    </div>
+    <nav>
         <ul>
-          <li><a href="home.html">TRANG CHỦ</a></li>
-          <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
-          <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
-          <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
-          
-          <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
-        </ul>
-      </nav>
+                <li><a href="home.html">TRANG CHỦ</a></li>
+                <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+                <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+                <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
+                <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+                <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+            </ul>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <h2>Quản Lý Đơn Hàng</h2>
+    <div class="search-filter">
+      <input type="text" placeholder="Tìm theo mã đơn / tên / SĐT" />
+      <select>
+        <option value="">-- Trạng thái --</option>
+        <option>Mới</option>
+        <option>Đang xử lý</option>
+        <option>Đang giao</option>
+        <option>Đã giao</option>
+        <option>Đã hủy</option>
+      </select>
+      <input type="date" />
+      <input type="date" />
+      <button class="btn-export">Xuất Dữ Liệu</button>
     </div>
-
-    <!-- PHẦN CŨ CỦA BẠN -->
-    <div class="main-content">
-      <h2>Quản Lý Đơn Hàng</h2>
-
-      <!-- Tìm kiếm & Lọc -->
-      <div class="search-filter">
-        <input type="text" placeholder="Tìm theo mã đơn / tên / SĐT" />
-        <select>
-          <option value="">-- Trạng thái --</option>
-          <option>Mới</option>
-          <option>Đang xử lý</option>
-          <option>Đang giao</option>
-          <option>Đã giao</option>
-          <option>Đã hủy</option>
-        </select>
-        <input type="date" />
-        <input type="date" />
-        <button class="btn-export">Xuất Dữ Liệu</button>
-      </div>
-
-      <!-- Danh sách đơn hàng -->
-      <table>
-        <thead>
-          <tr>
-            <th>Mã Đơn</th>
-            <th>Người Mua</th>
-            <th>Ngày Đặt</th>
-            <th>Trạng Thái</th>
-            <th>Tổng Tiền</th>
-            <th>Hành Động</th>
-          </tr>
-        </thead>
-        <tbody>
-        <tbody>
-          <tr>
-            <td>
-              <img
-                src="../img/MV5BMGQ0ZWE4NDYtYWY0Mi00MjE0LWI1MzctZDA1NGExYzE3N2FiXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg"
-                alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH001</td>
-            <td>Nguyễn Văn A</td>
-            <td>2025-05-27</td>
-            <td>Mới</td>
-            <td>500.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/3Fi_chi3Fc_-_anime_poster.webp" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH002</td>
-            <td>Trần Thị B</td>
-            <td>2025-05-26</td>
-            <td>Đang xử lý</td>
-            <td>750.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/one-piece-884x1024.jpg" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH003</td>
-            <td>Phạm Văn C</td>
-            <td>2025-05-25</td>
-            <td>Đang giao</td>
-            <td>1.200.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/s-l1200.png" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH004</td>
-            <td>Lê Thị D</td>
-            <td>2025-05-24</td>
-            <td>Đã giao</td>
-            <td>650.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/photo-1-15923244208011116886376.webp" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH005</td>
-            <td>Đặng Văn E</td>
-            <td>2025-05-23</td>
-            <td>Đã hủy</td>
-            <td>300.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img
-                src="../img/MV5BMGQ0ZWE4NDYtYWY0Mi00MjE0LWI1MzctZDA1NGExYzE3N2FiXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg"
-                alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH006</td>
-            <td>Ngô Thị F</td>
-            <td>2025-05-22</td>
-            <td>Đang xử lý</td>
-            <td>870.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/Naruto_Volume_1_manga_cover.jpg" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH007</td>
-            <td>Hoàng Văn G</td>
-            <td>2025-05-21</td>
-            <td>Đang giao</td>
-            <td>980.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-
-          <tr>
-            <td>
-              <img src="../img/one-piece-884x1024.jpg" alt="Sản phẩm" class="thumb" />
-            </td>
-            <td>DH008</td>
-            <td>Trần Thị H</td>
-            <td>2025-05-20</td>
-            <td>Mới</td>
-            <td>720.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-        </tbody>
-
-        <!-- Các dòng khác giữ nguyên như bạn gửi -->
-        </tbody>
-      </table>
+    <table>
+      <thead>
+        <tr>
+          <th>Ảnh</th>
+          <th>Mã Đơn</th>
+          <th>Người Mua</th>
+          <th>Ngày Đặt</th>
+          <th>Trạng Thái</th>
+          <th>Tổng Tiền</th>
+          <th>Hành Động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><img src="../img/MV5BMGQ0ZWE4NDYtYWY0Mi00MjE0LWI1MzctZDA1NGExYzE3N2FiXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH001</td>
+          <td>Nguyễn Văn A</td>
+          <td>2025-05-27</td>
+          <td>Mới</td>
+          <td>500.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/3Fi_chi3Fc_-_anime_poster.webp" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH002</td>
+          <td>Trần Thị B</td>
+          <td>2025-05-26</td>
+          <td>Đang xử lý</td>
+          <td>750.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/one-piece-884x1024.jpg" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH003</td>
+          <td>Phạm Văn C</td>
+          <td>2025-05-25</td>
+          <td>Đang giao</td>
+          <td>1.200.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/s-l1200.png" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH004</td>
+          <td>Lê Thị D</td>
+          <td>2025-05-24</td>
+          <td>Đã giao</td>
+          <td>650.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/photo-1-15923244208011116886376.webp" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH005</td>
+          <td>Đặng Văn E</td>
+          <td>2025-05-23</td>
+          <td>Đã hủy</td>
+          <td>300.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/MV5BMGQ0ZWE4NDYtYWY0Mi00MjE0LWI1MzctZDA1NGExYzE3N2FiXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH006</td>
+          <td>Ngô Thị F</td>
+          <td>2025-05-22</td>
+          <td>Đang xử lý</td>
+          <td>870.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/Naruto_Volume_1_manga_cover.jpg" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH007</td>
+          <td>Hoàng Văn G</td>
+          <td>2025-05-21</td>
+          <td>Đang giao</td>
+          <td>980.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+        <tr>
+          <td><img src="../img/one-piece-884x1024.jpg" alt="Sản phẩm" class="thumb" /></td>
+          <td>DH008</td>
+          <td>Trần Thị H</td>
+          <td>2025-05-20</td>
+          <td>Mới</td>
+          <td>720.000₫</td>
+          <td class="actions">
+            <button class="btn-detail">Chi tiết</button>
+            <button class="btn-update">Cập nhật</button>
+            <button class="btn-confirm">Xác nhận</button>
+            <button class="btn-return">Trả hàng</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="pagination">
+      <button>&laquo;</button>
+      <button>1</button>
+      <button>2</button>
+      <button>3</button>
+      <button>&raquo;</button>
     </div>
-  </div>
+  </main>
 </body>
-
 </html>

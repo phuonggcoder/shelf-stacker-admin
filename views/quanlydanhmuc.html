@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quản Lý Danh Mục </title>
-  
-  <link rel="stylesheet" href="../public/assets/css/DANHMUC1.css" />
-  
-  
-  </style>
+  <title>Quản Lý Danh Mục</title>
+  <link rel="stylesheet" href="../public/assets/css/DanhMuc.css" />
 </head>
 <body>
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Enter keywords..." />
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
 
-  <!-- =============================
-       Chèn thẻ sidebar CỐ ĐỊNH
-       ============================= -->
-  <div class="sidebar">
+  <aside class="sidebar">
     <div class="profile">
       <img src="https://i.pravatar.cc/100" alt="User Profile" />
       <h3>Jonathan Clarke</h3>
@@ -23,29 +23,25 @@
     </div>
     <nav>
       <ul>
-        <li><a href="home.html">TRANG CHỦ</a></li>
-          
-    <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
-    <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
-    <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
-    <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
-      </ul>
+                <li><a href="home.html">TRANG CHỦ</a></li>
+                <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+                <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+                <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
+                <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+                <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+            </ul>
     </nav>
-  </div>
+  </aside>
 
-  <!-- =============================
-       Phần gốc của bạn KHÔNG ĐƯỢC XÓA
-       mà chỉ thêm margin-left:250px ở .container
-       ============================= -->
-  <div class="container">
-    <h1>Quản Lý Danh Mục </h1>
-    <div class="top-bar">
+  <main class="main">
+    <h2>Quản Lý Danh Mục</h2>
+    <div class="search-filter">
       <input type="text" placeholder="Tìm kiếm danh mục..." />
       <select>
         <option>Sắp xếp A-Z</option>
         <option>Sắp xếp Z-A</option>
       </select>
-      <button class="add-btn">+ Thêm danh mục</button>
+      <button class="btn-export">+ Thêm danh mục</button>
     </div>
     <table>
       <thead>
@@ -66,9 +62,9 @@
           <td>Hiển thị</td>
           <td>12</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -78,9 +74,9 @@
           <td>Ẩn</td>
           <td>8</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Hiển thị</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Hiển thị</button>
           </td>
         </tr>
         <tr>
@@ -90,9 +86,9 @@
           <td>Hiển thị</td>
           <td>5</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -102,9 +98,9 @@
           <td>Hiển thị</td>
           <td>9</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -114,9 +110,9 @@
           <td>Hiển thị</td>
           <td>10</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -126,9 +122,9 @@
           <td>Ẩn</td>
           <td>4</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Hiển thị</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Hiển thị</button>
           </td>
         </tr>
         <tr>
@@ -138,9 +134,9 @@
           <td>Hiển thị</td>
           <td>6</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -150,9 +146,9 @@
           <td>Ẩn</td>
           <td>7</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Hiển thị</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Hiển thị</button>
           </td>
         </tr>
         <tr>
@@ -162,9 +158,9 @@
           <td>Hiển thị</td>
           <td>3</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
         <tr>
@@ -174,9 +170,9 @@
           <td>Hiển thị</td>
           <td>5</td>
           <td class="actions">
-            <button class="action-btn edit-btn">Sửa</button>
-            <button class="action-btn delete-btn">Xóa</button>
-            <button class="action-btn hide-btn">Ẩn</button>
+            <button class="action-btn btn-update">Sửa</button>
+            <button class="action-btn btn-return">Xóa</button>
+            <button class="action-btn btn-confirm">Ẩn</button>
           </td>
         </tr>
       </tbody>
@@ -188,6 +184,6 @@
       <button>3</button>
       <button>&raquo;</button>
     </div>
-  </div>
+  </main>
 </body>
 </html>
