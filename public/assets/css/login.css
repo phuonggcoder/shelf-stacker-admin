@@ -6,21 +6,23 @@
 }
 
 body {
-  height: 100vh;
+  min-height: 100vh;
   background: url('https://images.unsplash.com/photo-1506744038136-46273834b3fb') no-repeat center center/cover;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
 }
 
 .container {
-  width: 80%;
-  max-width: 1000px;
+  width: 100%;
+  max-width: 900px;
   display: flex;
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   overflow: hidden;
+  flex-direction: row;
 }
 
 .login, .register {
@@ -31,9 +33,6 @@ body {
 .login {
   background-color: #0044cc;
   color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
   text-align: center;
 }
 
@@ -56,10 +55,6 @@ body {
   text-decoration: none;
   font-weight: bold;
   display: inline-block;
-}
-
-.register {
-  background-color: white;
 }
 
 .register h2 {
@@ -101,13 +96,14 @@ body {
   background-color: #003399;
 }
 
-/* Logo */
 h1 {
   position: absolute;
-  top: 40px;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   color: white;
-  font-size: 32px;
+  font-size: 28px;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -115,4 +111,27 @@ h1 {
 
 h1 img {
   height: 32px;
+}
+
+#errorMsg {
+  color: red;
+  margin-top: 10px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .login, .register {
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 20px;
+    top: 10px;
+  }
 }
