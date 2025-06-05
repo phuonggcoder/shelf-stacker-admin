@@ -1,72 +1,171 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: #f4f6f8;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-color: #f5f8fb;
 }
 
-.container {
+.header {
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  height: 60px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
   display: flex;
-  min-height: 100vh;
-  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: #007bff;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
 }
 
 .sidebar {
-  width: 220px;
-  background-color: #2c3e50;
+  width: 250px;
+  background-color: #1a2238;
   color: #fff;
   padding: 20px;
+  padding-top: 80px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
 }
 
-.sidebar h2 {
-  font-size: 22px;
-  margin-bottom: 20px;
+.sidebar .profile {
+  text-align: center;
+  margin-bottom: 30px;
 }
 
-.sidebar ul {
+.sidebar .profile img {
+  width: 80px;
+  border-radius: 50%;
+}
+
+.sidebar .profile h3 {
+  margin: 10px 0 0;
+  font-size: 16px;
+}
+
+.sidebar .profile p {
+  margin: 0;
+  font-size: 12px;
+  color: #ccc;
+}
+
+.sidebar nav ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
-.sidebar li {
-  margin-bottom: 15px;
-  cursor: pointer;
+.sidebar nav ul li {
+  margin: 15px 0;
+}
+
+.sidebar nav ul li a {
+  text-decoration: none;
+  color: #ecf0f1;
+  display: block;
+  padding: 10px;
+  border-radius: 5px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.sidebar nav ul li a:hover {
+  background-color: #2c365d;
+  color: #fff;
 }
 
 .main-content {
-  flex: 1;
-  padding: 20px;
+  margin-left: 250px;
+  padding: 80px 30px 30px;
+  background-color: #f5f8fb;
+  min-height: 100vh;
 }
 
-header {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
+.management-section {
+  background: #fff;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 100%;
+  margin: 0;
 }
 
-.controls {
+.title {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  color: #007bff;
+  text-align: center;
+}
+
+.search-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 15px;
+  margin-bottom: 25px;
 }
 
-.controls input {
-  padding: 10px;
+.input {
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 14px;
   flex: 1;
   min-width: 200px;
+  background: #f5f8fb;
+  color: #222;
 }
 
-.controls button {
+.btn {
   padding: 10px 16px;
-  background-color: #007bff;
-  color: white;
   border: none;
+  border-radius: 8px;
+  font-size: 14px;
   cursor: pointer;
-  white-space: nowrap;
+  transition: 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-add {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.btn-add:hover {
+  background-color: #0056b3;
 }
 
 .product-grid {
@@ -78,11 +177,15 @@ header {
 .product-card {
   display: flex;
   align-items: center;
-  background: white;
+  background: #fff;
   border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  padding: 10px 20px;
-  gap: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 16px 24px;
+  gap: 24px;
+  transition: box-shadow 0.2s;
+}
+.product-card:hover {
+  box-shadow: 0 4px 16px rgba(0,123,255,0.10);
 }
 
 .product-card img {
@@ -90,6 +193,7 @@ header {
   height: 140px;
   object-fit: cover;
   border-radius: 5px;
+  border: 1px solid #eee;
 }
 
 .product-card .info {
@@ -98,7 +202,8 @@ header {
 
 .product-card h3 {
   margin: 0 0 5px;
-  font-size: 16px;
+  font-size: 18px;
+  color: #222;
 }
 
 .product-card p {
@@ -108,12 +213,12 @@ header {
 }
 
 .in-stock {
-  color: green;
+  color: #28a745;
   font-weight: bold;
 }
 
 .out-stock {
-  color: red;
+  color: #dc3545;
   font-weight: bold;
 }
 
@@ -127,9 +232,10 @@ header {
 .delete-btn {
   background-color: transparent;
   border: none;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
-  transition: color 0.3s ease;
+  transition: color 0.3s;
+  padding: 0;
 }
 
 .edit-btn:hover {
@@ -137,81 +243,48 @@ header {
 }
 
 .delete-btn:hover {
-  color: red;
+  color: #dc3545;
 }
 
-@media (max-width: 768px) {
-  .container {
-    flex-direction: column;
+@media (max-width: 900px) {
+  .main-content {
+    margin-left: 0;
+    padding: 80px 10px 10px;
   }
-
-  .sidebar {
-    width: 100%;
+  .management-section {
+    padding: 10px;
   }
-
   .product-card {
     flex-direction: column;
     align-items: flex-start;
+    gap: 12px;
+    padding: 12px 10px;
   }
-
   .actions {
     flex-direction: row;
     gap: 10px;
   }
+  .product-card img {
+    width: 70px;
+    height: 100px;
+  }
+  .title {
+    font-size: 20px;
+  }
+  .input {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .btn {
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    padding-top: 20px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
 }
- body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-
-    .container {
-      display: flex;
-    }
-
-    .sidebar {
-      width: 250px;
-      height: 100vh;
-      background-color: #2c3e50;
-      color: #fff;
-      padding: 20px;
-      box-sizing: border-box;
-    }
-
-    .sidebar .profile img {
-      width: 80px;
-      border-radius: 50%;
-    }
-
-    .sidebar .profile h3,
-    .sidebar .profile p {
-      margin: 10px 0 0;
-      text-align: center;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    .sidebar nav ul li {
-      margin: 15px 0;
-    }
-
-    .sidebar nav ul li a {
-      text-decoration: none;
-      color: #ecf0f1;
-      display: block;
-      padding: 8px;
-      border-radius: 5px;
-    }
-
-    .sidebar nav ul li a:hover {
-      background-color: #34495e;
-    }
-
-    .main-content {
-      flex-grow: 1;
-      padding: 20px;
-      background-color: #f5f5f5;
-      min-height: 100vh;
-    }

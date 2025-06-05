@@ -1,36 +1,62 @@
-/* ==========================================
-   0. RESET BOX-SIZING VÀ TẮT OVERFLOW XUỐNG
-   ========================================== */
-html, body {
-  overflow-x: hidden;      /* Không cho tràn ngang toàn trang */
-  box-sizing: border-box;
+* {
   margin: 0;
   padding: 0;
-}
-*, *::before, *::after {
-  box-sizing: inherit;
+  box-sizing: border-box;
 }
 
-/* ==========================
-   1. BODY VÀ CÁC THIẾT LẬP CHUNG
-   ========================== */
 body {
-  background-color: #0f0f0f;
-  color: white;
-  font-family: Arial, sans-serif;
-  margin: 0;               /* Đảm bảo margin gốc bằng 0 */
-  padding: 20px;           /* Padding chung nếu cần */
-  font-size: 18px;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  height: 100vh;
+  background-color: #f5f8fb;
+  color: #222;
 }
 
-/* ==========================
-   2. SIDEBAR (CỐ ĐỊNH NGANG 250px)
-   ========================== */
+.header {
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  height: 60px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: #007bff;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
 .sidebar {
   width: 250px;
   background-color: #1a2238;
   color: #fff;
-  padding: 20px 20px 0 20px; /* padding-top để dành chỗ cho header nếu có */
+  padding: 20px;
+  padding-top: 80px;
   position: fixed;
   top: 0;
   bottom: 0;
@@ -61,7 +87,7 @@ body {
 .sidebar nav ul {
   list-style: none;
   padding: 0;
-  margin: 0; /* Reset margin-pading để liên kết không bị thừa khoảng trắng */
+  margin: 0;
 }
 
 .sidebar nav ul li {
@@ -82,176 +108,154 @@ body {
   color: #fff;
 }
 
-/* ==========================
-   3. CONTAINER CHÍNH (NỘI DUNG) 
-      — ĐẨY SANG PHẢI 250px ĐỂ ĐỠ SIDEBAR
-   ========================== */
-.container {
-  margin-left: 250px;                    /* Đẩy nội dung sang phải đúng bằng chiều rộng sidebar */
-  width: calc(100% - 250px);             /* Chiều rộng container vừa khít còn lại */
-  background-color: #1e1e1e;
-  padding: 30px;
-  border-radius: 10px;
-  overflow-x: auto;                      /* Nếu bảng quá rộng, chỉ scroll trong nội dung */
+.main {
+  margin-left: 250px;
+  padding: 80px 30px 30px;
+  flex: 1;
+  background: #f5f8fb;
+  min-height: 100vh;
 }
 
-/* ==========================
-   4. TIÊU ĐỀ VÀ H2
-   ========================== */
-h1, h2 {
-  color: red;
-  text-align: center;
-  margin: 0 0 30px 0;
-}
-
-h1 {
-  font-size: 36px;
-}
-
+/* ----------- ĐƠN HÀNG ĐƯỢC LÀM ĐẸP HƠN ----------- */
 h2 {
-  font-size: 40px;
+  text-align: center;
+  color: #007bff;
+  font-size: 36px;
+  margin-bottom: 30px;
+  letter-spacing: 1px;
 }
 
-/* ==========================
-   5. TOP BAR (TÌM KIẾM, SẮP XẾP, NÚT THÊM)
-   ========================== */
-.top-bar,
 .search-filter {
   display: flex;
   flex-wrap: wrap;
   gap: 15px;
   margin-bottom: 30px;
+  background: #fff;
+  padding: 20px 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-.top-bar input[type="text"],
 .search-filter input[type="text"],
 .search-filter select,
 .search-filter input[type="date"] {
-  padding: 15px 20px;
-  font-size: 18px;
+  padding: 12px 16px;
+  font-size: 16px;
   border-radius: 6px;
-  border: none;
-  background-color: #2a2a2a;
-  color: white;
-  min-width: 200px;
+  border: 1px solid #ccc;
+  background-color: #f5f8fb;
+  color: #222;
+  min-width: 140px;
   flex: 1;
 }
 
-.top-bar select {
-  padding: 15px 20px;
-  font-size: 18px;
-  border-radius: 6px;
-  border: none;
-  background-color: #2a2a2a;
-  color: white;
-  min-width: 200px;
-  flex: none;
-}
-
-.top-bar button.add-btn,
-.search-filter .btn-export {
-  background-color: #007bff;
-  color: white;
-  padding: 15px 25px;
-  font-size: 18px;
+.btn-export {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: #fff;
+  padding: 12px 22px;
+  font-size: 16px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08);
+  transition: background 0.2s;
 }
-
-/* ==========================
-   6. BẢNG (TABLE)
-   ========================== */
-.table-wrapper {
-  overflow-x: auto;  /* Nếu bảng vẫn quá rộng, scroll nội bộ */
+.btn-export:hover {
+  background: linear-gradient(135deg, #0056b3, #007bff);
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 18px;
-  /* Nếu muốn giới hạn cho responsive: 
-     bỏ hoặc giảm min-width: 800px; */
-  min-width: 0;
+  font-size: 17px;
+  min-width: 800px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-th, td {
-  padding: 20px;
+th,
+td {
+  padding: 18px;
   text-align: left;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #e0e0e0;
   vertical-align: middle;
 }
 
 th {
-  color: red;
-  font-size: 20px;
-  white-space: nowrap; /* Giữ tiêu đề không xuống dòng */
+  color: #007bff;
+  font-size: 18px;
+  white-space: nowrap;
+  background: #f5f8fb;
+  font-weight: 700;
 }
 
-/* Ảnh thumb */
 img.thumb {
-  width: 100px;
-  height: 100px;
+  width: 70px;
+  height: 70px;
   object-fit: cover;
   border-radius: 6px;
-  transition: width 0.3s ease, height 0.3s ease;
+  border: 1px solid #eee;
 }
 
-/* ==========================
-   7. NÚT HÀNH ĐỘNG
-   ========================== */
-.action-btn {
-  padding: 10px 16px;
-  font-size: 16px;
+.btn-detail,
+.btn-update,
+.btn-confirm,
+.btn-return {
+  padding: 8px 14px;
+  font-size: 15px;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  min-width: 90px;
+  min-width: 80px;
   white-space: nowrap;
-  margin-right: 8px;
+  margin-right: 6px;
   display: inline-block;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
 }
 
-/* MÀU RIÊNG TỪNG NÚT */
 .btn-detail {
-  background-color: #17a2b8; /* xanh ngọc */
-  color: white;
+  background-color: #17a2b8;
+  color: #fff;
+}
+.btn-detail:hover {
+  background-color: #138496;
 }
 
 .btn-update {
-  background-color: #28a745; /* xanh lá */
-  color: white;
+  background-color: #28a745;
+  color: #fff;
+}
+.btn-update:hover {
+  background-color: #218838;
 }
 
 .btn-confirm {
-  background-color: #ffc107; /* vàng */
-  color: black;
+  background-color: #ffc107;
+  color: #222;
+}
+.btn-confirm:hover {
+  background-color: #e0a800;
+  color: #fff;
 }
 
 .btn-return {
-  background-color: #dc3545; /* đỏ */
-  color: white;
+  background-color: #dc3545;
+  color: #fff;
+}
+.btn-return:hover {
+  background-color: #b21f2d;
 }
 
-.delete-btn {
-  background-color: #e74c3c; /* đỏ đậm */
-  color: white;
-}
-
-.hide-btn {
-  background-color: #f39c12; /* cam */
-  color: white;
-}
-
-/* Giữ nút không xuống dòng */
 td.actions {
   white-space: nowrap;
 }
 
-/* ==========================
-   8. PHÂN TRANG
-   ========================== */
 .pagination {
   text-align: center;
   margin-top: 30px;
@@ -262,49 +266,57 @@ td.actions {
 }
 
 .pagination button {
-  background-color: #2a2a2a;
-  color: white;
-  padding: 12px 18px;
-  font-size: 16px;
-  border: none;
+  background-color: #fff;
+  color: #007bff;
+  padding: 10px 16px;
+  font-size: 15px;
+  border: 1px solid #e0e0e0;
   border-radius: 6px;
   cursor: pointer;
-  min-width: 45px;
+  min-width: 40px;
+  transition: background 0.2s, color 0.2s;
+  font-weight: 500;
+}
+.pagination button:hover {
+  background: #007bff;
+  color: #fff;
 }
 
-/* ==========================
-   9. RESPONSIVE
-   ========================== */
-@media (max-width: 768px) {
-  .top-bar,
-  .search-filter {
-    flex-direction: column;
-    align-items: stretch;
+@media (max-width: 900px) {
+  .main {
+    padding: 80px 10px 10px;
   }
-
   table {
-    font-size: 16px;
-    /* Bỏ min-width để co gọn */
     min-width: 0;
-  }
-
-  img.thumb {
-    width: 80px;
-    height: 80px;
-  }
-
-  th, td {
-    padding: 12px 10px;
-  }
-
-  .action-btn {
-    padding: 6px 10px;
     font-size: 14px;
-    min-width: 70px;
-    margin-right: 6px;
   }
-
-  td.actions {
-    white-space: nowrap;
+  img.thumb {
+    width: 40px;
+    height: 40px;
+  }
+  th, td {
+    padding: 8px;
+  }
+  .btn-detail,
+  .btn-update,
+  .btn-confirm,
+  .btn-return {
+    min-width: 50px;
+    font-size: 12px;
+    padding: 5px 7px;
+  }
+  .pagination {
+    gap: 4px;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    padding-top: 20px;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  .main {
+    margin-left: 0;
   }
 }

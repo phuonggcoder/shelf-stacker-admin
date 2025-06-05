@@ -1,443 +1,384 @@
-/* ====================
-   ĐẶT Ở ĐẦU FILE: RESET
-   ==================== */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* ====================
-   BODY & FONT CHUNG
-   ==================== */
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
-    color: #333;
+  font-family: "Segoe UI", sans-serif;
+  display: flex;
+  height: 100vh;
+  background-color: #f5f8fb;
 }
 
-/* ====================
-   CONTAINER CHUNG
-   ==================== */
-.container {
-    display: flex;
-    min-height: 100vh;
+.header {
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  height: 60px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
 }
 
-/* ====================
-   SIDEBAR CỐ ĐỊNH
-   ==================== */
+.logo {
+  font-weight: bold;
+  font-size: 20px;
+  color: #007bff;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
 .sidebar {
-    width: 280px;
-    background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
-    color: white;
-    overflow-y: auto;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+  width: 250px;
+  background-color: #1a2238;
+  color: #fff;
+  padding: 20px;
+  padding-top: 80px;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  overflow-y: auto;
 }
 
-.sidebar h2 {
-    color: #3498db;
-    text-align: center;
-    padding: 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-bottom: 1px solid #34495e;
-    margin-bottom: 10px;
+.sidebar .profile {
+  text-align: center;
+  margin-bottom: 30px;
 }
 
-/* Mục menu */
-.menu-item {
-    padding: 15px 20px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border-left: 3px solid transparent;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.menu-item:hover {
-    background-color: #34495e;
-    border-left-color: #3498db;
-}
-.menu-item.active {
-    background-color: #2980b9;
-    border-left-color: #ecf0f1;
-}
-.menu-item span {
-    display: flex;
-    align-items: center;
-    font-size: 14px;
-}
-.menu-item i {
-    margin-right: 10px;
-    width: 16px;
-}
-.arrow {
-    font-size: 12px;
-    color: #bdc3c7;
+.sidebar .profile img {
+  width: 80px;
+  border-radius: 50%;
 }
 
-/* ====================
-   NỘI DUNG CHÍNH
-   ==================== */
-.main-content {
-    flex: 1;
-    padding: 30px;
-    background-color: white;
-    margin: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+.sidebar .profile h3 {
+  margin-top: 10px;
+  font-size: 16px;
 }
 
-/* ====================
-   PRODUCT CONTAINER
-   ==================== */
+.sidebar .profile p {
+  font-size: 12px;
+  color: #ccc;
+}
+
+.sidebar nav ul {
+  list-style: none;
+}
+
+.sidebar nav ul li {
+  margin: 15px 0;
+}
+
+.sidebar nav ul li a {
+  color: #ccc;
+  text-decoration: none;
+  padding: 10px;
+  display: block;
+  border-radius: 5px;
+  transition: 0.3s;
+}
+
+.sidebar nav ul li a:hover {
+  background-color: #2c365d;
+  color: #fff;
+}
+
+.main {
+  margin-left: 250px;
+  padding: 80px 30px 30px;
+  flex: 1;
+}
+
+/* Giữ lại các phần style cho product, tab, review, responsive... */
 .product-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 50px;
-    max-width: 1200px;
-    margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* ====================
-   PRODUCT IMAGES
-   ==================== */
 .product-images {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .main-image {
-    width: 100%;
-    max-width: 500px;
-    height: 600px;
-    object-fit: cover;
-    border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    margin-bottom: 20px;
+  width: 100%;
+  max-width: 500px;
+  height: 600px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  margin-bottom: 20px;
 }
 
 .thumbnail-container {
-    display: flex;
-    gap: 12px;
-    justify-content: center;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
 }
 
 .thumbnail {
-    width: 80px;
-    height: 80px;
-    object-fit: cover;
-    border-radius: 8px;
-    cursor: pointer;
-    border: 3px solid transparent;
-    transition: all 0.3s ease;
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: all 0.3s ease;
 }
 
 .thumbnail:hover,
 .thumbnail.active {
-    border-color: #3498db;
-    transform: scale(1.05);
+  border-color: #3498db;
+  transform: scale(1.05);
 }
 
-/* ====================
-   PRODUCT INFO
-   ==================== */
 .product-info {
-    padding: 20px 0;
+  padding: 20px 0;
 }
 
 .product-title {
-    font-size: 32px;
-    font-weight: 700;
-    color: #2c3e50;
-    margin-bottom: 15px;
-    line-height: 1.3;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  line-height: 1.3;
 }
 
 .brand {
-    color: #7f8c8d;
-    font-size: 16px;
-    margin-bottom: 20px;
+  color: #7f8c8d;
+  font-size: 16px;
+  margin-bottom: 20px;
 }
 
 .brand span {
-    color: #3498db;
-    font-weight: 600;
+  color: #3498db;
+  font-weight: 600;
 }
 
 .rating {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
 }
 
 .stars {
-    color: #f39c12;
-    font-size: 20px;
+  color: #f39c12;
+  font-size: 20px;
 }
 
 .price {
-    font-size: 36px;
-    font-weight: 700;
-    color: #e74c3c;
-    margin-bottom: 25px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #e74c3c;
+  margin-bottom: 25px;
 }
 
 .description {
-    color: #7f8c8d;
-    line-height: 1.7;
-    margin-bottom: 35px;
-    font-size: 15px;
+  color: #7f8c8d;
+  line-height: 1.7;
+  margin-bottom: 35px;
+  font-size: 15px;
 }
 
-/* ====================
-   QUANTITY SELECTOR
-   ==================== */
 .quantity-selector {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 35px;
-    width: fit-content;
-    border: 2px solid #bdc3c7;
-    border-radius: 8px;
-    overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 35px;
+  width: fit-content;
+  border: 2px solid #bdc3c7;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .quantity-btn {
-    width: 45px;
-    height: 45px;
-    border: none;
-    background: #ecf0f1;
-    cursor: pointer;
-    font-size: 20px;
-    font-weight: bold;
-    transition: background-color 0.3s ease;
+  width: 45px;
+  height: 45px;
+  border: none;
+  background: #ecf0f1;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
 }
 
 .quantity-btn:hover {
-    background-color: #d5dbdb;
+  background-color: #d5dbdb;
 }
 
 .quantity-input {
-    width: 60px;
-    height: 45px;
-    text-align: center;
-    border: none;
-    font-size: 16px;
-    font-weight: 600;
-    background: white;
+  width: 60px;
+  height: 45px;
+  text-align: center;
+  border: none;
+  font-size: 16px;
+  font-weight: 600;
+  background: white;
 }
 
-/* ====================
-   ACTION BUTTONS
-   ==================== */
 .action-buttons {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 40px;
+  display: flex;
+  gap: 15px;
+  margin-bottom: 40px;
 }
 
 .btn {
-    padding: 15px 25px;
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+  padding: 15px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #3498db, #2980b9);
-    color: white;
-    flex: 1;
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  flex: 1;
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #2980b9, #3498db);
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+  background: linear-gradient(135deg, #2980b9, #3498db);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
 }
 
 .btn-secondary {
-    width: 50px;
-    background: #ecf0f1;
-    color: #7f8c8d;
-    justify-content: center;
+  width: 50px;
+  background: #ecf0f1;
+  color: #7f8c8d;
+  justify-content: center;
 }
 
 .btn-secondary:hover {
-    background: #d5dbdb;
-    color: #2c3e50;
+  background: #d5dbdb;
+  color: #2c3e50;
 }
 
-/* ====================
-   PRODUCT TABS
-   ==================== */
 .product-tabs {
-    border-top: 1px solid #ecf0f1;
-    padding-top: 30px;
+  border-top: 1px solid #ecf0f1;
+  padding-top: 30px;
 }
 
 .tab-buttons {
-    display: flex;
-    gap: 0;
-    margin-bottom: 25px;
-    border-bottom: 1px solid #ecf0f1;
+  display: flex;
+  gap: 0;
+  margin-bottom: 25px;
+  border-bottom: 1px solid #ecf0f1;
 }
 
 .tab-btn {
-    padding: 15px 25px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: 600;
-    color: #7f8c8d;
-    border-bottom: 3px solid transparent;
-    transition: all 0.3s ease;
+  padding: 15px 25px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  color: #7f8c8d;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
 }
 
 .tab-btn.active,
 .tab-btn:hover {
-    color: #3498db;
-    border-bottom-color: #3498db;
+  color: #3498db;
+  border-bottom-color: #3498db;
 }
 
-/* ====================
-   REVIEW ITEMS
-   ==================== */
 .review-item {
-    padding: 20px 0;
+  padding: 20px 0;
 }
 
 .reviewer {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
 }
 
 .reviewer-avatar {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    object-fit: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .reviewer-info h4 {
-    margin-bottom: 5px;
-    color: #2c3e50;
+  margin-bottom: 5px;
+  color: #2c3e50;
 }
 
 .review-time {
-    color: #7f8c8d;
-    font-size: 14px;
-    margin-bottom: 8px;
+  color: #7f8c8d;
+  font-size: 14px;
+  margin-bottom: 8px;
 }
 
 .review-text {
-    color: #7f8c8d;
-    line-height: 1.6;
-    margin-bottom: 15px;
+  color: #7f8c8d;
+  line-height: 1.6;
+  margin-bottom: 15px;
 }
 
 .review-actions {
-    display: flex;
-    gap: 20px;
+  display: flex;
+  gap: 20px;
 }
 
 .review-actions span {
-    color: #7f8c8d;
-    cursor: pointer;
-    font-size: 14px;
-    transition: color 0.3s ease;
+  color: #7f8c8d;
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.3s ease;
 }
 
 .review-actions span:hover {
-    color: #3498db;
+  color: #3498db;
 }
 
-/* ====================
-   RESPONSIVE CHO MOBILE
-   ==================== */
 @media (max-width: 768px) {
-    .container {
-        flex-direction: column;
-    }
-    
-    .sidebar {
-        width: 100%;
-        height: auto;
-    }
-    
-    .product-container {
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
-    
-    .main-content {
-        margin: 10px;
-        padding: 20px;
-    }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    padding-top: 20px;
+  }
+  .main {
+    margin-left: 0;
+    padding: 80px 10px 10px;
+  }
+  .product-container {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
 }
-  body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        .container {
-            display: flex;
-        }
-
-        .sidebar {
-            width: 250px;
-            height: 100vh;
-            background-color: #2c3e50;
-            color: #fff;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .sidebar .profile img {
-            width: 80px;
-            border-radius: 50%;
-        }
-
-        .sidebar .profile h3,
-        .sidebar .profile p {
-            margin: 10px 0 0;
-            text-align: center;
-        }
-
-        .sidebar nav ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .sidebar nav ul li {
-            margin: 15px 0;
-        }
-
-        .sidebar nav ul li a {
-            text-decoration: none;
-            color: #ecf0f1;
-            display: block;
-            padding: 8px;
-            border-radius: 5px;
-        }
-
-        .sidebar nav ul li a:hover {
-            background-color: #34495e;
-        }
-
-        .main-content {
-            flex-grow: 1;
-            padding: 20px;
-        }

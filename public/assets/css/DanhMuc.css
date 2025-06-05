@@ -1,178 +1,29 @@
-/* ===========================
-   PHẦN CHUNG (giữ nguyên)
-   =========================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 body {
-  background-color: #0f0f0f;
-  color: white;
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  font-size: 18px;
-}
-
-h2 {
-  text-align: center;
-  color: red;
-  font-size: 40px;
-  margin-bottom: 30px;
-}
-
-/* Tìm kiếm & lọc */
-.search-filter {
+  font-family: "Segoe UI", sans-serif;
   display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 30px;
+  height: 100vh;
+  background-color: #f5f8fb;
 }
 
-.search-filter input[type="text"],
-.search-filter select,
-.search-filter input[type="date"] {
-  padding: 15px 20px;
-  font-size: 18px;
-  border-radius: 6px;
-  border: none;
-  background-color: #2a2a2a;
-  color: white;
-  min-width: 200px;
-  flex: 1;
-}
-
-.btn-export {
-  background-color: #007bff;
-  color: white;
-  padding: 15px 25px;
-  font-size: 18px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-/* Bảng */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 18px;
-  min-width: 800px;
-}
-
-th,
-td {
-  padding: 20px;
-  text-align: left;
-  border-bottom: 1px solid #333;
-  vertical-align: middle;
-}
-
-th {
-  color: red;
-  font-size: 20px;
-  white-space: nowrap;
-}
-
-/* Ảnh sản phẩm */
-img.thumb {
-  width: 100px;
-  height: 100px;
-  object-fit: cover;
-  border-radius: 6px;
-  transition: width 0.3s ease, height 0.3s ease;
-}
-
-/* Nút hành động */
-.action-btn {
-  padding: 10px 16px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  min-width: 90px;
-  white-space: nowrap;
-  margin-right: 8px;
-  display: inline-block;
-}
-
-/* Màu riêng từng nút */
-.btn-detail {
-  background-color: #17a2b8; /* xanh ngọc */
-  color: white;
-}
-
-.btn-update {
-  background-color: #28a745; /* xanh lá */
-  color: white;
-}
-
-.btn-confirm {
-  background-color: #ffc107; /* vàng */
-  color: black;
-}
-
-.btn-return {
-  background-color: #dc3545; /* đỏ */
-  color: white;
-}
-
-/* Đảm bảo nút không xuống dòng */
-td.actions {
-  white-space: nowrap;
-}
-
-/* Phân trang */
-.pagination {
-  text-align: center;
-  margin-top: 30px;
+.header {
+  position: fixed;
+  top: 0;
+  left: 250px;
+  right: 0;
+  height: 60px;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.pagination button {
-  background-color: #2a2a2a;
-  color: white;
-  padding: 12px 18px;
-  font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  min-width: 45px;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .search-filter {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  table {
-    font-size: 16px;
-    min-width: 100%;
-  }
-
-  img.thumb {
-    width: 80px;
-    height: 80px;
-  }
-
-  th,
-  td {
-    padding: 12px 10px;
-  }
-
-  .action-btn {
-    padding: 6px 10px;
-    font-size: 14px;
-    min-width: 70px;
-    margin-right: 6px;
-  }
-
-  td.actions {
-    white-space: nowrap;
-  }
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  z-index: 1000;
 }
 
 .logo {
@@ -181,9 +32,23 @@ td.actions {
   color: #007bff;
 }
 
-/* ===============================
-   PHẦN SIDEBAR (giữ gần như nguyên)
-   =============================== */
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user input {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
 
 .sidebar {
   width: 250px;
@@ -240,72 +105,161 @@ td.actions {
   color: #fff;
 }
 
-/* =====================================================
-   CHỈ THÊM DÒNG NÀY ĐỂ ĐẨY NỘI DUNG CHÍNH SANG BÊN PHẢI
-   ===================================================== */
-.container {
-  display: flex;
-  /* KHOẢNG CÁCH BẢO ĐẢM NỘI DUNG KHÔNG BỊ CHE */
-  margin-left: 250px;  
-  /* Bạn có thể chỉnh padding/margin-left tuỳ ý */
-  padding: 30px;
-  background-color: #1e1e1e;
-  border-radius: 10px;
-  width: calc(100% - 250px);
-  overflow-x: auto;
-}
-
-/* Nếu bạn đóng gói phần nội dung chính trong .main-content */
-.main-content {
+.main {
+  margin-left: 250px;
+  padding: 80px 30px 30px;
   flex: 1;
-  /* không cần margin-left ở đây nếu đã đặt trên .container */
-  /* padding: 20px; */
 }
-  .container {
-      display: flex;
-    }
 
-    .sidebar {
-      width: 250px;
-      height: 100vh;
-      background-color: #2c3e50;
-      color: #fff;
-      padding: 20px;
-      box-sizing: border-box;
-    }
+h2 {
+  text-align: center;
+  color: red;
+  font-size: 40px;
+  margin-bottom: 30px;
+}
 
-    .sidebar .profile {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+.search-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 30px;
+}
 
-    .sidebar .profile img {
-      width: 80px;
-      border-radius: 50%;
-    }
+.search-filter input[type="text"],
+.search-filter select {
+  padding: 15px 20px;
+  font-size: 18px;
+  border-radius: 6px;
+  border: none;
+  background-color: #2a2a2a;
+  color: white;
+  min-width: 200px;
+  flex: 1;
+}
 
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0;
-    }
+.btn-export {
+  background-color: #007bff;
+  color: white;
+  padding: 15px 25px;
+  font-size: 18px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
 
-    .sidebar nav ul li {
-      margin: 10px 0;
-    }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 18px;
+  min-width: 800px;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 30px;
+}
 
-    .sidebar nav ul li a {
-      color: #ecf0f1;
-      text-decoration: none;
-      display: block;
-      padding: 8px;
-      border-radius: 4px;
-    }
+th,
+td {
+  padding: 20px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+  vertical-align: middle;
+}
 
-    .sidebar nav ul li a:hover {
-      background-color: #34495e;
-    }
+th {
+  color: red;
+  font-size: 20px;
+  white-space: nowrap;
+}
 
-    .main-content {
-      flex: 1;
-      padding: 20px;
-    }
+img.thumb {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 6px;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.action-btn {
+  padding: 10px 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 90px;
+  white-space: nowrap;
+  margin-right: 8px;
+  display: inline-block;
+}
+
+.btn-update {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-return {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-confirm {
+  background-color: #ffc107;
+  color: black;
+}
+
+td.actions {
+  white-space: nowrap;
+}
+
+.pagination {
+  text-align: center;
+  margin-top: 30px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pagination button {
+  background-color: #2a2a2a;
+  color: white;
+  padding: 12px 18px;
+  font-size: 16px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  min-width: 45px;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    padding-top: 20px;
+  }
+  .main {
+    margin-left: 0;
+    padding: 80px 10px 10px;
+  }
+  table {
+    min-width: 0;
+    font-size: 15px;
+  }
+  img.thumb {
+    width: 60px;
+    height: 60px;
+  }
+  th, td {
+    padding: 10px;
+  }
+  .action-btn {
+    min-width: 60px;
+    font-size: 13px;
+    padding: 7px 10px;
+  }
+  .pagination {
+    gap: 4px;
+  }
+}
