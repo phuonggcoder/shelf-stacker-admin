@@ -6,6 +6,7 @@
   <title>Quản lý truyện tranh</title>
   <link rel="stylesheet" href="../public/assets/css/DSsanpham.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
   <style>
     .dialog-overlay {
       display: none;
@@ -53,11 +54,15 @@
       flex-direction: column;
       gap: 10px;
     }
-    .dialog-box input, .dialog-box select {
+    .dialog-box input, .dialog-box select, .dialog-box textarea {
       padding: 7px 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 1rem;
+    }
+    .dialog-box textarea {
+      min-height: 80px;
+      resize: vertical;
     }
     .dialog-box button[type="submit"] {
       margin-top: 10px;
@@ -124,7 +129,8 @@
         <input type="text" id="bookName" placeholder="Tên truyện" required />
         <input type="text" id="bookAuthor" placeholder="Tác giả" required />
         <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
-        <input type="text" id="bookDesc" placeholder="Mô tả" required />
+        <!-- CKEditor 5 cho mô tả -->
+        <textarea id="bookDesc" placeholder="Mô tả"></textarea>
         <input type="text" id="bookImage" placeholder="Link ảnh" required />
         <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
         <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required />
@@ -137,217 +143,258 @@
   </div>
 
   <script>
-    const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
-    const apiPostURL = 'https://server-shelf-stacker.onrender.com/api/books';
+  const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
+  const apiPostURL = 'https://server-shelf-stacker.onrender.com/api/books';
 
-    const productGrid = document.getElementById('productGrid');
-    const searchBox = document.getElementById('searchBox');
-    const addBookBtn = document.getElementById('addBookBtn');
-    const dialogOverlay = document.getElementById('dialogOverlay');
-    const closeDialogBtn = document.getElementById('closeDialogBtn');
-    const addBookForm = document.getElementById('addBookForm');
-    const dialogTitle = document.getElementById('dialogTitle');
+  const productGrid = document.getElementById('productGrid');
+  const searchBox = document.getElementById('searchBox');
+  const addBookBtn = document.getElementById('addBookBtn');
+  const dialogOverlay = document.getElementById('dialogOverlay');
+  const closeDialogBtn = document.getElementById('closeDialogBtn');
+  const addBookForm = document.getElementById('addBookForm');
+  const dialogTitle = document.getElementById('dialogTitle');
 
-    // Hiện dialog khi bấm Thêm truyện
-    addBookBtn.addEventListener('click', () => {
-      dialogTitle.textContent = 'Thêm truyện mới';
-      addBookForm.reset();
-      addBookForm.removeAttribute('data-edit-id');
-      dialogOverlay.classList.add('active');
-    });
-    // Đóng dialog
-    closeDialogBtn.addEventListener('click', () => {
+  // CKEditor 5 setup
+  let bookDescEditor = null;
+  let ckeditorPromise = null;
+  function initCKEditorIfNeeded() {
+    if (!ckeditorPromise) {
+      ckeditorPromise = ClassicEditor.create(document.querySelector('#bookDesc'))
+        .then(editor => {
+          bookDescEditor = editor;
+          return editor;
+        })
+        .catch(error => {
+          console.error(error);
+        });
+    }
+    return ckeditorPromise;
+  }
+  // Khởi tạo CKEditor khi trang load
+  initCKEditorIfNeeded();
+
+  // Hiện dialog khi bấm Thêm truyện
+  addBookBtn.addEventListener('click', () => {
+    dialogTitle.textContent = 'Thêm truyện mới';
+    addBookForm.reset();
+    addBookForm.removeAttribute('data-edit-id');
+    dialogOverlay.classList.add('active');
+    setTimeout(() => {
+      initCKEditorIfNeeded().then(() => {
+        if (bookDescEditor) bookDescEditor.setData('');
+      });
+    }, 0);
+  });
+  // Đóng dialog
+  closeDialogBtn.addEventListener('click', () => {
+    dialogOverlay.classList.remove('active');
+    addBookForm.reset();
+    addBookForm.removeAttribute('data-edit-id');
+    if (bookDescEditor) bookDescEditor.setData('');
+  });
+  // Đóng dialog khi bấm ra ngoài
+  dialogOverlay.addEventListener('click', (e) => {
+    if (e.target === dialogOverlay) {
       dialogOverlay.classList.remove('active');
       addBookForm.reset();
       addBookForm.removeAttribute('data-edit-id');
-    });
-    // Đóng dialog khi bấm ra ngoài
-    dialogOverlay.addEventListener('click', (e) => {
-      if (e.target === dialogOverlay) {
-        dialogOverlay.classList.remove('active');
-        addBookForm.reset();
-        addBookForm.removeAttribute('data-edit-id');
-      }
+      if (bookDescEditor) bookDescEditor.setData('');
+    }
+  });
+
+  // Hàm render danh sách sản phẩm
+  function renderProducts(products) {
+    productGrid.innerHTML = '';
+    if(products.length === 0){
+      productGrid.innerHTML = '<p>Không tìm thấy truyện phù hợp.</p>';
+      return;
+    }
+    products.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+
+      card.innerHTML = `
+        <img src="${product.cover_image || product.image || ''}" alt="${product.title || product.name}" />
+        <div class="info">
+          <h3>${product.title || product.name}</h3>
+          <p><b>Tác giả:</b> ${product.author || ''}</p>
+          <p><b>Giá:</b> ${product.price ? product.price + '₫' : ''}</p>
+          <p>${product.description || ''}</p>
+          <span>
+            <b>Danh mục:</b> ${(product.categories && product.categories.length > 0) ? product.categories.map(c=>c.name || c).join(', ') : ''}
+          </span>
+          <br>
+          <span>
+            <b>Số lượng:</b> ${product.stock || ''}
+          </span>
+          <br>
+          <span>
+            <b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}
+          </span>
+          <br>
+          <span>
+            <b>Nhà xuất bản:</b> ${product.publisher || ''}
+          </span>
+          <br>
+          <span>
+            <b>Ngôn ngữ:</b> ${product.language || ''}
+          </span>
+        </div>
+        <div class="actions">
+          <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
+          <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
+        </div>
+      `;
+      productGrid.appendChild(card);
     });
 
-    // Hàm render danh sách sản phẩm
-    function renderProducts(products) {
-      productGrid.innerHTML = '';
-      if(products.length === 0){
-        productGrid.innerHTML = '<p>Không tìm thấy truyện phù hợp.</p>';
+    // Gán sự kiện XÓA
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const id = this.getAttribute('data-id');
+        if (confirm('Bạn có chắc muốn xóa truyện này?')) {
+          try {
+            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
+              method: 'DELETE'
+            });
+            if (!res.ok) {
+              const errText = await res.text();
+              alert('Xóa thất bại!\n' + errText);
+              return;
+            }
+            alert('Đã xóa truyện!');
+            products = await fetchProducts();
+            renderProducts(products);
+          } catch (err) {
+            alert('Có lỗi khi xóa truyện!\n' + err.message);
+          }
+        }
+      });
+    });
+
+    // Gán sự kiện SỬA
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = this.getAttribute('data-id');
+        const book = products.find(p => p._id === id);
+        if (!book) return;
+        dialogTitle.textContent = 'Cập nhật truyện';
+        addBookForm.reset();
+        document.getElementById('bookName').value = book.title || '';
+        document.getElementById('bookAuthor').value = book.author || '';
+        document.getElementById('bookPrice').value = book.price || '';
+        setTimeout(() => {
+          initCKEditorIfNeeded().then(() => {
+            if (bookDescEditor) bookDescEditor.setData(book.description || '');
+          });
+        }, 0);
+        document.getElementById('bookImage').value = book.cover_image || '';
+        document.getElementById('bookStock').value = book.stock || '';
+        document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0,10) : '';
+        document.getElementById('bookPublisher').value = book.publisher || '';
+        document.getElementById('bookLanguage').value = book.language || '';
+        document.getElementById('bookCategory').value = (book.categories && book.categories.length > 0) ? book.categories.map(c=>c._id || c).join(',') : '';
+        addBookForm.setAttribute('data-edit-id', id);
+        dialogOverlay.classList.add('active');
+      });
+    });
+  }
+
+  // Hàm lấy dữ liệu từ API
+  async function fetchProducts() {
+    try {
+      const response = await fetch(apiURL);
+      if (!response.ok) throw new Error('Lỗi kết nối API');
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+      productGrid.innerHTML = '<p>Không thể tải danh sách truyện tranh.</p>';
+      return [];
+    }
+  }
+
+  // Hàm lọc sản phẩm theo từ khóa (tìm trong tên, mô tả, tác giả)
+  function filterProducts(products, keyword) {
+    const lower = keyword.toLowerCase();
+    return products.filter(p =>
+      (p.title || '').toLowerCase().includes(lower) ||
+      (p.author || '').toLowerCase().includes(lower) ||
+      (p.description || '').toLowerCase().includes(lower)
+    );
+  }
+
+  // Xử lý submit form thêm/sửa truyện
+  addBookForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await initCKEditorIfNeeded();
+    const categoriesInput = document.getElementById('bookCategory').value;
+    const categoriesArr = categoriesInput.split(',').map(s => s.trim()).filter(Boolean);
+
+    // Lấy mô tả từ CKEditor 5 và kiểm tra rỗng
+    const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
+    if (!description || description.replace(/<[^>]*>/g, '').trim() === '') {
+      alert('Vui lòng nhập mô tả!');
+      if (bookDescEditor) bookDescEditor.editing.view.focus();
+      return;
+    }
+
+    const newBook = {
+      title: document.getElementById('bookName').value,
+      author: document.getElementById('bookAuthor').value,
+      price: parseFloat(document.getElementById('bookPrice').value),
+      description: description,
+      cover_image: document.getElementById('bookImage').value,
+      stock: parseInt(document.getElementById('bookStock').value),
+      publication_date: document.getElementById('bookPubDate').value,
+      publisher: document.getElementById('bookPublisher').value,
+      language: document.getElementById('bookLanguage').value,
+      categories: categoriesArr
+    };
+
+    const editId = addBookForm.getAttribute('data-edit-id');
+    let url = apiPostURL;
+    let method = 'POST';
+    if (editId) {
+      url = `https://server-shelf-stacker.onrender.com/api/books/${editId}`;
+      method = 'PUT';
+    }
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newBook)
+      });
+      if (!res.ok) {
+        const errText = await res.text();
+        alert((editId ? 'Cập nhật' : 'Thêm') + ' truyện thất bại!\n' + errText);
         return;
       }
-      products.forEach(product => {
-        const card = document.createElement('div');
-        card.className = 'product-card';
-
-        card.innerHTML = `
-          <img src="${product.cover_image || product.image || ''}" alt="${product.title || product.name}" />
-          <div class="info">
-            <h3>${product.title || product.name}</h3>
-            <p><b>Tác giả:</b> ${product.author || ''}</p>
-            <p><b>Giá:</b> ${product.price ? product.price + '₫' : ''}</p>
-            <p>${product.description || ''}</p>
-            <span>
-              <b>Danh mục:</b> ${(product.categories && product.categories.length > 0) ? product.categories.map(c=>c.name || c).join(', ') : ''}
-            </span>
-            <br>
-            <span>
-              <b>Số lượng:</b> ${product.stock || ''}
-            </span>
-            <br>
-            <span>
-              <b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}
-            </span>
-            <br>
-            <span>
-              <b>Nhà xuất bản:</b> ${product.publisher || ''}
-            </span>
-            <br>
-            <span>
-              <b>Ngôn ngữ:</b> ${product.language || ''}
-            </span>
-          </div>
-          <div class="actions">
-            <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
-            <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
-          </div>
-        `;
-        productGrid.appendChild(card);
-      });
-
-      // Gán sự kiện XÓA
-      document.querySelectorAll('.delete-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
-          const id = this.getAttribute('data-id');
-          if (confirm('Bạn có chắc muốn xóa truyện này?')) {
-            try {
-              const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
-                method: 'DELETE'
-              });
-              if (!res.ok) {
-                const errText = await res.text();
-                alert('Xóa thất bại!\n' + errText);
-                return;
-              }
-              alert('Đã xóa truyện!');
-              products = await fetchProducts();
-              renderProducts(products);
-            } catch (err) {
-              alert('Có lỗi khi xóa truyện!\n' + err.message);
-            }
-          }
-        });
-      });
-
-      // Gán sự kiện SỬA
-      document.querySelectorAll('.edit-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const id = this.getAttribute('data-id');
-          const book = products.find(p => p._id === id);
-          if (!book) return;
-          dialogTitle.textContent = 'Cập nhật truyện';
-          document.getElementById('bookName').value = book.title || '';
-          document.getElementById('bookAuthor').value = book.author || '';
-          document.getElementById('bookPrice').value = book.price || '';
-          document.getElementById('bookDesc').value = book.description || '';
-          document.getElementById('bookImage').value = book.cover_image || '';
-          document.getElementById('bookStock').value = book.stock || '';
-          document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0,10) : '';
-          document.getElementById('bookPublisher').value = book.publisher || '';
-          document.getElementById('bookLanguage').value = book.language || '';
-          document.getElementById('bookCategory').value = (book.categories && book.categories.length > 0) ? book.categories.map(c=>c._id || c).join(',') : '';
-          addBookForm.setAttribute('data-edit-id', id);
-          dialogOverlay.classList.add('active');
-        });
-      });
-    }
-
-    // Hàm lấy dữ liệu từ API
-    async function fetchProducts() {
-      try {
-        const response = await fetch(apiURL);
-        if (!response.ok) throw new Error('Lỗi kết nối API');
-        const data = await response.json();
-        return data;
-      } catch (error) {
-        console.error(error);
-        productGrid.innerHTML = '<p>Không thể tải danh sách truyện tranh.</p>';
-        return [];
-      }
-    }
-
-    // Hàm lọc sản phẩm theo từ khóa (tìm trong tên, mô tả, tác giả)
-    function filterProducts(products, keyword) {
-      const lower = keyword.toLowerCase();
-      return products.filter(p =>
-        (p.title || '').toLowerCase().includes(lower) ||
-        (p.author || '').toLowerCase().includes(lower) ||
-        (p.description || '').toLowerCase().includes(lower)
-      );
-    }
-
-    // Xử lý submit form thêm/sửa truyện
-    addBookForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const categoriesInput = document.getElementById('bookCategory').value;
-      const categoriesArr = categoriesInput.split(',').map(s => s.trim()).filter(Boolean);
-
-      const newBook = {
-        title: document.getElementById('bookName').value,
-        author: document.getElementById('bookAuthor').value,
-        price: parseFloat(document.getElementById('bookPrice').value),
-        description: document.getElementById('bookDesc').value,
-        cover_image: document.getElementById('bookImage').value,
-        stock: parseInt(document.getElementById('bookStock').value),
-        publication_date: document.getElementById('bookPubDate').value,
-        publisher: document.getElementById('bookPublisher').value,
-        language: document.getElementById('bookLanguage').value,
-        categories: categoriesArr
-      };
-
-      const editId = addBookForm.getAttribute('data-edit-id');
-      let url = apiPostURL;
-      let method = 'POST';
-      if (editId) {
-        url = `https://server-shelf-stacker.onrender.com/api/books/${editId}`;
-        method = 'PUT';
-      }
-
-      try {
-        const res = await fetch(url, {
-          method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(newBook)
-        });
-        if (!res.ok) {
-          const errText = await res.text();
-          alert((editId ? 'Cập nhật' : 'Thêm') + ' truyện thất bại!\n' + errText);
-          return;
-        }
-        alert(editId ? 'Cập nhật thành công!' : 'Thêm truyện thành công!');
-        addBookForm.reset();
-        dialogOverlay.classList.remove('active');
-        addBookForm.removeAttribute('data-edit-id');
-        products = await fetchProducts();
-        renderProducts(products);
-      } catch (err) {
-        alert('Có lỗi xảy ra!\n' + err.message);
-      }
-    });
-
-    // Main chạy khi load trang
-    let products = [];
-    document.addEventListener('DOMContentLoaded', async () => {
+      alert(editId ? 'Cập nhật thành công!' : 'Thêm truyện thành công!');
+      addBookForm.reset();
+      if (bookDescEditor) bookDescEditor.setData('');
+      dialogOverlay.classList.remove('active');
+      addBookForm.removeAttribute('data-edit-id');
       products = await fetchProducts();
       renderProducts(products);
+    } catch (err) {
+      alert('Có lỗi xảy ra!\n' + err.message);
+    }
+  });
 
-      // Bắt sự kiện nhập từ khóa tìm kiếm
-      searchBox.addEventListener('input', () => {
-        const filtered = filterProducts(products, searchBox.value);
-        renderProducts(filtered);
-      });
+  // Main chạy khi load trang
+  let products = [];
+  document.addEventListener('DOMContentLoaded', async () => {
+    products = await fetchProducts();
+    renderProducts(products);
+
+    // Bắt sự kiện nhập từ khóa tìm kiếm
+    searchBox.addEventListener('input', () => {
+      const filtered = filterProducts(products, searchBox.value);
+      renderProducts(filtered);
     });
+  });
   </script>
 </body>
 </html>
