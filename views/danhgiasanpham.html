@@ -460,6 +460,54 @@
     products = await fetchProducts();
     renderFilteredAndSorted(1);
   });
+
+  addBookForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const id = addBookForm.getAttribute('data-edit-id');
+    const title = document.getElementById('bookName').value.trim();
+    const author = document.getElementById('bookAuthor').value.trim();
+    const price = Number(document.getElementById('bookPrice').value);
+    const image = document.getElementById('bookImage').value.trim();
+    const stock = Number(document.getElementById('bookStock').value);
+    const publication_date = document.getElementById('bookPubDate').value;
+    const publisher = document.getElementById('bookPublisher').value.trim();
+    const language = document.getElementById('bookLanguage').value.trim();
+    const categories = document.getElementById('bookCategory').value.split(',').map(s => s.trim());
+    // LẤY DỮ LIỆU TỪ CKEDITOR
+    const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
+
+    const payload = {
+      title, author, price, cover_image: image, stock, publication_date, publisher, language, categories, description
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await fetch(`${apiPostURL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } else {
+        res = await fetch(apiPostURL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      }
+      if (!res.ok) {
+        const err = await res.json();
+        alert('Lưu thất bại: ' + (err.message || 'Lỗi không xác định!'));
+        return;
+      }
+      alert('Lưu thành công!');
+      dialogOverlay.classList.remove('active');
+      products = await fetchProducts();
+      renderFilteredAndSorted(1);
+    } catch (err) {
+      alert('Có lỗi khi lưu truyện!\n' + err.message);
+    }
+  });
   </script>
 </body>
 </html>
