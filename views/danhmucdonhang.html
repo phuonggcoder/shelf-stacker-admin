@@ -35,9 +35,15 @@
 
   <main class="main">
     <h2>Quản Lý Đơn Hàng</h2>
-    <div class="search-filter">
-      <input type="text" placeholder="Tìm theo mã đơn / tên / SĐT" />
-      <select>
+    <div class="search-filter" style="display: flex; gap: 6px; align-items: center; margin-bottom: 16px;">
+      <input type="text" id="order-search" placeholder="Tìm theo mã đơn / tên / SĐT"
+        style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; flex: 1;" />
+      <button id="btn-order-search" type="button"
+        style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/><path stroke="#fff" stroke-width="2" stroke-linecap="round" d="M20 20l-3-3"/></svg>
+        Tìm kiếm
+      </button>
+      <select style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;">
         <option value="">-- Trạng thái --</option>
         <option>Mới</option>
         <option>Đang xử lý</option>
@@ -47,7 +53,7 @@
       </select>
       <input type="date" />
       <input type="date" />
-      <button class="btn-export">Xuất Dữ Liệu</button>
+      <button class="btn-export" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;">Xuất Dữ Liệu</button>
     </div>
     <table>
       <thead>

@@ -68,56 +68,83 @@
   </main>
 
   <script>
+    let allUsers = []; // Lưu toàn bộ danh sách để lọc/tìm kiếm
+
     async function fetchUsers() {
       const tbody = document.getElementById('user-table-body');
       tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
       try {
         const res = await fetch('https://server-shelf-stacker.onrender.com/auth/users');
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          tbody.innerHTML = '';
-          data.forEach((user, idx) => {
-            const address = user.address
-              ? `
-                <div><b>Địa chỉ:</b> ${user.address.street || ''}, ${user.address.ward || ''}, ${user.address.district || ''}, ${user.address.city || ''}, ${user.address.country || ''}</div>
-              `
-              : '<div><b>Địa chỉ:</b> Không có</div>';
-            tbody.innerHTML += `
-              <tr>
-                <td>${user.full_name || user.username || ''}</td>
-                <td>${user.email || ''}</td>
-                <td>${user.phone_number || ''}</td>
-                <td>
-                  <span style="color: ${user.isActive ? '#' : '#FF0000'};">
-                    ${user.isActive ? 'Đang hoạt động' : 'Đã khóa'}
-                  </span>
-                </td>
-                <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : ''}</td>
-                <td class="actions">
-                  <button class="btn btn-detail" data-idx="${idx}">Chi tiết</button>
-                  <button class="btn btn-edit" data-id="${user._id}" data-idx="${idx}">Sửa</button>
-                  <button class="btn btn-lock-toggle" data-id="${user._id}" data-active="${user.isActive}">
-                    ${user.isActive ? 'Khóa' : 'Mở khóa'}
-                  </button>
-                </td>
-              </tr>
-              <tr class="user-detail-row" id="detail-row-${idx}" style="display:none; background:#f8f9fa;">
-                <td colspan="6" style="padding:12px 24px;">
-                  ${address}
-                  <div><b>Giới tính:</b> ${user.gender || 'Không rõ'}</div>
-                  <div><b>Đã xác thực email:</b> ${user.is_verified ? 'Có' : 'Chưa'}</div>
-                  <div><b>Quyền:</b> ${(user.roles || []).join(', ')}</div>
-                </td>
-              </tr>
-            `;
-          });
-        } else {
-          tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Không có dữ liệu</td></tr>';
-        }
+        allUsers = Array.isArray(data) ? data : [];
+        renderUsers(allUsers);
       } catch (err) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
       }
     }
+
+    // Hàm render lại bảng theo mảng truyền vào
+    function renderUsers(users) {
+      const tbody = document.getElementById('user-table-body');
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Không có dữ liệu</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      users.forEach((user, idx) => {
+        const address = user.address
+          ? `<div><b>Địa chỉ:</b> ${user.address.street || ''}, ${user.address.ward || ''}, ${user.address.district || ''}, ${user.address.city || ''}, ${user.address.country || ''}</div>`
+          : '<div><b>Địa chỉ:</b> Không có</div>';
+        tbody.innerHTML += `
+          <tr>
+            <td>${user.full_name || user.username || ''}</td>
+            <td>${user.email || ''}</td>
+            <td>${user.phone_number || ''}</td>
+            <td>
+              <span style="color: ${user.isActive ? '#' : '#FF0000'};">
+                ${user.isActive ? 'Đang hoạt động' : 'Đã khóa'}
+              </span>
+            </td>
+            <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : ''}</td>
+            <td class="actions">
+              <button class="btn btn-detail" data-idx="${idx}">Chi tiết</button>
+              <button class="btn btn-edit" data-id="${user._id}" data-idx="${idx}">Sửa</button>
+              <button class="btn btn-lock-toggle" data-id="${user._id}" data-active="${user.isActive}">
+                ${user.isActive ? 'Khóa' : 'Mở khóa'}
+              </button>
+            </td>
+          </tr>
+          <tr class="user-detail-row" id="detail-row-${idx}" style="display:none; background:#f8f9fa;">
+            <td colspan="6" style="padding:12px 24px;">
+              ${address}
+              <div><b>Giới tính:</b> ${user.gender || 'Không rõ'}</div>
+              <div><b>Đã xác thực email:</b> ${user.is_verified ? 'Có' : 'Chưa'}</div>
+              <div><b>Quyền:</b> ${(user.roles || []).join(', ')}</div>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    // Hàm lọc theo từ khóa và trạng thái
+    function filterAndRenderUsers() {
+      const keyword = document.querySelector('.search-filter .input').value.trim().toLowerCase();
+      const status = document.querySelector('.search-filter .select').value;
+      let filtered = allUsers.filter(u =>
+        (u.full_name || u.username || '').toLowerCase().includes(keyword) ||
+        (u.email || '').toLowerCase().includes(keyword) ||
+        (u.phone_number || '').toLowerCase().includes(keyword)
+      );
+      if (status === 'active') filtered = filtered.filter(u => u.isActive);
+      if (status === 'locked') filtered = filtered.filter(u => !u.isActive);
+      renderUsers(filtered);
+    }
+
+    // Gán sự kiện cho ô tìm kiếm và select trạng thái
+    document.querySelector('.search-filter .input').addEventListener('input', filterAndRenderUsers);
+    document.querySelector('.search-filter .select').addEventListener('change', filterAndRenderUsers);
+
+    // Gọi lại fetchUsers để lấy dữ liệu ban đầu
     fetchUsers();
 
     // Xử lý các nút thao tác
