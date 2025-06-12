@@ -684,6 +684,42 @@
       alert('Có lỗi khi lưu truyện!\n' + err.message);
     }
   });
+
+  let bookCategoryChoices = null;
+  async function fetchCategoriesForSelect() {
+    try {
+      const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
+      const data = await res.json();
+      const select = document.getElementById('bookCategory');
+      select.innerHTML = '';
+      data.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat._id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+      // Khởi tạo Choices.js cho select multi
+      if (!bookCategoryChoices) {
+        bookCategoryChoices = new Choices(select, {
+          removeItemButton: true,
+          searchResultLimit: 10,
+          placeholder: true,
+          placeholderValue: 'Chọn danh mục...',
+          searchPlaceholderValue: 'Tìm danh mục...',
+          noResultsText: 'Không tìm thấy',
+          itemSelectText: '',
+          shouldSort: false
+        });
+      } else {
+        bookCategoryChoices.setChoices(
+          data.map(cat => ({ value: cat._id, label: cat.name, selected: false })),
+          'value',
+          'label',
+          false
+        );
+      }
+    } catch (err) {}
+  }
   </script>
 </body>
 </html>
