@@ -3,59 +3,36 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/assets/css/home.css">
+  <link rel="stylesheet" href="../public/assets/css/home.css">
   <title>Sleek Admin - Basic</title>
   
 </head>
 <body>
-  <div class="container-fluid">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-logo">
-        <!-- Để trống hoặc thêm tên hệ thống nếu muốn -->
-        <!-- <h3 class="logo">Sleek<span class="small">admin</span></h3> -->
-      </div>
-      <div class="header-menu" style="width:100%;">
-        <div>
-          <span class="menu-icon">☰</span>
-          <span class="menu-icon">
-            🔔
-            <span class="badge badge-danger">5</span>
-          </span>
-          <span class="menu-icon">
-            ✉️
-            <span class="badge badge-danger">4</span>
-          </span>
-          <span class="menu-icon">⬛</span>
-        </div>
-        <div style="display:flex;align-items:center;">
-          <div class="search-rounded">
-            <input type="text" class="search-box" placeholder="Enter keywords..">
-          </div>
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Avatar">
-        </div>
-      </div>
+   <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Enter keywords..." id="searchInput" />
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
     </div>
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- Sidebar -->
-      <div class="sidebar">
-        <div class="profile">
-          <img src="https://i.pravatar.cc/100" alt="User Profile" />
-          <h3>Tuấn Anh</h3>
-          <p>Nhà thiết kế UI/UX</p>
-        </div>
-        <nav>
-          <ul class="sidebar-menu">
-            <li><a href="home.html">TRANG CHỦ</a></li>
-            <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
-            <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
-            <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
-            <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
-            <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
-          </ul>
-        </nav>
-      </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX </p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="home.html">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+        <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
+        <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+      </ul>
+    </nav>
+  </aside>
       <!-- Content -->
       <div class="content">
         <h5>Dashboard</h5>
