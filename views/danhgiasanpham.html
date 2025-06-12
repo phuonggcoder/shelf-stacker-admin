@@ -103,6 +103,17 @@
       cursor: not-allowed;
       box-shadow: none;
     }
+    .desc-wrap {
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .toggle-desc {
+      color: #0ea5e9;
+      cursor: pointer;
+      margin-left: 6px;
+      font-size: 14px;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -117,8 +128,8 @@
   <aside class="sidebar">
     <div class="profile">
       <img src="https://i.pravatar.cc/100" alt="User Profile" />
-      <h3>Jonathan Clarke</h3>
-      <p>UI/UX Designer</p>
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX </p>
     </div>
     <nav>
       <ul>
@@ -238,16 +249,31 @@
     }
   });
 
-  // Hàm render danh sách sản phẩm
+  // Hàm render danh sách sản phẩm với mô tả có thể ẩn/hiện nếu quá dài
   function renderProducts(products) {
     productGrid.innerHTML = '';
     if(products.length === 0){
       productGrid.innerHTML = '<p>Không tìm thấy truyện phù hợp.</p>';
       return;
     }
-    products.forEach(product => {
+    products.forEach((product, idx) => {
       const card = document.createElement('div');
       card.className = 'product-card';
+
+      // Xử lý mô tả: nếu dài hơn 120 ký tự thì cắt và thêm nút Xem thêm
+      let desc = product.description || '';
+      let shortDesc = desc.replace(/(<([^>]+)>)/gi, ""); // bỏ tag html
+      let isLong = shortDesc.length > 270;
+      let descHtml = '';
+      if (isLong) {
+        descHtml = `
+          <span class="desc-short" id="desc-short-${idx}">${shortDesc.slice(0, 270)}...</span>
+          <span class="desc-full" id="desc-full-${idx}" style="display:none">${shortDesc}</span>
+          <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
+        `;
+      } else {
+        descHtml = `<span>${shortDesc}</span>`;
+      }
 
       card.innerHTML = `
         <img src="${product.cover_image || product.image || ''}" alt="${product.title || product.name}" />
@@ -255,7 +281,7 @@
           <h3>${product.title || product.name}</h3>
           <p><b>Tác giả:</b> ${product.author || ''}</p>
           <p><b>Giá:</b> ${product.price ? product.price + '₫' : ''}</p>
-          <p>${product.description || ''}</p>
+          <div class="desc-wrap">${descHtml}</div>
           <span>
             <b>Danh mục:</b> ${(product.categories && product.categories.length > 0) ? product.categories.map(c=>c.name || c).join(', ') : ''}
           </span>
@@ -282,6 +308,25 @@
         </div>
       `;
       productGrid.appendChild(card);
+    });
+
+    // Sự kiện ẩn/hiện mô tả dài
+    document.querySelectorAll('.toggle-desc').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        const idx = this.getAttribute('data-idx');
+        const shortSpan = document.getElementById('desc-short-' + idx);
+        const fullSpan = document.getElementById('desc-full-' + idx);
+        if (shortSpan.style.display !== 'none') {
+          shortSpan.style.display = 'none';
+          fullSpan.style.display = '';
+          this.textContent = 'Ẩn bớt';
+        } else {
+          shortSpan.style.display = '';
+          fullSpan.style.display = 'none';
+          this.textContent = 'Xem thêm';
+        }
+      });
     });
 
     // Gán sự kiện XÓA

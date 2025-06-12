@@ -1,72 +1,253 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard Home</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="../public/assets/css/home.css">
+  <title>Sleek Admin - Basic</title>
+  
 </head>
 <body>
-  <header class="header">
-    <div class="logo">SleekAdmin</div>
-    <div class="user">
-      <input type="text" placeholder="Enter keywords..." />
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
-    </div>
-  </header>
-
-  <aside class="sidebar">
-    <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" />
-      <h3>Jonathan Clarke</h3>
-      <p>UI/UX Designer</p>
-    </div>
-    <nav>
-  <ul>
-    <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
-    <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
-    <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
-    <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
-    <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
-  </ul>
-</nav>
-
-  </aside>
-
-  <main class="main">
-    <div class="stats">
-      <div class="stat-card blue">
-        <h3>INCOME</h3>
-        <p>$36,500</p>
+  <div class="container-fluid">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-logo">
+        <!-- Để trống hoặc thêm tên hệ thống nếu muốn -->
+        <!-- <h3 class="logo">Sleek<span class="small">admin</span></h3> -->
       </div>
-      <div class="stat-card red">
-        <h3>EXPENSES</h3>
-        <p>$10,850</p>
-      </div>
-      <div class="stat-card green">
-        <h3>GROSS PROFIT</h3>
-        <p>$25,650</p>
+      <div class="header-menu" style="width:100%;">
+        <div>
+          <span class="menu-icon">☰</span>
+          <span class="menu-icon">
+            🔔
+            <span class="badge badge-danger">5</span>
+          </span>
+          <span class="menu-icon">
+            ✉️
+            <span class="badge badge-danger">4</span>
+          </span>
+          <span class="menu-icon">⬛</span>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <div class="search-rounded">
+            <input type="text" class="search-box" placeholder="Enter keywords..">
+          </div>
+          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Avatar">
+        </div>
       </div>
     </div>
-
-    <div class="analytics">
-      <img src="https://www.chartjs.org/media/logo-title.svg" alt="Analytics Chart" />
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="profile">
+          <img src="https://i.pravatar.cc/100" alt="User Profile" />
+          <h3>Tuấn Anh</h3>
+          <p>Nhà thiết kế UI/UX</p>
+        </div>
+        <nav>
+          <ul class="sidebar-menu">
+            <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+            <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+            <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
+            <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+            <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+          </ul>
+        </nav>
+      </div>
+      <!-- Content -->
+      <div class="content">
+        <h5>Dashboard</h5>
+        <!-- Dashboard widget -->
+        <div class="button-container">
+          <div class="row">
+            <div class="col-lg-4">
+              <div class="bg-white border shadow">
+                <div class="media" style="padding:24px;">
+                  <div class="notify-icon bg-theme">👤</div>
+                  <div class="media-body">
+                    <h3 style="margin:0 0 4px 0;"><strong>$300k</strong></h3>
+                    <p class="bc-description">Total Revenue</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="bg-white border shadow">
+                <div class="media" style="padding:24px;">
+                  <div class="notify-icon bg-danger">✉️</div>
+                  <div class="media-body">
+                    <h3 style="margin:0 0 4px 0;"><strong>3.1M</strong></h3>
+                    <p class="bc-description">Customers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="bg-theme border shadow">
+                <div class="media" style="padding:24px;">
+                  <div class="notify-icon bg-white"><span class="text-theme">🏷️</span></div>
+                  <div class="media-body">
+                    <h3 style="margin:0 0 4px 0;"><strong>1022</strong></h3>
+                    <p class="bc-description" style="color:#fff;">Total Products</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Analytics overview -->
+        <div class="mt-1 mb-3 p-3 button-container bg-white shadow-sm border" style="margin-top:32px;">
+          <h6>Analytics overview</h6><hr>
+          <div class="row mb-3">
+            <div>
+              <h1 class="text-success">1560</h1>
+              <h5>Customers</h5>
+            </div>
+            <div>
+              <h1 class="text-theme">1300</h1>
+              <h5>Orders</h5>
+            </div>
+            <div>
+              <h1 class="text-danger">$5545</h1>
+              <h5>Revenue</h5>
+            </div>
+          </div>
+          <div style="height:100px;background:#f4f4f4;border-radius:8px;text-align:center;line-height:100px;color:#bbb;">
+            [Chart Placeholder]
+          </div>
+        </div>
+        <!-- Order Listing -->
+        <div class="mt-4 mb-4 p-3 bg-white border shadow-sm lh-sm">
+          <div class="product-list">
+            <div class="row border-bottom mb-4" style="display:flex;justify-content:space-between;align-items:center;">
+              <div><h6 class="mb-4 bc-header">Order listing</h6></div>
+              <div>
+                <button type="button" class="btn btn-danger icon-round shadow"><b>🗑️</b></button>
+                <select class="shadow bg-secondary bulk-actions" style="padding:5px 10px;border-radius:4px;border:1px solid #ccc;">
+                  <option>Status options</option>
+                  <option>Pending</option>
+                  <option>Cancelled</option>
+                  <option>Delivered</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-responsive product-list">
+              <table>
+                <thead>
+                  <tr>
+                    <th><input type="checkbox"></th>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                    <th>Order date</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#13</td>
+                    <td>Stephanie Cott</td>
+                    <td><span class="badge badge-warning">Pending</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#14</td>
+                    <td>Andy Webb</td>
+                    <td><span class="badge badge-danger">Cancelled</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#15</td>
+                    <td>Andy Webb</td>
+                    <td><span class="badge badge-success">Delivered</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#16</td>
+                    <td>Stephanie Cott</td>
+                    <td><span class="badge badge-warning">Pending</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#17</td>
+                    <td>Andy Webb</td>
+                    <td><span class="badge badge-danger">Cancelled</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#18</td>
+                    <td>Andy Webb</td>
+                    <td><span class="badge badge-success">Delivered</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td>Ord#19</td>
+                    <td>Stephanie Cott</td>
+                    <td><span class="badge badge-warning">Pending</span></td>
+                    <td>$200</td>
+                    <td>15/09/2018</td>
+                    <td>
+                      <button class="btn btn-theme">👁️</button>
+                      <button class="btn btn-success">✏️</button>
+                      <button class="btn btn-danger">🗑️</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="text-align:right;">
+                <button class="btn btn-outline-theme">👁️ View full orders</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+      </div>
     </div>
-
-    <div class="overview">
-      <div class="card circle blue">
-        <h4>Visitors</h4>
-        <p>2,367</p>
-      </div>
-      <div class="card circle red">
-        <h4>Transactions</h4>
-        <p>15,367</p>
-      </div>
-      <div class="card circle green">
-        <h4>Tasks</h4>
-        <p>585</p>
-      </div>
-    </div>
-  </main>
+  </div>
 </body>
 </html>
