@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sách đã xóa gần đây</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    .restore-btn {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 8px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .restore-btn:hover {
+      background: #218838;
+    }
+    .product-card {
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #fff6f6;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+    }
+    .product-images img {
+      max-width: 80px;
+      margin: 2px;
+      border-radius: 4px;
+      border: 1px solid #eee;
+    }
+    .info {
+      flex: 1;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="color:#dc3545;">Sách đã xóa gần đây</h1>
+  <div id="trashGrid"></div>
+  <script>
+    const trashGrid = document.getElementById('trashGrid');
+    const apiTrash = 'https://server-shelf-stacker.onrender.com/api/books/trash/all';
+
+    async function fetchTrashBooks() {
+      try {
+        const res = await fetch(apiTrash);
+        if (!res.ok) {
+          trashGrid.innerHTML = '<p>Lỗi tải dữ liệu!</p>';
+          return;
+        }
+        const books = await res.json();
+        renderTrashBooks(books);
+      } catch (err) {
+        trashGrid.innerHTML = '<p>Lỗi kết nối server!</p>';
+      }
+    }
+
+    function renderTrashBooks(books) {
+      trashGrid.innerHTML = '';
+      if (!books || !Array.isArray(books) || books.length === 0) {
+        trashGrid.innerHTML = '<p>Không có sách đã xóa gần đây.</p>';
+        return;
+      }
+      books.forEach(book => {
+        let imagesHtml = '';
+        if (book.cover_image && Array.isArray(book.cover_image) && book.cover_image.length) {
+          imagesHtml = `
+            <div class="product-images">
+              ${book.cover_image.map(img => `<img src="${img}" alt="Ảnh sách" />`).join('')}
+            </div>
+          `;
+        }
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          ${imagesHtml}
+          <div class="info">
+            <h3>${book.title || ''}</h3>
+            <p><b>Tác giả:</b> ${book.author || ''}</p>
+            <p><b>Giá:</b> ${book.price ? book.price + '₫' : ''}</p>
+            <p><b>Ngày xuất bản:</b> ${book.publication_date ? new Date(book.publication_date).toLocaleDateString() : ''}</p>
+            <button class="restore-btn" data-id="${book._id}"><i class="fa fa-undo"></i> Khôi phục</button>
+          </div>
+        `;
+        trashGrid.appendChild(card);
+      });
+
+      // Sự kiện khôi phục
+      document.querySelectorAll('.restore-btn').forEach(btn => {
+        btn.onclick = async function() {
+          const id = this.getAttribute('data-id');
+          try {
+            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ deleted: false })
+            });
+            if (!res.ok) {
+              alert('Khôi phục thất bại!');
+              return;
+            }
+            alert('Đã khôi phục!');
+            fetchTrashBooks();
+          } catch (err) {
+            alert('Lỗi kết nối!');
+          }
+        };
+      });
+    }
+
+    // Tải danh sách khi vào trang
+    fetchTrashBooks();
+  </script>
+</body>
+</html>

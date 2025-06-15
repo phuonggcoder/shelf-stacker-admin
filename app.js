@@ -13,7 +13,7 @@ app.get('/danhgiasanpham.html', (req, res) => res.sendFile(path.join(__dirname, 
 app.get('/quanlynguoidung.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlynguoidung.html')));
 app.get('/danhgia.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhgia.html')));
 app.get('/danhmucdonhang.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdonhang.html')));
-
+app.get('/trashbooks.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'trashbooks.html')));
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);

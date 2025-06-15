@@ -191,7 +191,7 @@
         <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
         <!-- CKEditor 5 cho mô tả -->
         <textarea id="bookDesc" placeholder="Mô tả"></textarea>
-        <input type="text" id="bookImage" placeholder="Link ảnh" required />
+        <textarea id="bookImages" placeholder="Dán mỗi link ảnh 1 dòng" required style="min-height:60px; width:100%;"></textarea>
         <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
         <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required />
         <input type="text" id="bookPublisher" placeholder="Nhà xuất bản" required />
@@ -292,8 +292,14 @@
         descHtml = `<span>${shortDesc}</span>`;
       }
 
+      // Xử lý hình ảnh
+      let imagesHtml = '';
+      if (product.cover_image && Array.isArray(product.cover_image) && product.cover_image.length) {
+        imagesHtml = product.cover_image.map(img => `<img src="${img}" alt="Ảnh sách" style="max-width:80px; margin:2px;">`).join('');
+      }
+
       card.innerHTML = `
-        <img src="${product.cover_image || product.image || ''}" alt="${product.title || product.name}" />
+        ${imagesHtml}
         <div class="info">
           <h3>${product.title || product.name}</h3>
           <p><b>Tác giả:</b> ${product.author || ''}</p>
@@ -386,7 +392,7 @@
             if (bookDescEditor) bookDescEditor.setData(book.description || '');
           });
         }, 0);
-        document.getElementById('bookImage').value = book.cover_image || '';
+        document.getElementById('bookImages').value = book.cover_image || '';
         document.getElementById('bookStock').value = book.stock || '';
         document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0,10) : '';
         document.getElementById('bookPublisher').value = book.publisher || '';
@@ -642,7 +648,7 @@
     const title = document.getElementById('bookName').value.trim();
     const author = document.getElementById('bookAuthor').value.trim();
     const price = Number(document.getElementById('bookPrice').value);
-    const image = document.getElementById('bookImage').value.trim();
+    const image = document.getElementById('bookImages').value.trim();
     const stock = Number(document.getElementById('bookStock').value);
     const publication_date = document.getElementById('bookPubDate').value;
     const publisher = document.getElementById('bookPublisher').value.trim();
@@ -652,8 +658,13 @@
     // LẤY DỮ LIỆU TỪ CKEDITOR
     const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
 
+    const cover_image = document.getElementById('bookImages').value
+      .split('\n')
+      .map(s => s.trim())
+      .filter(Boolean);
+
     const payload = {
-      title, author, price, cover_image: image, stock, publication_date, publisher, language, categories, description
+      title, author, price, cover_image, stock, publication_date, publisher, language, categories, description
     };
 
     try {
