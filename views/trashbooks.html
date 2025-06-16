@@ -2,8 +2,10 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <title>Sách đã xóa gần đây</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đã xóa gần đây</title>
+  <link rel="stylesheet" href="../public/assets/css/DSsanpham.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <style>
     .restore-btn {
       background: #28a745;
@@ -38,18 +40,75 @@
     .info {
       flex: 1;
     }
+    .desc-wrap {
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    .toggle-desc {
+      color: #0ea5e9;
+      cursor: pointer;
+      margin-left: 6px;
+      font-size: 14px;
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
-  <h1 style="color:#dc3545;">Sách đã xóa gần đây</h1>
-  <div id="trashGrid"></div>
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <span>Đã xóa gần đây</span>
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX </p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="home.html">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc.html">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="danhgiasanpham.html">DANH SÁCH TRUYỆN TRANH</a></li>
+        <li><a href="quanlynguoidung.html">QUẢN LÝ NGƯỜI DÙNG</a></li>
+        <li><a href="danhmucdonhang.html">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhgia.html">ĐÁNH GIÁ</a></li>
+        <li><a href="trashbooks.html" class="active">ĐÃ XÓA GẦN ĐÂY</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <section class="management-section">
+      <h1 class="title" style="color:#dc3545;">Sách đã xóa gần đây</h1>
+      <div class="product-grid" id="trashGrid"></div>
+    </section>
+  </main>
+
   <script>
-    const trashGrid = document.getElementById('trashGrid');
-    const apiTrash = 'https://server-shelf-stacker.onrender.com/api/books/trash/all';
+    // Hàm cắt mô tả dài và có nút Xem thêm
+    function renderDesc(desc, idx) {
+      let shortDesc = (desc || '').replace(/(<([^>]+)>)/gi, "");
+      let isLong = shortDesc.length > 270;
+      if (isLong) {
+        return `
+          <span class="desc-short" id="desc-short-${idx}">${shortDesc.slice(0, 270)}...</span>
+          <span class="desc-full" id="desc-full-${idx}" style="display:none">${shortDesc}</span>
+          <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
+        `;
+      } else {
+        return `<span>${shortDesc}</span>`;
+      }
+    }
 
     async function fetchTrashBooks() {
+      const trashGrid = document.getElementById('trashGrid');
+      trashGrid.innerHTML = '<p>Đang tải...</p>';
       try {
-        const res = await fetch(apiTrash);
+        const res = await fetch('https://server-shelf-stacker.onrender.com/api/books/trash/all');
         if (!res.ok) {
           trashGrid.innerHTML = '<p>Lỗi tải dữ liệu!</p>';
           return;
@@ -62,19 +121,16 @@
     }
 
     function renderTrashBooks(books) {
+      const trashGrid = document.getElementById('trashGrid');
       trashGrid.innerHTML = '';
       if (!books || !Array.isArray(books) || books.length === 0) {
         trashGrid.innerHTML = '<p>Không có sách đã xóa gần đây.</p>';
         return;
       }
-      books.forEach(book => {
+      books.forEach((book, idx) => {
         let imagesHtml = '';
         if (book.cover_image && Array.isArray(book.cover_image) && book.cover_image.length) {
-          imagesHtml = `
-            <div class="product-images">
-              ${book.cover_image.map(img => `<img src="${img}" alt="Ảnh sách" />`).join('')}
-            </div>
-          `;
+          imagesHtml = book.cover_image.map(img => `<img src="${img}" alt="Ảnh sách" style="max-width:80px; margin:2px;">`).join('');
         }
         const card = document.createElement('div');
         card.className = 'product-card';
@@ -84,29 +140,92 @@
             <h3>${book.title || ''}</h3>
             <p><b>Tác giả:</b> ${book.author || ''}</p>
             <p><b>Giá:</b> ${book.price ? book.price + '₫' : ''}</p>
-            <p><b>Ngày xuất bản:</b> ${book.publication_date ? new Date(book.publication_date).toLocaleDateString() : ''}</p>
+            <div class="desc-wrap">${renderDesc(book.description, idx)}</div>
+            <span>
+              <b>Danh mục:</b> ${(book.categories && book.categories.length > 0) ? book.categories.map(c=>c.name || c).join(', ') : ''}
+            </span>
+            <br>
+            <span>
+              <b>Số lượng:</b> ${book.stock || ''}
+            </span>
+            <br>
+            <span>
+              <b>Ngày xuất bản:</b> ${book.publication_date ? new Date(book.publication_date).toLocaleDateString() : ''}
+            </span>
+            <br>
+            <span>
+              <b>Nhà xuất bản:</b> ${book.publisher || ''}
+            </span>
+            <br>
+            <span>
+              <b>Ngôn ngữ:</b> ${book.language || ''}
+            </span>
+            <br>
             <button class="restore-btn" data-id="${book._id}"><i class="fa fa-undo"></i> Khôi phục</button>
+            <button class="force-delete-btn" data-id="${book._id}" style="background:#dc3545; color:#fff; border:none; border-radius:5px; padding:8px 14px; font-size:15px; cursor:pointer; margin-top:8px; transition: background 0.2s;">
+              <i class="fa fa-trash"></i> XÓA CỨNG
+            </button>
           </div>
         `;
         trashGrid.appendChild(card);
+      });
+
+      // Sự kiện ẩn/hiện mô tả dài
+      document.querySelectorAll('.toggle-desc').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          const idx = this.getAttribute('data-idx');
+          const shortSpan = document.getElementById('desc-short-' + idx);
+          const fullSpan = document.getElementById('desc-full-' + idx);
+          if (shortSpan.style.display !== 'none') {
+            shortSpan.style.display = 'none';
+            fullSpan.style.display = '';
+            this.textContent = 'Ẩn bớt';
+          } else {
+            shortSpan.style.display = '';
+            fullSpan.style.display = 'none';
+            this.textContent = 'Xem thêm';
+          }
+        });
       });
 
       // Sự kiện khôi phục
       document.querySelectorAll('.restore-btn').forEach(btn => {
         btn.onclick = async function() {
           const id = this.getAttribute('data-id');
+          if (!confirm('Khôi phục sách này?')) return;
           try {
-            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
+            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}/restore`, {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ deleted: false })
+              headers: { 'Content-Type': 'application/json' }
             });
             if (!res.ok) {
               alert('Khôi phục thất bại!');
               return;
             }
             alert('Đã khôi phục!');
-            fetchTrashBooks();
+            fetchTrashBooks(); // hoặc reload lại danh sách
+          } catch (err) {
+            alert('Lỗi kết nối!');
+          }
+        };
+      });
+
+      // Sự kiện xóa vĩnh viễn
+      document.querySelectorAll('.force-delete-btn').forEach(btn => {
+        btn.onclick = async function() {
+          const id = this.getAttribute('data-id');
+          if (!confirm('Bạn có chắc muốn xóa vĩnh viễn sách này?')) return;
+          try {
+            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}/force`, {
+              method: 'DELETE'
+            });
+            if (!res.ok) {
+              alert('Xóa cứng thất bại!');
+              return;
+            }
+            alert('Đã xóa vĩnh viễn!');
+            fetchTrashBooks(); // Reload lại danh sách đã xóa gần đây
           } catch (err) {
             alert('Lỗi kết nối!');
           }
@@ -115,7 +234,7 @@
     }
 
     // Tải danh sách khi vào trang
-    fetchTrashBooks();
+    document.addEventListener('DOMContentLoaded', fetchTrashBooks);
   </script>
 </body>
 </html>
