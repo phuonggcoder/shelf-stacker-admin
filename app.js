@@ -3,17 +3,23 @@ const path = require('path');
 
 const app = express();
 
+// Khai báo thư mục public chứa file tĩnh (css, js, img)
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.get('/home.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'home.html')));
+// Các route không cần .html
+app.get('/home', (req, res) => res.sendFile(path.join(__dirname, 'views', 'home.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
+app.get('/quanlydanhmuc', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlydanhmuc.html')));
+app.get('/danhgiasanpham', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhgiasanpham.html')));
+app.get('/quanlynguoidung', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlynguoidung.html')));
+app.get('/danhmucdonhang', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdonhang.html')));
+app.get('/trashbooks', (req, res) => res.sendFile(path.join(__dirname, 'views', 'trashbooks.html')));
 
-app.get('/login.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
-app.get('/quanlydanhmuc.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlydanhmuc.html')));
-app.get('/danhgiasanpham.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhgiasanpham.html')));
-app.get('/quanlynguoidung.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'quanlynguoidung.html')));
-app.get('/danhgia.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhgia.html')));
-app.get('/danhmucdonhang.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdonhang.html')));
-app.get('/trashbooks.html', (req, res) => res.sendFile(path.join(__dirname, 'views', 'trashbooks.html')));
+// Chuyển hướng trang chủ về /login
+app.get('/', (req, res) => {
+  res.redirect('/login');
+});
+
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running at http://localhost:${PORT}`);
