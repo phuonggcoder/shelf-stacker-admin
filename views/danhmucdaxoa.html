@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Danh mục đã xóa gần đây</title>
+  <link rel="stylesheet" href="/assets/css/DSsanpham.css" />
+  <link rel="stylesheet" href="/assets/css/danhmucdaxoa.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <span>Danh mục đã xóa gần đây</span>
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX </p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
+        <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
+        <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhmucdaxoa" class="active">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks" class="active">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <section class="management-section">
+      <h1 class="title" style="color:#dc3545;">Danh mục đã xóa gần đây</h1>
+      <div id="trashCategoryGrid" class="product-grid"></div>
+    </section>
+  </main>
+
+  <script src="/assets/js/danhmucdaxoa.js"></script>
+</body>
+</html>

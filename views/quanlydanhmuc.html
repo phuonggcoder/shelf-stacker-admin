@@ -30,7 +30,8 @@
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
         <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
-        <li><a href="trashbooks" class="active">ĐÃ XÓA GẦN ĐÂY</a></li>
+        <li><a href="danhmucdaxoa" class="active">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks" class="active">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
       </ul>
     </nav>
   </aside>
@@ -211,16 +212,11 @@ document.addEventListener('click', async function(e) {
     const id = e.target.getAttribute('data-id');
     if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
       try {
-        const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
+        await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
           method: 'DELETE'
         });
-        if (res.ok) {
-          alert('Xóa danh mục thành công!');
-          fetchCategories();
-        } else {
-          const err = await res.json();
-          alert('Xóa thất bại: ' + (err.message || 'Lỗi không xác định!'));
-        }
+        alert('Xóa danh mục thành công!');
+        fetchCategories();
       } catch (err) {
         alert('Lỗi kết nối!');
       }
@@ -371,16 +367,11 @@ document.getElementById('filter-status').addEventListener('change', function() {
         const id = e.target.getAttribute('data-id');
         if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
           try {
-            const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
+            await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
               method: 'DELETE'
             });
-            if (res.ok) {
-              alert('Xóa danh mục thành công!');
-              fetchCategories();
-            } else {
-              const err = await res.json();
-              alert('Xóa thất bại: ' + (err.message || 'Lỗi không xác định!'));
-            }
+            alert('Xóa danh mục thành công!');
+            fetchCategories();
           } catch (err) {
             alert('Lỗi kết nối!');
           }

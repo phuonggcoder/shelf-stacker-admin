@@ -1,0 +1,33 @@
+.category-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fff6f6;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.category-info {
+  flex: 1;
+}
+.restore-btn, .force-delete-btn {
+  background: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 14px;
+  font-size: 15px;
+  cursor: pointer;
+  margin-right: 8px;
+  transition: background 0.2s;
+}
+.restore-btn:hover {
+  background: #218838;
+}
+.force-delete-btn {
+  background: #dc3545;
+}
+.force-delete-btn:hover {
+  background: #b71c1c;
+}
