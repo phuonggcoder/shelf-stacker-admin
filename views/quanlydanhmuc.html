@@ -21,6 +21,64 @@
   background: #f0f8ff;
   border-left: 4px solid #007bff;
 }
+.ck-editor__editable[role="textbox"] {
+      min-height: 220px !important;
+    }
+    .dialog-box button[type="submit"] {
+      margin-top: 10px;
+      background: #f5f5f5 !important;
+      color: #222 !important;
+      border: 1px solid #ccc !important;
+      box-shadow: none !important;
+    }
+    .dialog-box button[type="submit"]:hover {
+      background: #e0e0e0 !important;
+      color: #222 !important;
+    }
+    /* Bỏ màu xanh ở input, textarea, select, label, CKEditor toolbar */
+.dialog-box input,
+.dialog-box textarea,
+.dialog-box select {
+  background: #fff !important;
+  color: #222 !important;
+  border: 1px solid #ccc !important;
+}
+
+.dialog-box label {
+  color: #222 !important;
+}
+
+/* CKEditor toolbar về mặc định */
+.ck.ck-toolbar {
+  background: #f5f5f5 !important;
+  border: 1px solid #ccc !important;
+}
+.ck.ck-toolbar .ck-button {
+  background: none !important;
+  color: #222 !important;
+}
+.ck.ck-toolbar .ck-button.ck-on {
+  background: #e0e0e0 !important;
+  color: #222 !important;
+}
+
+/* Nút Thêm và Hủy giữ màu */
+.dialog-box button[type="submit"] {
+  background: #007bff !important;
+  color: #fff !important;
+  border: none !important;
+}
+.dialog-box button[type="submit"]:hover {
+  background: #0056b3 !important;
+}
+.dialog-box button[type="button"] {
+  background: #bdbdbd !important;
+  color: #fff !important;
+  border: none !important;
+}
+.dialog-box button[type="button"]:hover {
+  background: #888 !important;
+}
 </style>
 </head>
 <body>
