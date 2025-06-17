@@ -6,128 +6,31 @@
   <title>Quản Lý Danh Mục</title>
   <link rel="stylesheet" href="/assets/css/DanhMuc.css" />
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
-  <style>
-  /* ...existing styles... */
-  .thumb {
-    width: 64px;
-    height: 64px;
-    object-fit: cover;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  .sidebar a.active {
-  color: #007bff;
-  font-weight: 600;
-  background: #f0f8ff;
-  border-left: 4px solid #007bff;
-}
-.ck-editor__editable[role="textbox"] {
-      min-height: 220px !important;
-    }
-    .dialog-box button[type="submit"] {
-      margin-top: 10px;
-      background: #f5f5f5 !important;
-      color: #222 !important;
-      border: 1px solid #ccc !important;
-      box-shadow: none !important;
-    }
-    .dialog-box button[type="submit"]:hover {
-      background: #e0e0e0 !important;
-      color: #222 !important;
-    }
-    /* Bỏ màu xanh ở input, textarea, select, label, CKEditor toolbar */
-.dialog-box input,
-.dialog-box textarea,
-.dialog-box select {
-  background: #fff !important;
-  color: #222 !important;
-  border: 1px solid #ccc !important;
-}
 
-.dialog-box label {
-  color: #222 !important;
-}
-
-/* CKEditor toolbar về mặc định */
-.ck.ck-toolbar {
-  background: #f5f5f5 !important;
-  border: 1px solid #ccc !important;
-}
-.ck.ck-toolbar .ck-button {
-  background: none !important;
-  color: #222 !important;
-}
-.ck.ck-toolbar .ck-button.ck-on {
-  background: #e0e0e0 !important;
-  color: #222 !important;
-}
-
-/* Nút Thêm và Hủy giữ màu */
-.dialog-box button[type="submit"] {
-  background: #007bff !important;
-  color: #fff !important;
-  border: none !important;
-}
-.dialog-box button[type="submit"]:hover {
-  background: #0056b3 !important;
-}
-.dialog-box button[type="button"] {
-  background: #bdbdbd !important;
-  color: #fff !important;
-  border: none !important;
-}
-.dialog-box button[type="button"]:hover {
-  background: #888 !important;
-}
-</style>
 </head>
 <body>
-  <header class="header">
+   <header class="header">
     <div class="logo">SleekAdmin</div>
     <div class="user">
-      <input type="text" placeholder="Enter keywords..." />
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+      <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
+      <img src="https://i.pravatar.cc/40" alt="User " class="avatar" />
     </div>
   </header>
 
-  <aside class="sidebar" style="background: #0ea5e9; width: 250px; min-height: 100vh; box-shadow: 2px 0 8px rgba(0,0,0,0.04);">
-    <div class="profile" style="text-align:center; padding: 32px 0 16px 0;">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" style="border-radius:50%; border:3px solid #fff; width:80px; height:80px;"/>
-      <h3 style="margin: 12px 0 4px 0; color: #fff;">Tuấn Anh</h3>
-      <p style="color: #e0eaff; font-size: 14px;">Nhà thiết kế UI/UX</p>
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User  Profile" />
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX </p>
     </div>
     <nav>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <li>
-          <a href="home" style="display:block; padding:14px 32px; color:#fff; text-decoration:none; font-weight:500; border-left:4px solid transparent;">
-            TRANG CHỦ
-          </a>
-        </li>
-        <li>
-          <a href="quanlydanhmuc" class="active" style="display:block; padding:14px 32px; color:#007bff; background:#fff; font-weight:600; border-left:4px solid #fff;">
-            QUẢN LÝ DANH MỤC
-          </a>
-        </li>
-        <li>
-          <a href="danhgiasanpham" style="display:block; padding:14px 32px; color:#fff; text-decoration:none; font-weight:500; border-left:4px solid transparent;">
-            DANH SÁCH TRUYỆN TRANH
-          </a>
-        </li>
-        <li>
-          <a href="quanlynguoidung" style="display:block; padding:14px 32px; color:#fff; text-decoration:none; font-weight:500; border-left:4px solid transparent;">
-            QUẢN LÝ NGƯỜI DÙNG
-          </a>
-        </li>
-        <li>
-          <a href="danhmucdonhang" style="display:block; padding:14px 32px; color:#fff; text-decoration:none; font-weight:500; border-left:4px solid transparent;">
-            QUẢN LÝ ĐƠN HÀNG
-          </a>
-        </li>
-        <li>
-          <a href="trashbooks" style="display:block; padding:14px 32px; color:#fff; text-decoration:none; font-weight:500; border-left:4px solid transparent;">
-            ĐÃ XÓA GẦN ĐÂY
-          </a>
-        </li>
+      <ul>
+        <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
+        <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
+        <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="trashbooks" class="active">ĐÃ XÓA GẦN ĐÂY</a></li>
       </ul>
     </nav>
   </aside>

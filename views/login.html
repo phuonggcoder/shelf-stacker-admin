@@ -16,13 +16,13 @@
     <div class="login">
       <h2>Đăng nhập</h2>
       <p>
-        Anim pariatur cliche reprehenderit, enim eiusmod cuộc sống thường lưu cáo buộc terry Richardson quảng cáo mục. 3 sỏi mặt trắng officia aute, non cupidatat văn trượt dolor bữa nửa buổi.
+       "Người dùng chỉ thấy giao diện, nhưng admin là người gánh cả hệ thống vận hành phía sau."  - "Admin không chỉ quản lý dữ liệu, mà còn quản lý niềm tin."
       </p>
-      <a href="register.html">Chưa có tài khoản? Đăng ký </a>
+     
     </div>
     <div class="register">
       <h2>Đăng Nhập</h2>
-      <p>Tạo tài khoản mới</p>
+      
       <input type="text" id="username" placeholder="Tên người dùng">
       <input type="password" id="password" placeholder="Mật khẩu">
       <button id="loginBtn">Đăng nhập</button>
@@ -55,7 +55,7 @@
         const data = await response.json();
 
         if (response.ok) {
-          window.location.href = 'home.html';
+          window.location.href = 'home';
         } else {
           errorMsg.textContent = data.message || 'Tên người dùng hoặc mật khẩu không đúng.';
         }
