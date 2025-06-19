@@ -1,1 +1,8 @@
-node_modules/ 
+
+node_modules/
+
+# Một số thư mục/phần khác nên bỏ:
+.env
+dist/
+*.log
+uploads/
