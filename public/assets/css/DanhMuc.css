@@ -404,7 +404,7 @@ td.actions {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  box-shadow: 0 4px 24px #bae6fd55;
+  box-shadow: 0 4px 24px #06060655;
 }
 
 #add-category-form h3 {
@@ -420,7 +420,7 @@ td.actions {
   padding: 10px;
   font-size: 16px;
   border-radius: 8px;
-  border: 1.5px solid #bae6fd;
+  border: 1.5px solid #ebebeb;
   background: #f0f9ff;
   color: #222;
 }
@@ -432,8 +432,8 @@ td.actions {
 
 #add-category-form button[type="submit"],
 #add-category-form button[type="button"] {
-  background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
-  color: #fff;
+  background: linear-gradient(90deg, #faf9f9 0%, #fdfdfd 100%);
+  color: #000000;
   border: none;
   border-radius: 8px;
   padding: 10px 0;
@@ -445,7 +445,7 @@ td.actions {
 
 #add-category-form button[type="submit"]:hover,
 #add-category-form button[type="button"]:hover {
-  background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+  background: linear-gradient(90deg, #3093be 0%, #0ea5e9 100%);
 }
 
 /* RESPONSIVE */
@@ -510,12 +510,11 @@ td.actions {
     border-radius: 0 0 18px 18px;
   }
 }
-<<<<<<< HEAD
+
 
 .ck-editor__editable[role="textbox"] {
   min-height: 220px !important;
 }
-=======
 #add-category-modal {
   display: none;
   position: fixed;
@@ -534,7 +533,7 @@ td.actions {
   padding: 32px 24px;
   border-radius: 8px;
   width: 1000px; /* Kích thước cố định cho chiều rộng */
-  height: 400px; /* Kích thước cố định cho chiều cao */
+  height: 700px; /* Kích thước cố định cho chiều cao */
   overflow-y: auto; /* Thêm thanh cuộn khi cần */
   margin: auto;
   display: flex;
@@ -542,4 +541,4 @@ td.actions {
   gap: 14px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
 }
->>>>>>> 95fc7ee5fbfad6cc9d139f898fe8612b9bab00aa
+

@@ -14,16 +14,7 @@ const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
   let ckeditorPromise = null;
   function initCKEditorIfNeeded() {
     if (!ckeditorPromise) {
-      ckeditorPromise = ClassicEditor.create(document.querySelector('#bookDesc'), {
-        toolbar: {
-          items: [
-            'ckfinder', 'imageUpload', 'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', 'blockQuote'
-          ]
-        },
-        ckfinder: {
-          uploadUrl: 'https://your-server.com/ckfinder/core/connector/php/connector.php?command=QuickUpload&type=Files&responseType=json'
-        }
-      })
+      ckeditorPromise = ClassicEditor.create(document.querySelector('#bookDesc'))
         .then(editor => {
           bookDescEditor = editor;
           return editor;

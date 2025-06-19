@@ -1,9 +1,4 @@
-<<<<<<< HEAD
-let editingCategoryId = null;
-=======
 
-    let editingCategoryId = null;
->>>>>>> 95fc7ee5fbfad6cc9d139f898fe8612b9bab00aa
 
     let categories = [];
 let catCurrentPage = 1;
@@ -357,9 +352,4 @@ function initCatDescEditorIfNeeded() {
   }
   return catDescEditorPromise;
 }
-<<<<<<< HEAD
-initCatDescEditorIfNeeded();
-=======
-initCatDescEditorIfNeeded();
- 
->>>>>>> 95fc7ee5fbfad6cc9d139f898fe8612b9bab00aa
+
