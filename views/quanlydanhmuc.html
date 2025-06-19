@@ -6,20 +6,19 @@
   <title>Quản Lý Danh Mục</title>
   <link rel="stylesheet" href="/assets/css/DanhMuc.css" />
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
-
 </head>
 <body>
    <header class="header">
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img src="https://i.pravatar.cc/40" alt="User " class="avatar" />
+      <img src="https://i.pravatar.cc/40" alt="User  " class="avatar" />
     </div>
   </header>
 
   <aside class="sidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User  Profile" />
+      <img src="https://i.pravatar.cc/100" alt="User   Profile" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX </p>
     </div>
@@ -53,9 +52,10 @@
       </select>
       <button class="btn-export">+ Thêm danh mục</button>
     </div> 
+
     <!-- Modal thêm/cập nhật danh mục -->
     <div id="add-category-modal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); z-index:9999; align-items:center; justify-content:center;">
-      <form id="add-category-form" style="background:#fff; padding:32px 24px; border-radius:8px; min-width:320px; max-width:90vw; margin:auto; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
+      <form id="add-category-form" style="background:#fff; padding:32px 24px; border-radius:8px; min-width:320px; max-width:90vw; max-height:80vh; overflow-y:auto; margin:auto; display:flex; flex-direction:column; gap:14px; box-shadow:0 4px 24px rgba(0,0,0,0.15);">
         <h3 style="margin:0 0 10px 0;">Thêm/Cập nhật danh mục</h3>
         <input type="text" id="cat-name" placeholder="Tên danh mục" required style="padding:10px; font-size:16px;">
         <input type="text" id="cat-slug" placeholder="Slug (không dấu, viết liền)" required style="padding:10px; font-size:16px;">
@@ -72,6 +72,7 @@
         </div>
       </form>
     </div>
+
     <table>
       <thead>
         <tr>
@@ -89,9 +90,13 @@
         </tr>
       </tbody>
     </table>
-    <!-- Thay đoạn div.pagination cũ bằng div rỗng để JS tự render phân trang đẹp -->
     <div class="pagination"></div>
   </main>
+<<<<<<< HEAD
   <script src="/assets/js/quanlydanhmuc.js"></script>
+=======
+  
+ <script src="/assets/js/quanlydanhmuc.js"></script>
+>>>>>>> 95fc7ee5fbfad6cc9d139f898fe8612b9bab00aa
 </body>
 </html>

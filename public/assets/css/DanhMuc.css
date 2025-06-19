@@ -510,7 +510,36 @@ td.actions {
     border-radius: 0 0 18px 18px;
   }
 }
+<<<<<<< HEAD
 
 .ck-editor__editable[role="textbox"] {
   min-height: 220px !important;
 }
+=======
+#add-category-modal {
+  display: none;
+  position: fixed;
+  left: 0; 
+  top: 0; 
+  width: 100vw; 
+  height: 100vh;
+  background: rgba(0,0,0,0.3);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+}
+
+#add-category-form {
+  background: #fff;
+  padding: 32px 24px;
+  border-radius: 8px;
+  width: 1000px; /* Kích thước cố định cho chiều rộng */
+  height: 400px; /* Kích thước cố định cho chiều cao */
+  overflow-y: auto; /* Thêm thanh cuộn khi cần */
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+}
+>>>>>>> 95fc7ee5fbfad6cc9d139f898fe8612b9bab00aa
