@@ -510,3 +510,7 @@ td.actions {
     border-radius: 0 0 18px 18px;
   }
 }
+
+.ck-editor__editable[role="textbox"] {
+  min-height: 220px !important;
+}
