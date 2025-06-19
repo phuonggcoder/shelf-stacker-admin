@@ -510,6 +510,7 @@ td.actions {
     border-radius: 0 0 18px 18px;
   }
 }
+<<<<<<<<< Temporary merge branch 1
 #add-category-modal {
   display: none;
   position: fixed;
@@ -536,7 +537,9 @@ td.actions {
   gap: 14px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.15);
 }
+=========
 
 .ck-editor__editable[role="textbox"] {
   min-height: 220px !important;
 }
+>>>>>>>>> Temporary merge branch 2
