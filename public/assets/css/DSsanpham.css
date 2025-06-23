@@ -480,3 +480,7 @@ body {
   position: relative;
   animation: popup 0.2s;
 }
+.ck-content img.editable-cover {
+  max-width: 300px;
+  height: auto;
+}
