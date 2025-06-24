@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-   <link rel="stylesheet" href="/assets/css/home.css">
+  <link rel="stylesheet" href="/assets/css/home.css">
   <title>Sleek Admin - Basic</title>
-  
 </head>
 <body>
-   <header class="header">
+  <header class="header">
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
@@ -23,7 +22,7 @@
       <p>Nhà thiết kế UI/UX </p>
     </div>
     <nav>
-     <ul>
+      <ul>
         <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
@@ -40,60 +39,11 @@
       <h5>Dashboard</h5>
       <div class="button-container">
         <div class="row">
-          <div class="col-lg-4">
-            <div class="bg-white border shadow">
-              <div class="media" style="padding:24px;">
-                <div class="notify-icon bg-theme">👤</div>
-                <div class="media-body">
-                  <h3 style="margin:0 0 4px 0;"><strong>$300k</strong></h3>
-                  <p class="bc-description">Total Revenue</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="bg-white border shadow">
-              <div class="media" style="padding:24px;">
-                <div class="notify-icon bg-danger">✉️</div>
-                <div class="media-body">
-                  <h3 style="margin:0 0 4px 0;"><strong>3.1M</strong></h3>
-                  <p class="bc-description">Customers</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="col-lg-4">
-            <div class="bg-theme border shadow">
-              <div class="media" style="padding:24px;">
-                <div class="notify-icon bg-white"><span class="text-theme">🏷️</span></div>
-                <div class="media-body">
-                  <h3 style="margin:0 0 4px 0;"><strong>1022</strong></h3>
-                  <p class="bc-description" style="color:#fff;">Total Products</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- Các phần hiển thị -->
         </div>
       </div>
       <div class="mt-1 mb-3 p-3 button-container bg-white shadow-sm border" style="margin-top:32px;">
-        <h6>Analytics overview</h6><hr>
-        <div class="row mb-3">
-          <div>
-            <h1 class="text-success">1560</h1>
-            <h5>Customers</h5>
-          </div>
-          <div>
-            <h1 class="text-theme">1300</h1>
-            <h5>Orders</h5>
-          </div>
-          <div>
-            <h1 class="text-danger">$5545</h1>
-            <h5>Revenue</h5>
-          </div>
-        </div>
-        <div style="height:100px;background:#f4f4f4;border-radius:8px;text-align:center;line-height:100px;color:#bbb;">
-          [Chart Placeholder]
-        </div>
+        <!-- Analytics overview -->
       </div>
       <div class="mt-4 mb-4 p-3 bg-white border shadow-sm lh-sm">
         <div class="product-list">
@@ -136,43 +86,26 @@
                     <button class="btn btn-danger">🗑️</button>
                   </td>
                 </tr>
-                <tr>
-                  <td><input type="checkbox"></td>
-                  <td>Ord#14</td>
-                  <td>Andy Webb</td>
-                  <td><span class="badge badge-danger">Cancelled</span></td>
-                  <td>$200</td>
-                  <td>15/09/2018</td>
-                  <td>
-                    <button class="btn btn-theme">👁️</button>
-                    <button class="btn btn-success">✏️</button>
-                    <button class="btn btn-danger">🗑️</button>
-                  </td>
-                </tr>
-                <tr>
-                  <td><input type="checkbox"></td>
-                  <td>Ord#15</td>
-                  <td>Andy Webb</td>
-                  <td><span class="badge badge-success">Delivered</span></td>
-                  <td>$200</td>
-                  <td>15/09/2018</td>
-                  <td>
-                    <button class="btn btn-theme">👁️</button>
-                    <button class="btn btn-success">✏️</button>
-                  <button class="btn btn-danger">🗑️</button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-              <div style="text-align:right;">
-                <button class="btn btn-outline-theme">👁️ View full orders</button>
-              </div>
+                <!-- Các dòng khác -->
+              </tbody>
+            </table>
+            <div style="text-align:right;">
+              <button class="btn btn-outline-theme">👁️ View full orders</button>
             </div>
           </div>
         </div>
-      
       </div>
     </div>
   </div>
+
+  <!-- SCRIPT KIỂM TRA TOKEN -->
+  <script>
+    // Kiểm tra token khi trang load
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      // Chưa đăng nhập => quay về login
+      window.location.href = 'login.html';
+    }
+  </script>
 </body>
 </html>

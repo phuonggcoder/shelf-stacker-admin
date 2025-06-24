@@ -5,14 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="/assets/css/DANHMUC1.css">
   <title>Quản Lý Đơn Hàng</title>
-<<<<<<< Updated upstream
-  
-=======
-  <link rel="stylesheet" href="/assets/css/DANHMUC1.css" />
->>>>>>> Stashed changes
 </head>
 <body>
-   <header class="header">
+  <header class="header">
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
@@ -27,14 +22,14 @@
       <p>Nhà thiết kế UI/UX </p>
     </div>
     <nav>
-     <ul>
+      <ul>
         <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
-        <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
-        <li><a href="danhmucdaxoa" class="active">DANH MỤC ĐÃ XÓA</a></li>
-        <li><a href="trashbooks" class="active">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
+        <li><a href="danhmucdonhang" class="active">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhmucdaxoa">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
       </ul>
     </nav>
   </aside>
@@ -69,81 +64,12 @@
             <th>Hành Động</th>
           </tr>
         </thead>
-        <tbody>
-          <!-- Dữ liệu sản phẩm từ API -->
-          <tr>
-            <td><img src="../img/sample1.jpg" alt="Sản phẩm" class="thumb" /></td>
-            <td>DH001</td>
-            <td>Nguyễn Văn A</td>
-            <td>2025-05-27</td>
-            <td>Mới</td>
-            <td>500.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-          <tr>
-            <td><img src="../img/sample2.jpg" alt="Sản phẩm" class="thumb" /></td>
-            <td>DH002</td>
-            <td>Trần Thị B</td>
-            <td>2025-05-26</td>
-            <td>Đang xử lý</td>
-            <td>750.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-          <tr>
-            <td><img src="../img/sample3.jpg" alt="Sản phẩm" class="thumb" /></td>
-            <td>DH003</td>
-            <td>Phạm Văn C</td>
-            <td>2025-05-25</td>
-            <td>Đang giao</td>
-            <td>1.200.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-          <tr>
-            <td><img src="../img/sample4.jpg" alt="Sản phẩm" class="thumb" /></td>
-            <td>DH004</td>
-            <td>Lê Thị D</td>
-            <td>2025-05-24</td>
-            <td>Đã giao</td>
-            <td>650.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
-          <tr>
-            <td><img src="../img/sample5.jpg" alt="Sản phẩm" class="thumb" /></td>
-            <td>DH005</td>
-            <td>Đặng Văn E</td>
-            <td>2025-05-23</td>
-            <td>Đã giao</td>
-            <td>650.000₫</td>
-            <td class="actions">
-              <button class="btn-detail">Chi tiết</button>
-              <button class="btn-update">Cập nhật</button>
-              <button class="btn-confirm">Xác nhận</button>
-              <button class="btn-return">Trả hàng</button>
-            </td>
-          </tr>
+        <tbody id="orders-body">
+          <tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>
         </tbody>
       </table>
     </div>
   </main>
+  <script src="/assets/js/danhmucdonhang.js"></script>
 </body>
 </html>

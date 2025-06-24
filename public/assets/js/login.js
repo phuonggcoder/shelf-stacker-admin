@@ -1,4 +1,4 @@
-document.getElementById('loginBtn').addEventListener('click', async function () {
+ document.getElementById('loginBtn').addEventListener('click', async function () {
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
       const errorMsg = document.getElementById('errorMsg');
@@ -22,6 +22,12 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
         const data = await response.json();
 
         if (response.ok) {
+          // Nếu server trả token, lưu token (nếu cần)
+          if (data.token) {
+            localStorage.setItem('authToken', data.token);
+          }
+
+          // Điều hướng sang trang chính
           window.location.href = 'home';
         } else {
           errorMsg.textContent = data.message || 'Tên người dùng hoặc mật khẩu không đúng.';

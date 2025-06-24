@@ -1,8 +1,12 @@
+const base_url = 'https://server-shelf-stacker.onrender.com';
+// Nếu test local, bạn chỉ cần đổi lại:
+// const base_url = 'http://localhost:3000';
+
 async function fetchTrashCategories() {
   const grid = document.getElementById('trashCategoryGrid');
   grid.innerHTML = '<p>Đang tải...</p>';
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories/trash/all');
+    const res = await fetch(`${base_url}/api/categories/trash/all`);
     if (!res.ok) {
       grid.innerHTML = '<p>Lỗi tải dữ liệu!</p>';
       return;
@@ -29,7 +33,7 @@ function renderTrashCategories(categories) {
         <p><b>ID:</b> ${cat._id || ''}</p>
         <h3>${cat.name || ''}</h3>
         <p><b>Slug:</b> ${cat.slug || ''}</p>
-        <p><b>Mô tả:</b> <span>${cat.description ? cat.description : ''}</span></p>
+        <p><b>Mô tả:</b> <span>${cat.description || ''}</span></p>
         ${cat.image ? `<p><b>Ảnh:</b> <img src="${cat.image}" alt="Ảnh danh mục" style="max-width:60px;max-height:60px;border-radius:4px;border:1px solid #ccc;vertical-align:middle;" onerror="this.style.display='none'"></p>` : ''}
         <p><b>Hiển thị:</b> ${cat.isVisible ? 'Có' : 'Không'}</p>
         <p><b>Ngày tạo:</b> ${cat.createdAt ? new Date(cat.createdAt).toLocaleString() : ''}</p>
@@ -38,7 +42,7 @@ function renderTrashCategories(categories) {
       </div>
       <div class="actions">
         <button class="restore-btn" data-id="${cat._id}"><i class="fa fa-undo"></i> Khôi phục</button>
-        <button class="force-delete-btn" data-id="${cat._id}"><i class="fa fa-trash"></i> Xóa cứng</button>
+        <button class="force-delete-btn" data-id="${cat._id}"><i class="fa fa-trash"></i> xóa vĩnh viễn</button>
       </div>
     `;
     grid.appendChild(card);
@@ -50,7 +54,7 @@ function renderTrashCategories(categories) {
       const id = this.getAttribute('data-id');
       if (!confirm('Khôi phục danh mục này?')) return;
       try {
-        const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}/restore`, {
+        const res = await fetch(`${base_url}/api/categories/${id}/restore`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -72,11 +76,11 @@ function renderTrashCategories(categories) {
       const id = this.getAttribute('data-id');
       if (!confirm('Xóa vĩnh viễn danh mục này?')) return;
       try {
-        const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}/force`, {
+        const res = await fetch(`${base_url}/api/categories/${id}/force`, {
           method: 'DELETE'
         });
         if (!res.ok) {
-          alert('Xóa cứng thất bại!');
+          alert('Xóa vĩnh viễn danh mục thất bại!');
           return;
         }
         alert('Đã xóa vĩnh viễn!');

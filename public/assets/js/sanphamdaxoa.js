@@ -73,7 +73,7 @@
             <br>
             <button class="restore-btn" data-id="${book._id}"><i class="fa fa-undo"></i> Khôi phục</button>
             <button class="force-delete-btn" data-id="${book._id}" style="background:#dc3545; color:#fff; border:none; border-radius:5px; padding:8px 14px; font-size:15px; cursor:pointer; margin-top:8px; transition: background 0.2s;">
-              <i class="fa fa-trash"></i> XÓA CỨNG
+              <i class="fa fa-trash"></i> XÓA vĩnh viễn
             </button>
           </div>
         `;
