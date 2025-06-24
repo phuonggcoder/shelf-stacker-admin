@@ -300,22 +300,33 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
       }
       // Sửa
       if (e.target.classList.contains('btn-update')) {
-        editingCategoryId = e.target.getAttribute('data-id');
-        document.getElementById('cat-name').value = e.target.getAttribute('data-name') || '';
-        document.getElementById('cat-slug').value = e.target.getAttribute('data-slug') || '';
-        document.getElementById('cat-image').value = e.target.getAttribute('data-image') || '';
-        setTimeout(() => {
-          initCatDescEditorIfNeeded().then(() => {
-            if (catDescEditor) catDescEditor.setData(e.target.getAttribute('data-description') || '');
-          });
-        }, 0);
-        document.getElementById('cat-status').value = e.target.getAttribute('data-status') === 'false' ? 'false' : 'true';
-        document.getElementById('add-category-modal').style.display = 'flex';
-        document.getElementById('save-category-btn').style.display = 'none';
-        document.getElementById('update-category-btn').style.display = 'block';
-      }
-    });
+  editingCategoryId = e.target.getAttribute('data-id');
+  document.getElementById('cat-name').value = e.target.getAttribute('data-name') || '';
+  document.getElementById('cat-slug').value = e.target.getAttribute('data-slug') || '';
+  document.getElementById('cat-image').value = e.target.getAttribute('data-image') || '';
+      
+  // Hiển thị ảnh preview nếu có
+  const imageUrl = e.target.getAttribute('data-image') || '';
+  const preview = document.getElementById('preview-image');
+  if (imageUrl) {
+    preview.src = imageUrl;
+    preview.style.display = 'block';
+  } else {
+    preview.style.display = 'none';
+  }
 
+  setTimeout(() => {
+    initCatDescEditorIfNeeded().then(() => {
+      if (catDescEditor) catDescEditor.setData(e.target.getAttribute('data-description') || '');
+    });
+  }, 0);
+
+  document.getElementById('cat-status').value = e.target.getAttribute('data-status') === 'false' ? 'false' : 'true';
+  document.getElementById('add-category-modal').style.display = 'flex';
+  document.getElementById('save-category-btn').style.display = 'none';
+  document.getElementById('update-category-btn').style.display = 'block';
+}
+});
     // Cập nhật danh mục
     document.getElementById('update-category-btn').addEventListener('click', async function(e) {
       e.preventDefault();
