@@ -198,14 +198,17 @@
         <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
         <textarea id="bookDesc" placeholder="Mô tả"></textarea>
 
-        <div class="form-group">
-          
-          <label for="bookImageInput">Chọn hình ảnh </label>
-          <input type="file" id="bookImageInput" multiple accept="image/*">
-          <div id="previewImages" style="margin-top:10px;"></div>
-          <input type="hidden" id="bookImagesHidden" />
+       <div class="form-group">
 
-        </div>
+<label for="bookImageInput">Chọn hình ảnh từ máy</label>
+<input type="file" id="bookImageInput" multiple accept="image/*">
+
+<div id="previewImages" style="margin-top:10px;"></div>
+
+<input type="hidden" id="bookImagesHidden" />
+
+</div>
+
 
         <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
         <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required />
@@ -218,31 +221,40 @@
   </div>
 
   <script src="/ckfinder/ckfinder.js"></script>
-  <script src="/assets/js/danhsachsanpham.js"></script>
+ <script type="module" src="/assets/js/danhsachsanpham.js"></script>
 
-  <script>
-    const imageInput = document.getElementById('bookImageInput');
-    const previewImages = document.getElementById('previewImages');
-    const imageLinksTextarea = document.getElementById('bookImagesHidden');
+<script>
+  const imageInput = document.getElementById('bookImageInput');
+  const previewImages = document.getElementById('previewImages');
+  const imageLinksTextarea = document.getElementById('bookImagesHidden');
 
-    imageInput.addEventListener('change', function () {
-      previewImages.innerHTML = '';
-      imageLinksTextarea.value = '';
+  imageInput.addEventListener('change', function () {
+    previewImages.innerHTML = '';
+    imageLinksTextarea.value = '';
 
-      Array.from(this.files).forEach(file => {
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          const img = document.createElement('img');
-          img.src = e.target.result;
-          img.style.maxWidth = '100px';
-          img.style.margin = '6px';
-          previewImages.appendChild(img);
+    const files = Array.from(this.files);
+    const imageBase64List = [];
 
-          imageLinksTextarea.value += e.target.result + '\n';
-        };
-        reader.readAsDataURL(file);
-      });
+    files.forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.style.maxWidth = '100px';
+        img.style.margin = '6px';
+        previewImages.appendChild(img);
+
+        imageBase64List.push(e.target.result);
+
+        if (imageBase64List.length === files.length) {
+          imageLinksTextarea.value = imageBase64List.join('\n');
+        }
+      };
+      reader.readAsDataURL(file);
     });
-  </script>
+  });
+</script>
+
+
 </body>
 </html>
