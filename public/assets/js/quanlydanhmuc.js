@@ -231,38 +231,55 @@ document.getElementById('filter-status').addEventListener('change', function() {
     };
 
     // Thêm danh mục mới
-    document.getElementById('add-category-form').addEventListener('submit', async function(e) {
-      if (editingCategoryId) return; // Nếu đang sửa thì không cho thêm mới
-      e.preventDefault();
-      const name = document.getElementById('cat-name').value.trim();
-      const slug = document.getElementById('cat-slug').value.trim();
-      const image = document.getElementById('cat-image').value.trim();
-      await initCatDescEditorIfNeeded();
-      const description = catDescEditor ? catDescEditor.getData() : document.getElementById('cat-desc').value.trim();
-      const isVisible = document.getElementById('cat-status').value === 'true';
-      if (!name || !slug) {
-        alert('Vui lòng nhập tên danh mục và slug!');
-        return;
-      }
-      try {
-        const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, slug, description, image, isVisible })
-        });
-        if (res.ok) {
-          alert('Thêm danh mục thành công!');
-          document.getElementById('add-category-modal').style.display = 'none';
-          fetchCategories();
-          this.reset();
-        } else {
-          const err = await res.json();
-          alert('Thêm thất bại: ' + (err.message || 'Lỗi không xác định!'));
-        }
-      } catch (err) {
-        alert('Lỗi kết nối!');
-      }
+document.getElementById('add-category-form').addEventListener('submit', async function (e) {
+  e.preventDefault();
+
+  if (editingCategoryId) {
+    alert('Đang ở chế độ sửa. Bấm nút cập nhật!');
+    return;
+  }
+
+  const name = document.getElementById('cat-name').value.trim();
+  const slug = document.getElementById('cat-slug').value.trim();
+  const image = document.getElementById('cat-image').value.trim();
+  await initCatDescEditorIfNeeded();
+  const description = catDescEditor ? catDescEditor.getData() : '';
+  const isVisible = document.getElementById('cat-status').value === 'true';
+
+  if (!name || !slug) {
+    alert('Vui lòng nhập tên danh mục và slug!');
+    return;
+  }
+
+  const payload = { name, slug, description, image, isVisible };
+  console.log('➡ Dữ liệu gửi lên server:', payload);
+
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
+
+    const result = await res.json();
+    console.log('⬅ Phản hồi server:', result);
+
+    if (res.ok) {
+      alert('✅ Thêm danh mục thành công!');
+      document.getElementById('add-category-modal').style.display = 'none';
+      this.reset();
+      document.getElementById('preview-image').style.display = 'none';
+      fetchCategories();
+    } else {
+      alert('❌ Thêm thất bại: ' + (result.message || 'Lỗi không xác định!'));
+    }
+
+  } catch (err) {
+    console.error('🚫 Lỗi kết nối:', err);
+    alert('Lỗi kết nối hoặc server không phản hồi');
+  }
+});
+
 
     // Xử lý xóa và sửa danh mục
     document.addEventListener('click', async function(e) {
@@ -352,4 +369,84 @@ function initCatDescEditorIfNeeded() {
   }
   return catDescEditorPromise;
 }
+const inputFile = document.getElementById('cat-upload');
 
+document.getElementById('btn-select-image').addEventListener('click', function() {
+  if (confirm('Bạn muốn tải ảnh mới lên? (OK: tải mới, Cancel: chọn từ server)')) {
+    inputFile.click();
+  } else {
+    openImageListModal();
+  }
+});
+
+inputFile.onchange = async function(event) {
+  const file = event.target.files[0];
+  if (file) {
+    const formData = new FormData();
+    formData.append('upload', file);
+
+    try {
+      const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const imageUrl = data.url.startsWith('/')
+          ? `https://server-shelf-stacker.onrender.com${data.url}`
+          : data.url;
+        updateImageSelection(imageUrl);
+      } else {
+        alert('Upload thất bại');
+      }
+    } catch {
+      alert('Lỗi kết nối khi upload');
+    }
+  }
+};
+
+function openImageListModal() {
+  document.getElementById('image-list-modal').style.display = 'flex';
+  loadUploadedImages();
+}
+
+async function loadUploadedImages() {
+  const container = document.getElementById('image-list-container');
+  container.innerHTML = '<p>Đang tải...</p>';
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images');
+    const data = await res.json();
+    if (Array.isArray(data) && data.length) {
+      container.innerHTML = '';
+      data.forEach(img => {
+        const imgEl = document.createElement('img');
+        imgEl.src = img.url.startsWith('/')
+          ? `https://server-shelf-stacker.onrender.com${img.url}`
+          : img.url;
+        imgEl.style = 'width:100px; height:100px; margin:5px; cursor:pointer; object-fit:cover; border:2px solid transparent;';
+        imgEl.onclick = () => {
+          updateImageSelection(imgEl.src);
+          document.getElementById('image-list-modal').style.display = 'none';
+        };
+        imgEl.onmouseover = () => imgEl.style.border = '2px solid #007bff';
+        imgEl.onmouseout = () => imgEl.style.border = '2px solid transparent';
+        container.appendChild(imgEl);
+      });
+    } else {
+      container.innerHTML = '<p>Không có ảnh nào</p>';
+    }
+  } catch {
+    container.innerHTML = '<p style="color:red;">Lỗi tải ảnh</p>';
+  }
+}
+
+document.getElementById('close-image-list-modal').onclick = function() {
+  document.getElementById('image-list-modal').style.display = 'none';
+};
+
+function updateImageSelection(url) {
+  document.getElementById('cat-image').value = url;
+  const preview = document.getElementById('preview-image');
+  preview.src = url;
+  preview.style.display = 'block';
+}
