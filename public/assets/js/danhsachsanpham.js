@@ -94,15 +94,14 @@ function renderProducts(products) {
     }
 
     // Hình ảnh
-    let imagesHtml = '';
-    if (product.cover_image && Array.isArray(product.cover_image)) {
-      imagesHtml = product.cover_image.slice(0, 2).map(img =>
-        `<img src="${img
-          .replace(/^http:\/\/localhost:3000/, 'https://server-shelf-stacker.onrender.com')
-          .replace(/^\/assets/, 'https://server-shelf-stacker.onrender.com/assets')}" 
-          alt="Ảnh sách" style="max-width:80px; margin:2px;">`
-      ).join('');
-    }
+   imagesHtml = product.cover_image.slice(0, 2).map(img =>
+  `<img src="${img
+    .replace(/^http:\/\/localhost:3000/, 'https://server-shelf-stacker.onrender.com')
+    .replace(/^\/assets/, 'https://server-shelf-stacker.onrender.com/assets')}" 
+    alt="Ảnh sách" style="max-width:80px; margin:2px;">`
+).join('');
+
+  
 
     card.innerHTML = `
       ${imagesHtml}
@@ -191,10 +190,15 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
 
     uploadedImageUrls = book.cover_image || [];
     document.getElementById('bookImages').value = uploadedImageUrls.join('\n');
-    previewDiv.innerHTML = uploadedImageUrls.map(url =>
-      `<img src="${url.startsWith('http') ? url : 'https://server-shelf-stacker.onrender.com' + url}" 
-            style="max-width:100px; margin:5px;">`
-    ).join('');
+    previewDiv.innerHTML = uploadedImageUrls.map((url, index) => `
+  <div style="display:inline-block; position:relative; margin:5px;">
+    <img src="${url.startsWith('http') ? url : 'https://server-shelf-stacker.onrender.com' + url}" 
+         style="max-width:100px;">
+    <button class="remove-image-btn" data-idx="${index}"
+      style="position:absolute;top:0;right:0;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;">×</button>
+  </div>
+`).join('');
+
 
     addBookForm.setAttribute('data-edit-id', id);
     dialogOverlay.classList.add('active');
@@ -595,3 +599,108 @@ fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
     console.error('Lỗi lấy danh sách ảnh:', err);
     alert('Không thể tải danh sách ảnh');
   });
+previewDiv.querySelectorAll('.remove-image-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const idx = parseInt(this.getAttribute('data-idx'), 10);
+    if (!isNaN(idx)) {
+      uploadedImageUrls.splice(idx, 1);
+      bookImagesInput.value = uploadedImageUrls.join('\n');
+      // Render lại ảnh sau khi xóa
+      previewDiv.innerHTML = uploadedImageUrls.map((url, index) => `
+        <div style="display:inline-block; position:relative; margin:5px;">
+          <img src="${url.startsWith('http') ? url : 'https://server-shelf-stacker.onrender.com' + url}" 
+               style="max-width:100px;">
+          <button class="remove-image-btn" data-idx="${index}"
+            style="position:absolute;top:0;right:0;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;">×</button>
+        </div>
+      `).join('');
+      // Gắn lại event xóa (hoặc bạn có thể tách render riêng và gọi lại)
+      previewDiv.querySelectorAll('.remove-image-btn').forEach(newBtn => {
+        newBtn.addEventListener('click', arguments.callee);
+      });
+    }
+  });
+});
+
+
+// Hàm render ảnh với nút xóa
+function renderUploadedImages() {
+  previewDiv.innerHTML = uploadedImageUrls.map((url, index) => `
+    <div style="display:inline-block; position:relative; margin:5px;">
+      <img src="${url.startsWith('http') ? url : 'https://server-shelf-stacker.onrender.com' + url}" 
+           style="max-width:100px;">
+      <button class="remove-image-btn" data-idx="${index}"
+        style="position:absolute;top:0;right:0;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;">×</button>
+    </div>
+  `).join('');
+
+  previewDiv.querySelectorAll('.remove-image-btn').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const idx = parseInt(this.getAttribute('data-idx'), 10);
+      if (!isNaN(idx)) {
+        uploadedImageUrls.splice(idx, 1);
+        bookImagesInput.value = uploadedImageUrls.join('\n');
+        renderUploadedImages();
+      }
+    });
+  });
+}
+
+// Mở file picker khi bấm nút
+document.getElementById('btn-select-image').addEventListener('click', () => {
+  uploadInput.click();
+});
+
+// Upload ảnh
+uploadInput.addEventListener('change', async () => {
+  const file = uploadInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('upload', file);
+
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    const data = await res.json();
+    uploadedImageUrls.push(data.url);
+    bookImagesInput.value = uploadedImageUrls.join('\n');
+    renderUploadedImages();
+
+    alert('Upload thành công!');
+  } catch (err) {
+    console.error('Upload lỗi:', err);
+    alert('Upload thất bại: ' + err.message);
+  }
+});
+
+// Khi click Thêm mới
+addBookBtn.addEventListener('click', function () {
+  uploadedImageUrls = [];
+  bookImagesInput.value = '';
+  renderUploadedImages();
+});
+
+// Khi click Sửa
+document.addEventListener('click', function (e) {
+  if (e.target.closest('.edit-btn')) {
+    const btn = e.target.closest('.edit-btn');
+    const id = btn.getAttribute('data-id');
+    const book = products.find(p => p._id === id);
+    if (!book) return;
+
+    uploadedImageUrls = book.cover_image || [];
+    bookImagesInput.value = uploadedImageUrls.join('\n');
+    renderUploadedImages();
+  }
+});

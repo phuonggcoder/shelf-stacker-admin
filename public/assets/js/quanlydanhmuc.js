@@ -3,6 +3,7 @@
     let categories = [];
 let catCurrentPage = 1;
 const catPageSize = 6;
+let editingCategoryId = null; // ✅ Thêm khai báo global cho biến này
 
 // Hàm render danh mục với phân trang
 function renderCategoriesWithPagination(categoriesArr, page = 1) {
@@ -128,20 +129,24 @@ document.addEventListener('click', async function(e) {
   }
   // Sửa
   if (e.target.classList.contains('btn-update')) {
-    editingCategoryId = e.target.getAttribute('data-id');
-    document.getElementById('cat-name').value = e.target.getAttribute('data-name') || '';
-    document.getElementById('cat-slug').value = e.target.getAttribute('data-slug') || '';
-    document.getElementById('cat-image').value = e.target.getAttribute('data-image') || '';
-    setTimeout(() => {
-      initCatDescEditorIfNeeded().then(() => {
-        if (catDescEditor) catDescEditor.setData(e.target.getAttribute('data-description') || '');
-      });
-    }, 0);
-    document.getElementById('cat-status').value = e.target.getAttribute('data-status') === 'false' ? 'false' : 'true';
-    document.getElementById('add-category-modal').style.display = 'flex';
-    document.getElementById('save-category-btn').style.display = 'none';
-    document.getElementById('update-category-btn').style.display = 'block';
-  }
+  editingCategoryId = e.target.getAttribute('data-id');
+  document.getElementById('cat-name').value = e.target.getAttribute('data-name') || '';
+  document.getElementById('cat-slug').value = e.target.getAttribute('data-slug') || '';
+  document.getElementById('cat-image').value = e.target.getAttribute('data-image') || '';
+
+  updateImageSelection(e.target.getAttribute('data-image') || '');
+
+  setTimeout(() => {
+    initCatDescEditorIfNeeded().then(() => {
+      if (catDescEditor) catDescEditor.setData(e.target.getAttribute('data-description') || '');
+    });
+  }, 0);
+
+  document.getElementById('cat-status').value = e.target.getAttribute('data-status') === 'false' ? 'false' : 'true';
+  document.getElementById('add-category-modal').style.display = 'flex';
+  document.getElementById('save-category-btn').style.display = 'none';
+  document.getElementById('update-category-btn').style.display = 'block';
+}
 
   // Ẩn/Hiển thị
   if (e.target.classList.contains('btn-confirm')) {
@@ -328,41 +333,41 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
 }
 });
     // Cập nhật danh mục
-    document.getElementById('update-category-btn').addEventListener('click', async function(e) {
-      e.preventDefault();
-      if (!editingCategoryId) return;
-      const name = document.getElementById('cat-name').value.trim();
-      const slug = document.getElementById('cat-slug').value.trim();
-      const image = document.getElementById('cat-image').value.trim();
-      await initCatDescEditorIfNeeded();
-      const description = catDescEditor ? catDescEditor.getData() : document.getElementById('cat-desc').value.trim();
-      const isVisible = document.getElementById('cat-status').value === 'true';
-      if (!name || !slug) {
-        alert('Vui lòng nhập tên danh mục và slug!');
-        return;
-      }
-      try {
-        const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${editingCategoryId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, slug, description, image, isVisible })
-        });
-        if (res.ok) {
-          alert('Cập nhật danh mục thành công!');
-          document.getElementById('add-category-modal').style.display = 'none';
-          fetchCategories();
-          document.getElementById('add-category-form').reset();
-          document.getElementById('save-category-btn').style.display = 'block';
-          document.getElementById('update-category-btn').style.display = 'none';
-          editingCategoryId = null;
-        } else {
-          const err = await res.json();
-          alert('Cập nhật thất bại: ' + (err.message || 'Lỗi không xác định!'));
-        }
-      } catch (err) {
-        alert('Lỗi kết nối!');
-      }
+  document.getElementById('update-category-btn').addEventListener('click', async function (e) {
+  e.preventDefault();
+  if (!editingCategoryId) return;
+
+  const name = document.getElementById('cat-name').value.trim();
+  const slug = document.getElementById('cat-slug').value.trim();
+  const image = document.getElementById('cat-image').value.trim();
+  await initCatDescEditorIfNeeded();
+  const description = catDescEditor ? catDescEditor.getData() : '';
+  const isVisible = document.getElementById('cat-status').value === 'true';
+
+  if (!name || !slug) {
+    alert('Vui lòng nhập tên danh mục và slug!');
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${editingCategoryId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, slug, description, image, isVisible })
     });
+
+    if (res.ok) {
+      alert('Cập nhật danh mục thành công!');
+      await fetchCategories();   // reload danh mục trước
+      resetCategoryForm();       // reset form sau
+    } else {
+      const err = await res.json();
+      alert('Cập nhật thất bại: ' + (err.message || 'Lỗi không xác định!'));
+    }
+  } catch (err) {
+    alert('Lỗi kết nối!');
+  }
+});
 
     // Khởi tạo CKEditor 5 cho mô tả danh mục
 let catDescEditor = null;
@@ -454,10 +459,112 @@ async function loadUploadedImages() {
 document.getElementById('close-image-list-modal').onclick = function() {
   document.getElementById('image-list-modal').style.display = 'none';
 };
-
 function updateImageSelection(url) {
-  document.getElementById('cat-image').value = url;
+  const input = document.getElementById('cat-image');
   const preview = document.getElementById('preview-image');
+
+  input.value = url;
   preview.src = url;
   preview.style.display = 'block';
+
+  showDeleteImageButton(preview);
+}
+
+function showDeleteImageButton(preview) {
+  let btn = document.getElementById('delete-image-btn');
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'delete-image-btn';
+    btn.textContent = '×';
+    btn.style = `
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 14px;
+      cursor: pointer;
+    `;
+    btn.onclick = () => {
+      document.getElementById('cat-image').value = '';
+      preview.src = '';
+      preview.style.display = 'none';
+      btn.style.display = 'none';
+    };
+
+    const wrapper = ensurePreviewWrapper(preview);
+    wrapper.appendChild(btn);
+  }
+  btn.style.display = 'block';
+}
+
+function ensurePreviewWrapper(preview) {
+  let wrapper = document.getElementById('preview-wrapper');
+  if (!wrapper) {
+    wrapper = document.createElement('div');
+    wrapper.id = 'preview-wrapper';
+    wrapper.style = 'position: relative; display: inline-block;';
+    preview.parentNode.insertBefore(wrapper, preview);
+    wrapper.appendChild(preview);
+  }
+  return wrapper;
+}
+
+
+// Reset khi thêm mới
+document.querySelector('.btn-export').addEventListener('click', () => {
+  document.getElementById('cat-image').value = '';
+  const preview = document.getElementById('preview-image');
+  preview.src = '';
+  preview.style.display = 'none';
+  const btn = document.getElementById('delete-image-btn');
+  if (btn) btn.style.display = 'none';
+});
+
+// Khi sửa
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('btn-update')) {
+    const url = e.target.getAttribute('data-image') || '';
+    if (url) {
+      updateImageSelection(url);
+    } else {
+      document.getElementById('cat-image').value = '';
+      const preview = document.getElementById('preview-image');
+      preview.src = '';
+      preview.style.display = 'none';
+      const btn = document.getElementById('delete-image-btn');
+      if (btn) btn.style.display = 'none';
+    }
+  }
+});
+function resetCategoryForm() {
+  // Reset form
+  document.getElementById('add-category-form').reset();
+
+  // Xóa editor
+  if (catDescEditor) catDescEditor.setData('');
+
+  // Xóa ảnh
+  const preview = document.getElementById('preview-image');
+  preview.src = '';
+  preview.style.display = 'none';
+  document.getElementById('cat-image').value = '';
+
+  // Ẩn nút xóa ảnh
+  const deleteBtn = document.getElementById('delete-image-btn');
+  if (deleteBtn) deleteBtn.style.display = 'none';
+
+  // Đóng modal
+  document.getElementById('add-category-modal').style.display = 'none';
+
+  // Reset nút
+  document.getElementById('save-category-btn').style.display = 'block';
+  document.getElementById('update-category-btn').style.display = 'none';
+
+  // Reset ID
+  editingCategoryId = null;
 }
