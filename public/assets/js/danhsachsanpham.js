@@ -704,3 +704,9 @@ document.addEventListener('click', function (e) {
     renderUploadedImages();
   }
 });
+imagesHtml = product.cover_image.slice(0, 2).map(img => {
+  const decoded = decodeURIComponent(img)
+    .replace(/^http:\/\/localhost:3000/, 'https://server-shelf-stacker.onrender.com')
+    .replace(/^\/assets/, 'https://server-shelf-stacker.onrender.com/assets');
+  return `<img src="${decoded}" alt="Ảnh sách" style="max-width:80px; margin:2px;">`;
+}).join('');
