@@ -484,3 +484,9 @@ body {
   max-width: 300px;
   height: auto;
 }
+.ck-content img {
+  max-width: 50px;
+  height: auto;
+  display: block;
+  margin: 10px auto;
+}

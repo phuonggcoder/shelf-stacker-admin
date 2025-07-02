@@ -12,20 +12,24 @@ const dialogTitle = document.getElementById('dialogTitle');
 // CKEditor 5 setup
 let bookDescEditor = null;
 let ckeditorPromise = null;
-
 function initCKEditorIfNeeded() {
   if (!ckeditorPromise) {
-    ckeditorPromise = ClassicEditor.create(document.querySelector('#bookDesc'))
+    ckeditorPromise = ClassicEditor
+      .create(document.querySelector('#bookDesc'), {
+        extraPlugins: [CustomUploadAdapterPlugin]
+      })
       .then(editor => {
         bookDescEditor = editor;
         return editor;
       })
       .catch(error => {
-        console.error(error);
+        console.error('CKEditor init error:', error);
       });
   }
   return ckeditorPromise;
 }
+
+
 
 // Khởi tạo CKEditor khi trang load
 initCKEditorIfNeeded();
@@ -81,20 +85,27 @@ function renderProducts(products) {
     card.className = 'product-card';
 
     // Xử lý mô tả
-    let desc = product.description || '';
-    let shortDesc = desc.replace(/(<([^>]+)>)/gi, ""); 
-    let isLong = shortDesc.length > 270;
-    let descHtml = '';
+    // Xử lý mô tả
+let desc = product.description || '';
 
-    if (isLong) {
-      descHtml = `
-        <span class="desc-short" id="desc-short-${idx}">${shortDesc.slice(0, 270)}...</span>
-        <span class="desc-full" id="desc-full-${idx}" style="display:none">${shortDesc}</span>
-        <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
-      `;
-    } else {
-      descHtml = `<span>${shortDesc}</span>`;
-    }
+// Tạo thẻ ảo để lấy nội dung thuần văn bản
+let temp = document.createElement('div');
+temp.innerHTML = desc;
+let plainText = temp.textContent || temp.innerText || '';
+let isLong = plainText.length > 270;
+let shortDesc = plainText.slice(0, 270) + '...';
+
+let descHtml = '';
+if (isLong) {
+  descHtml = `
+    <div class="desc-short" id="desc-short-${idx}">${shortDesc}</div>
+    <div class="desc-full" id="desc-full-${idx}" style="display:none">${desc}</div>
+    <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
+  `;
+} else {
+  descHtml = `<div>${desc}</div>`;
+}
+
 
     // Hình ảnh
     imagesHtml = product.cover_image.slice(0, 2).map(img =>
@@ -605,7 +616,7 @@ fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
     data.files.forEach(path => {
       const img = document.createElement('img');
       img.src = `https://server-shelf-stacker.onrender.com${path}`;  // ✅ Đảm bảo đầy đủ URL
-      img.style = 'max-width:100px; margin:5px;';
+      img.style = 'max-width:50px; margin:5px;';
       previewDiv.appendChild(img);
     });
   })
@@ -613,3 +624,46 @@ fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
     console.error('Lỗi lấy danh sách ảnh:', err);
     alert('Không thể tải danh sách ảnh');
   });
+function CustomUploadAdapterPlugin(editor) {
+  editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+    return new MyUploadAdapter(loader);
+  };
+}
+class MyUploadAdapter {
+  constructor(loader) {
+    this.loader = loader;
+  }
+
+  upload() {
+    return this.loader.file.then(file => new Promise((resolve, reject) => {
+      const data = new FormData();
+      data.append('upload', file);
+
+      fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+        method: 'POST',
+        body: data
+      })
+        .then(response => response.json())
+        .then(result => {
+          if (result.url) {
+            const fullUrl = result.url.startsWith('/')
+              ? 'https://server-shelf-stacker.onrender.com' + result.url
+              : result.url;
+            resolve({
+  default: `<img src="${fullUrl}" style="max-width:100%; height:auto; max-height:300px;">`
+});
+
+          } else {
+            reject('Không có đường dẫn ảnh!');
+          }
+        })
+        .catch(err => {
+          reject('Upload thất bại: ' + err.message);
+        });
+    }));
+  }
+
+  abort() {
+    // Có thể bỏ trống hoặc xử lý nếu muốn
+  }
+}
