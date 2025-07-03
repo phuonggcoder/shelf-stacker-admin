@@ -108,12 +108,19 @@ if (isLong) {
 
 
     // Hình ảnh
-    imagesHtml = product.cover_image.slice(0, 2).map(img =>
-      `<img src="${img
-        .replace(/^http:\/\/localhost:3000/, 'https://server-shelf-stacker.onrender.com')
-        .replace(/^\/assets/, 'https://server-shelf-stacker.onrender.com/assets')}" 
-        alt="Ảnh sách" style="max-width:80px; margin:2px;">`
-    ).join('');
+   // Hiển thị ảnh thumbnail thay vì cover_image
+let thumbUrl = product.thumbnail || '';
+if (thumbUrl.startsWith('/')) {
+  thumbUrl = 'https://server-shelf-stacker.onrender.com' + thumbUrl;
+}
+if (thumbUrl.startsWith('http://localhost:3000')) {
+  thumbUrl = thumbUrl.replace('http://localhost:3000', 'https://server-shelf-stacker.onrender.com');
+}
+
+imagesHtml = thumbUrl
+  ? `<img src="${thumbUrl}" alt="Thumbnail" style="max-width:80px; margin:2px;">`
+  : '';
+
 
     card.innerHTML = `
       ${imagesHtml}
@@ -194,7 +201,10 @@ if (isLong) {
       document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
       document.getElementById('bookPublisher').value = book.publisher || '';
       document.getElementById('bookLanguage').value = book.language || '';
-
+document.getElementById('bookThumbnail').value = book.thumbnail || '';
+thumbnailPreview.innerHTML = book.thumbnail
+  ? `<img src="${book.thumbnail}" style="max-width:100px;">`
+  : '';
       initCKEditorIfNeeded().then(() => {
         if (bookDescEditor) bookDescEditor.setData(book.description || '');
       });
@@ -473,7 +483,7 @@ uploadInput.addEventListener('change', async () => {
     }
 
     const data = await res.json();
-    uploadedImageUrls = [data.url]; // Chỉ giữ lại ảnh mới
+    uploadedImageUrls.push(data.url); // ✅ thêm ảnh mới vào mảng
     bookImagesInput.value = uploadedImageUrls.join('\n');
     renderUploadedImages();
 
@@ -562,6 +572,7 @@ document.addEventListener('click', function (e) {
 // Lưu thông tin sách
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
+  const thumbnail = document.getElementById('bookThumbnail').value;
   const id = addBookForm.getAttribute('data-edit-id');
   const title = document.getElementById('bookName').value.trim();
   const author = document.getElementById('bookAuthor').value.trim();
@@ -574,9 +585,10 @@ addBookForm.addEventListener('submit', async function(e) {
   const categories = Array.from(select.selectedOptions).map(opt => opt.value);
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
 
-  const payload = {
-    title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description
-  };
+ const payload = {
+  title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
+};
+
 
   try {
     let res;
@@ -634,36 +646,83 @@ class MyUploadAdapter {
     this.loader = loader;
   }
 
-  upload() {
-    return this.loader.file.then(file => new Promise((resolve, reject) => {
-      const data = new FormData();
-      data.append('upload', file);
+ upload() {
+  return this.loader.file.then(file => new Promise((resolve, reject) => {
+    const data = new FormData();
+    data.append('upload', file);
 
-      fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
-        method: 'POST',
-        body: data
+    fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+      method: 'POST',
+      body: data
+    })
+      .then(response => response.json())
+      .then(result => {
+        if (result.url) {
+          const fullUrl = result.url.startsWith('/')
+            ? 'https://server-shelf-stacker.onrender.com' + result.url
+            : result.url;
+
+          resolve({
+            default: fullUrl  // ✅ CHỈ URL thôi, KHÔNG phải <img>
+          });
+        } else {
+          reject('Không có đường dẫn ảnh!');
+        }
       })
-        .then(response => response.json())
-        .then(result => {
-          if (result.url) {
-            const fullUrl = result.url.startsWith('/')
-              ? 'https://server-shelf-stacker.onrender.com' + result.url
-              : result.url;
-            resolve({
-  default: `<img src="${fullUrl}" style="max-width:100%; height:auto; max-height:300px;">`
-});
+      .catch(err => {
+        reject('Upload thất bại: ' + err.message);
+      });
+  }));
+}
 
-          } else {
-            reject('Không có đường dẫn ảnh!');
-          }
-        })
-        .catch(err => {
-          reject('Upload thất bại: ' + err.message);
-        });
-    }));
-  }
 
   abort() {
     // Có thể bỏ trống hoặc xử lý nếu muốn
   }
 }
+// --- Upload ảnh thumbnail ---
+const thumbnailInput = document.getElementById('bookThumbnailUpload');
+const thumbnailPreview = document.getElementById('thumbnailPreview');
+const thumbnailHiddenInput = document.getElementById('bookThumbnail');
+const btnSelectThumbnail = document.getElementById('btn-select-thumbnail');
+
+btnSelectThumbnail.addEventListener('click', () => {
+  thumbnailInput.click();
+});
+
+thumbnailInput.addEventListener('change', async () => {
+  const file = thumbnailInput.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('upload', file);
+
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text);
+    }
+
+    const data = await res.json();
+    const fullUrl = data.url.startsWith('/')
+      ? 'https://server-shelf-stacker.onrender.com' + data.url
+      : data.url;
+
+    thumbnailHiddenInput.value = fullUrl;
+
+    // Hiển thị preview
+    thumbnailPreview.innerHTML = `
+      <img src="${fullUrl}" style="max-width:100px; margin-top:5px;">
+    `;
+
+    alert('Upload thumbnail thành công!');
+  } catch (err) {
+    console.error('Upload thumbnail lỗi:', err);
+    alert('Upload thumbnail thất bại: ' + err.message);
+  }
+});

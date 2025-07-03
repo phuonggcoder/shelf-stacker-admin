@@ -198,10 +198,17 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
         <!-- CKEditor 5 cho mô tả -->
         <textarea id="bookDesc" placeholder="Mô tả"></textarea>
-<button type="button" id="btn-select-image">Chọn ảnh</button>
+<button type="button" id="btn-select-image">Chọn thư viện ảnh </button>
 <input type="file" id="bookImageUpload" accept="image/*" style="display:none">
 <div id="uploadedImagesPreview" style="margin-top: 10px;"></div>
 <input type="hidden" id="bookImages">
+
+<label for="bookThumbnailUpload" style="margin-top:10px;">Chọn ảnh đại diện (thumbnail):</label>
+<input type="file" id="bookThumbnailUpload" accept="image/*" style="display:none">
+<button type="button" id="btn-select-thumbnail">Chọn ảnh đại diện</button>
+<div id="thumbnailPreview" style="margin-top: 10px;"></div>
+<input type="hidden" id="bookThumbnail">
+
 
 
         <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
