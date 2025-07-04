@@ -490,3 +490,6 @@ body {
   display: block;
   margin: 10px auto;
 }
+.desc-wrap img {
+  display: none !important;
+}

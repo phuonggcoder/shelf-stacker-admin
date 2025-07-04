@@ -117,9 +117,11 @@ if (thumbUrl.startsWith('http://localhost:3000')) {
   thumbUrl = thumbUrl.replace('http://localhost:3000', 'https://server-shelf-stacker.onrender.com');
 }
 
-imagesHtml = thumbUrl
-  ? `<img src="${thumbUrl}" alt="Thumbnail" style="max-width:80px; margin:2px;">`
-  : '';
+let imagesHtml = '';
+if (thumbUrl) {
+  imagesHtml = `<img src="${thumbUrl}" alt="Thumbnail" style="max-width:80px; margin:2px;">`;
+}
+
 
 
     card.innerHTML = `
