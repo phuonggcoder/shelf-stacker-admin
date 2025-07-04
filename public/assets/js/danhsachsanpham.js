@@ -110,17 +110,16 @@ if (isLong) {
     // Hình ảnh
    // Hiển thị ảnh thumbnail thay vì cover_image
 let thumbUrl = product.thumbnail || '';
-if (thumbUrl.startsWith('/')) {
+if (thumbUrl && thumbUrl.startsWith('/')) {
   thumbUrl = 'https://server-shelf-stacker.onrender.com' + thumbUrl;
 }
 if (thumbUrl.startsWith('http://localhost:3000')) {
   thumbUrl = thumbUrl.replace('http://localhost:3000', 'https://server-shelf-stacker.onrender.com');
 }
 
-let imagesHtml = '';
-if (thumbUrl) {
-  imagesHtml = `<img src="${thumbUrl}" alt="Thumbnail" style="max-width:80px; margin:2px;">`;
-}
+let imagesHtml = thumbUrl
+  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='/assets/default-thumbnail.png'" style="max-width:80px; margin:2px;">`
+  : `<img src="/assets/default-thumbnail.png" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
 
 
 
@@ -203,10 +202,16 @@ if (thumbUrl) {
       document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
       document.getElementById('bookPublisher').value = book.publisher || '';
       document.getElementById('bookLanguage').value = book.language || '';
-document.getElementById('bookThumbnail').value = book.thumbnail || '';
-thumbnailPreview.innerHTML = book.thumbnail
-  ? `<img src="${book.thumbnail}" style="max-width:100px;">`
-  : '';
+const thumb = book.thumbnail || '';
+const fullThumb = thumb.startsWith('/') 
+  ? 'https://server-shelf-stacker.onrender.com' + thumb 
+  : thumb;
+
+document.getElementById('bookThumbnail').value = fullThumb;
+thumbnailPreview.innerHTML = fullThumb
+  ? `<img src="${fullThumb}" style="max-width:100px;">`
+  : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
+
       initCKEditorIfNeeded().then(() => {
         if (bookDescEditor) bookDescEditor.setData(book.description || '');
       });
