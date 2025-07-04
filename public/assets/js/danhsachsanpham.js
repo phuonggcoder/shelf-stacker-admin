@@ -129,7 +129,7 @@ if (thumbUrl) {
       <div class="info">
         <h3>${product.title || product.name}</h3>
         <p><b>Tác giả:</b> ${product.author || ''}</p>
-        <p><b>Giá:</b> ${product.price ? product.price + '₫' : ''}</p>
+        <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
         <div class="desc-wrap">${descHtml}</div>
         <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
         <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
@@ -615,7 +615,7 @@ addBookForm.addEventListener('submit', async function(e) {
     alert('Lưu thành công!');
     dialogOverlay.classList.remove('active');
     products = await fetchProducts();
-    renderFilteredAndSorted(1);
+    renderFilteredAndSorted(currentPage); // <-- Dùng trang hiện tại ✅
   } catch (err) {
     alert('Có lỗi khi lưu truyện!\n' + err.message);
   }
@@ -728,3 +728,22 @@ thumbnailInput.addEventListener('change', async () => {
     alert('Upload thumbnail thất bại: ' + err.message);
   }
 });
+async function fetchCategoriesForSelect() {
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
+    const data = await res.json();
+
+    const select = document.getElementById('bookCategory');
+    select.innerHTML = ''; // clear cũ
+
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat._id;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    console.error('Lỗi lấy danh mục:', error);
+    alert('Không thể tải danh sách danh mục');
+  }
+}
