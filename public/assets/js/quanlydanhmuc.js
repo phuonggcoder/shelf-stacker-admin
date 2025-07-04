@@ -1,6 +1,4 @@
-
-
-    let categories = [];
+let categories = [];
 let catCurrentPage = 1;
 const catPageSize = 6;
 let editingCategoryId = null; // ✅ Thêm khai báo global cho biến này
@@ -358,8 +356,17 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
 
     if (res.ok) {
       alert('Cập nhật danh mục thành công!');
-      await fetchCategories();   // reload danh mục trước
-      resetCategoryForm();       // reset form sau
+      // Cập nhật ngay trên client (không cần fetch lại từ backend)
+      const idx = categories.findIndex(cat => cat._id === editingCategoryId);
+      if (idx !== -1) {
+        categories[idx].image = image; // image sẽ là "" nếu đã xóa
+        categories[idx].name = name;
+        categories[idx].slug = slug;
+        categories[idx].description = description;
+        categories[idx].isVisible = isVisible;
+      }
+      renderCategoriesWithPagination(categories, catCurrentPage);
+      resetCategoryForm();
     } else {
       const err = await res.json();
       alert('Cập nhật thất bại: ' + (err.message || 'Lỗi không xác định!'));
@@ -562,7 +569,7 @@ function resetCategoryForm() {
   document.getElementById('add-category-modal').style.display = 'none';
 
   // Reset nút
-  document.getElementById('save-category-btn').style.display = 'block';
+  document.getElementById('save-category-btn').style.display = 'z';
   document.getElementById('update-category-btn').style.display = 'none';
 
   // Reset ID
