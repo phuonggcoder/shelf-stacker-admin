@@ -584,12 +584,19 @@ addBookForm.addEventListener('submit', async function(e) {
   const publisher = document.getElementById('bookPublisher').value.trim();
   const language = document.getElementById('bookLanguage').value.trim();
   const select = document.getElementById('bookCategory');
-  const categories = Array.from(select.selectedOptions).map(opt => opt.value);
+  // --- SỬA ĐOẠN NÀY ---
+  let categories = [];
+  if (select.choicesInstance) {
+    categories = select.choicesInstance.getValue(true); // Lấy array value đã chọn
+  } else {
+    categories = Array.from(select.selectedOptions).map(opt => opt.value);
+  }
+  // --- HẾT SỬA ---
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
 
- const payload = {
-  title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
-};
+  const payload = {
+    title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
+  };
 
 
   try {
@@ -742,6 +749,19 @@ async function fetchCategoriesForSelect() {
       option.textContent = cat.name;
       select.appendChild(option);
     });
+
+    // Khởi tạo Choices.js cho select nhiều danh mục (chỉ 1 lần)
+    if (!select.choicesInstance) {
+      select.choicesInstance = new Choices(select, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: 'Chọn danh mục...',
+        searchPlaceholderValue: 'Tìm danh mục...',
+        noResultsText: 'Không tìm thấy',
+        itemSelectText: '',
+        shouldSort: false
+      });
+    }
   } catch (error) {
     console.error('Lỗi lấy danh mục:', error);
     alert('Không thể tải danh sách danh mục');
