@@ -221,9 +221,19 @@ thumbnailPreview.innerHTML = book.thumbnail
       fetchCategoriesForSelect().then(() => {
         const select = document.getElementById('bookCategory');
         const ids = (book.categories || []).map(c => c._id || c);
-        Array.from(select.options).forEach(opt => {
-          opt.selected = ids.includes(opt.value);
-        });
+
+        // Nếu đã có Choices.js thì set lại các mục đã chọn
+        if (select.choicesInstance) {
+          // Xóa chọn cũ
+          select.choicesInstance.removeActiveItems();
+          // Chọn lại các mục đã chọn trước đó
+          ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
+        } else {
+          // Nếu chưa có Choices thì set selected cho option (trường hợp fallback)
+          Array.from(select.options).forEach(opt => {
+            opt.selected = ids.includes(opt.value);
+          });
+        }
       });
     });
   });
