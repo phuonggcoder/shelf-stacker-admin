@@ -118,8 +118,9 @@ if (thumbUrl.startsWith('http://localhost:3000')) {
 }
 
 let imagesHtml = thumbUrl
-  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='/assets/default-thumbnail.png'" style="max-width:80px; margin:2px;">`
-  : `<img src="/assets/default-thumbnail.png" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
+  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='/assets/images/default-thumbnail.png'" style="max-width:80px; margin:2px;">`
+  : `<img src="/assets/images/default-thumbnail.png" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
+
 
 
 
