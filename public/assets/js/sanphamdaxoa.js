@@ -1,5 +1,4 @@
-
-    // Hàm cắt mô tả dài và có nút Xem thêm
+// Hàm cắt mô tả dài và có nút Xem thêm
     function renderDesc(desc, idx) {
       let shortDesc = (desc || '').replace(/(<([^>]+)>)/gi, "");
       let isLong = shortDesc.length > 270;
@@ -14,11 +13,19 @@
       }
     }
 
+    function getToken() {
+      return localStorage.getItem('authToken') || '';
+    }
+
     async function fetchTrashBooks() {
       const trashGrid = document.getElementById('trashGrid');
       trashGrid.innerHTML = '<p>Đang tải...</p>';
       try {
-        const res = await fetch('https://server-shelf-stacker.onrender.com/api/books/trash/all');
+        const res = await fetch('https://server-shelf-stacker.onrender.com/api/books/trash/all', {
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
+        });
         if (!res.ok) {
           trashGrid.innerHTML = '<p>Lỗi tải dữ liệu!</p>';
           return;
@@ -107,14 +114,17 @@
           try {
             const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}/restore`, {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' }
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + getToken()
+              }
             });
             if (!res.ok) {
               alert('Khôi phục thất bại!');
               return;
             }
             alert('Đã khôi phục!');
-            fetchTrashBooks(); // hoặc reload lại danh sách
+            fetchTrashBooks();
           } catch (err) {
             alert('Lỗi kết nối!');
           }
@@ -128,14 +138,17 @@
           if (!confirm('Bạn có chắc muốn xóa vĩnh viễn sách này?')) return;
           try {
             const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}/force`, {
-              method: 'DELETE'
+              method: 'DELETE',
+              headers: {
+                'Authorization': 'Bearer ' + getToken()
+              }
             });
             if (!res.ok) {
               alert('Xóa cứng thất bại!');
               return;
             }
             alert('Đã xóa vĩnh viễn!');
-            fetchTrashBooks(); // Reload lại danh sách đã xóa gần đây
+            fetchTrashBooks();
           } catch (err) {
             alert('Lỗi kết nối!');
           }

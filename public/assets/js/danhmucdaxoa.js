@@ -2,11 +2,19 @@ const base_url = 'https://server-shelf-stacker.onrender.com';
 // Nếu test local, bạn chỉ cần đổi lại:
 // const base_url = 'http://localhost:3000';
 
+function getToken() {
+  return localStorage.getItem('authToken') || '';
+}
+
 async function fetchTrashCategories() {
   const grid = document.getElementById('trashCategoryGrid');
   grid.innerHTML = '<p>Đang tải...</p>';
   try {
-    const res = await fetch(`${base_url}/api/categories/trash/all`);
+    const res = await fetch(`${base_url}/api/categories/trash/all`, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    });
     if (!res.ok) {
       grid.innerHTML = '<p>Lỗi tải dữ liệu!</p>';
       return;
