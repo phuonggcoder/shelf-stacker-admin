@@ -53,6 +53,8 @@ addBookBtn.addEventListener('click', function () {
   dialogOverlay.classList.add('active');
 
   fetchCategoriesForSelect();
+    fetchCampaignsForSelect(); // <-- Thêm dòng này vào
+
 });
 
 // Đóng dialog
@@ -125,23 +127,25 @@ let imagesHtml = thumbUrl
 
 
     card.innerHTML = `
-      ${imagesHtml}
-      <div class="info">
-        <h3>${product.title || product.name}</h3>
-        <p><b>Tác giả:</b> ${product.author || ''}</p>
-        <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
-        <div class="desc-wrap">${descHtml}</div>
-        <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
-        <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
-        <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
-        <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
-        <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
-      </div>
-      <div class="actions">
-        <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
-        <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
-      </div>
-    `;
+  ${imagesHtml}
+  <div class="info">
+    <h3>${product.title || product.name}</h3>
+    <p><b>Tác giả:</b> ${product.author || ''}</p>
+    <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
+    <div class="desc-wrap">${descHtml}</div>
+    <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
+    <span><b>Chiến dịch:</b> ${(product.campaigns || []).map(c => c.name || c).join(', ')}</span><br> <!-- ✅ Thêm dòng này -->
+    <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
+    <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
+    <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
+    <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
+  </div>
+  <div class="actions">
+    <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
+    <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
+  </div>
+`;
+
     productGrid.appendChild(card);
   });
 
@@ -187,62 +191,75 @@ let imagesHtml = thumbUrl
   });
 
   // SỬA
-  document.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const id = this.getAttribute('data-id');
-      const book = products.find(p => p._id === id);
-      if (!book) return;
+document.querySelectorAll('.edit-btn').forEach(btn => {
+  btn.addEventListener('click', function () {
+    const id = this.getAttribute('data-id');
+    const book = products.find(p => p._id === id);
+    if (!book) return;
 
-      dialogTitle.textContent = 'Cập nhật truyện';
-      addBookForm.reset();
+    dialogTitle.textContent = 'Cập nhật truyện';
+    addBookForm.reset();
 
-      document.getElementById('bookName').value = book.title || '';
-      document.getElementById('bookAuthor').value = book.author || '';
-      document.getElementById('bookPrice').value = book.price || '';
-      document.getElementById('bookStock').value = book.stock || '';
-      document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
-      document.getElementById('bookPublisher').value = book.publisher || '';
-      document.getElementById('bookLanguage').value = book.language || '';
-const thumb = book.thumbnail || '';
-const fullThumb = thumb.startsWith('/') 
-  ? 'https://server-shelf-stacker.onrender.com' + thumb 
-  : thumb;
+    document.getElementById('bookName').value = book.title || '';
+    document.getElementById('bookAuthor').value = book.author || '';
+    document.getElementById('bookPrice').value = book.price || '';
+    document.getElementById('bookStock').value = book.stock || '';
+    document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
+    document.getElementById('bookPublisher').value = book.publisher || '';
+    document.getElementById('bookLanguage').value = book.language || '';
 
-document.getElementById('bookThumbnail').value = fullThumb;
-thumbnailPreview.innerHTML = fullThumb
-  ? `<img src="${fullThumb}" style="max-width:100px;">`
-  : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
+    const thumb = book.thumbnail || '';
+    const fullThumb = thumb.startsWith('/')
+      ? 'https://server-shelf-stacker.onrender.com' + thumb
+      : thumb;
 
-      initCKEditorIfNeeded().then(() => {
-        if (bookDescEditor) bookDescEditor.setData(book.description || '');
-      });
+    document.getElementById('bookThumbnail').value = fullThumb;
+    thumbnailPreview.innerHTML = fullThumb
+      ? `<img src="${fullThumb}" style="max-width:100px;">`
+      : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
 
-      uploadedImageUrls = book.cover_image || [];
-      document.getElementById('bookImages').value = uploadedImageUrls.join('\n');
-      renderUploadedImages(); // Cập nhật hiển thị ảnh
+    initCKEditorIfNeeded().then(() => {
+      if (bookDescEditor) bookDescEditor.setData(book.description || '');
+    });
 
-      addBookForm.setAttribute('data-edit-id', id);
-      dialogOverlay.classList.add('active');
+    uploadedImageUrls = book.cover_image || [];
+    document.getElementById('bookImages').value = uploadedImageUrls.join('\n');
+    renderUploadedImages();
 
-      fetchCategoriesForSelect().then(() => {
-        const select = document.getElementById('bookCategory');
-        const ids = (book.categories || []).map(c => c._id || c);
+    addBookForm.setAttribute('data-edit-id', id);
+    dialogOverlay.classList.add('active');
 
-        // Nếu đã có Choices.js thì set lại các mục đã chọn
-        if (select.choicesInstance) {
-          // Xóa chọn cũ
-          select.choicesInstance.removeActiveItems();
-          // Chọn lại các mục đã chọn trước đó
-          ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
-        } else {
-          // Nếu chưa có Choices thì set selected cho option (trường hợp fallback)
-          Array.from(select.options).forEach(opt => {
-            opt.selected = ids.includes(opt.value);
-          });
-        }
-      });
+    // --- Load danh mục và set chọn lại ---
+    fetchCategoriesForSelect().then(() => {
+      const select = document.getElementById('bookCategory');
+      const ids = (book.categories || []).map(c => c._id || c);
+
+      if (select.choicesInstance) {
+        select.choicesInstance.removeActiveItems();
+        ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
+      } else {
+        Array.from(select.options).forEach(opt => {
+          opt.selected = ids.includes(opt.value);
+        });
+      }
+    });
+
+    // --- Load campaigns và set chọn lại ---
+    fetchCampaignsForSelect().then(() => {
+      const select = document.getElementById('bookCampaign');
+      const campaignIds = book.campaigns || [];
+
+      if (select.choicesInstance) {
+        select.choicesInstance.removeActiveItems();
+        campaignIds.forEach(val => select.choicesInstance.setChoiceByValue(val));
+      } else {
+        Array.from(select.options).forEach(opt => {
+          opt.selected = campaignIds.includes(opt.value);
+        });
+      }
     });
   });
+});
 }
 
 // Hàm lấy dữ liệu từ API
@@ -611,7 +628,7 @@ addBookForm.addEventListener('submit', async function(e) {
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
 
   const payload = {
-    title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
+    campaigns , title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
   };
 
 
@@ -781,5 +798,37 @@ async function fetchCategoriesForSelect() {
   } catch (error) {
     console.error('Lỗi lấy danh mục:', error);
     alert('Không thể tải danh sách danh mục');
+  }
+}
+async function fetchCampaignsForSelect() {
+  try {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/campaigns');
+    if (!res.ok) throw new Error('Response not OK');
+    const data = await res.json();
+
+    const select = document.getElementById('bookCampaign');
+    select.innerHTML = '';
+
+    data.forEach(camp => {
+      const option = document.createElement('option');
+      option.value = camp._id;
+      option.textContent = camp.name;
+      select.appendChild(option);
+    });
+
+    // Khởi tạo Choices.js
+    if (!select.choicesInstance) {
+      select.choicesInstance = new Choices(select, {
+        removeItemButton: true,
+        placeholderValue: 'Chọn chiến dịch...',
+        searchPlaceholderValue: 'Tìm chiến dịch...',
+        noResultsText: 'Không có chiến dịch',
+        itemSelectText: '',
+        shouldSort: false
+      });
+    }
+  } catch (err) {
+    console.error('Lỗi lấy campaign:', err);  // Chính dòng này báo lỗi ở console
+    alert('Không thể tải danh sách chiến dịch!');
   }
 }

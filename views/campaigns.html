@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản Lý Chiến Dịch</title>
+  <link rel="stylesheet" href="/assets/css/campaigns.css" />
+  <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
+  <style>
+    .btn-action {
+      display: inline-block;
+      padding: 6px 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #fff;
+    }
+    .btn-edit {
+      background-color: #ffc107;
+    }
+    .btn-delete {
+      background-color: #dc3545;
+    }
+    .btn-edit:hover {
+      background-color: #e0a800;
+    }
+    .btn-delete:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
+      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="profile">
+      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <h3>Tuấn Anh</h3>
+      <p>Nhà thiết kế UI/UX</p>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
+        <li><a href="quanlychientich" class="active">QUẢN LÝ CHIẾN DỊCH</a></li>
+        <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
+        <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
+        <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
+        <li><a href="danhmucdaxoa">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
+        <li><a href="voucher">QUẢN LÝ VOUCHER</a></li>
+        <li><a href="khoiphucvoucher">VOUCHER XÓA GẦN ĐÂY</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <main class="main">
+    <h2>Quản Lý Chiến Dịch</h2>
+    <div class="search-filter" style="display:flex; gap:6px; align-items:center; margin-bottom:16px;">
+      <input type="text" id="search-campaign" placeholder="Tìm chiến dịch..." 
+        style="padding:10px 12px; font-size:16px; border:1px solid #ccc; border-radius:5px; flex:1;">
+      <button id="btn-search" style="background:#007bff; color:#fff; border:none; border-radius:5px; padding:10px 18px; font-size:16px;">Tìm kiếm</button>
+      <button class="btn-export" id="btn-add-campaign">+ Thêm chiến dịch</button>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Tên chiến dịch</th>
+          <th>Ngày bắt đầu</th>
+          <th>Ngày kết thúc</th>
+          <th>Loại</th>
+          <th>Số truyện</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody id="campaign-table-body">
+        <tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>
+      </tbody>
+    </table>
+
+    <div class="pagination"></div>
+
+    <!-- Modal thêm/cập nhật -->
+    <div id="campaign-modal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+      <form id="campaign-form" style="background:#fff; padding:32px; border-radius:12px; width:100%; max-width:640px; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:16px;">
+        <h2 style="text-align:center; color:#007bff; margin-bottom:8px;">🎯 Thêm / Cập nhật Chiến Dịch</h2>
+
+        <input type="text" id="campaign-name" class="form-input" placeholder="Tên chiến dịch" required />
+
+        <textarea id="campaign-desc" placeholder="Mô tả chiến dịch"></textarea>
+
+        <div style="display:flex; gap:12px;">
+          <select id="campaign-type" class="form-select" style="flex:1;">
+            <option value="promotion">Khuyến mãi</option>
+            <option value="event">Sự kiện</option>
+          </select>
+
+          <!-- Giữ lại status cho việc lưu backend (mặc dù không hiển thị trong bảng nữa) -->
+          <select id="campaign-status" class="form-select" style="flex:1;">
+            <option value="true">Hiển thị</option>
+            <option value="false">Ẩn</option>
+          </select>
+        </div>
+
+        <div style="display:flex; gap:12px;">
+          <input type="date" id="campaign-start" class="form-input" placeholder="Ngày bắt đầu" style="flex:1;" />
+          <input type="date" id="campaign-end" class="form-input" placeholder="Ngày kết thúc" style="flex:1;" />
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:8px;">
+          <button type="submit" id="save-campaign-btn" class="btn btn-primary" style="flex:1;">Thêm</button>
+          <button type="button" id="update-campaign-btn" class="btn btn-success" style="flex:1; display:none;">Cập nhật</button>
+          <button type="button" id="close-campaign-modal" class="btn btn-secondary" style="flex:1;">Hủy</button>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="/assets/js/campaigns.js"></script>
+</body>
+</html>
