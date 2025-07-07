@@ -3,6 +3,10 @@ let catCurrentPage = 1;
 const catPageSize = 6;
 let editingCategoryId = null; // ✅ Thêm khai báo global cho biến này
 
+function getToken() {
+  return localStorage.getItem('authToken') || '';
+}
+
 // Hàm render danh mục với phân trang
 function renderCategoriesWithPagination(categoriesArr, page = 1) {
   const tbody = document.getElementById('category-table-body');
@@ -95,7 +99,7 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
 
 // Sửa lại fetchCategories để lưu categories và gọi renderCategoriesWithPagination
 async function fetchCategories() {
-  const tbody = document.getElementById('category-table-body');
+  const tbody = document.getElementById('category-table-body'); 
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
@@ -116,7 +120,10 @@ document.addEventListener('click', async function(e) {
     if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
       try {
         await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          }
         });
         alert('Xóa danh mục thành công!');
         fetchCategories();
@@ -260,7 +267,10 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
       body: JSON.stringify(payload)
     });
 
@@ -292,7 +302,10 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
         if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
           try {
             await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
-              method: 'DELETE'
+              method: 'DELETE',
+              headers: {
+                'Authorization': 'Bearer ' + getToken()
+              }
             });
             alert('Xóa danh mục thành công!');
             fetchCategories();
@@ -350,7 +363,10 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
   try {
     const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${editingCategoryId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + getToken()
+      },
       body: JSON.stringify({ name, slug, description, image, isVisible })
     });
 

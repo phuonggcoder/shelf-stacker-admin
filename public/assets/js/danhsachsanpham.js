@@ -614,19 +614,29 @@ addBookForm.addEventListener('submit', async function(e) {
     title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
   };
 
+  // Thêm hàm lấy token
+  function getToken() {
+    return localStorage.getItem('authToken') || '';
+  }
 
   try {
     let res;
     if (id) {
       res = await fetch(`${apiPostURL}/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
         body: JSON.stringify(payload)
       });
     } else {
       res = await fetch(apiPostURL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + getToken()
+        },
         body: JSON.stringify(payload)
       });
     }

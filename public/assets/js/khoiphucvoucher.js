@@ -5,10 +5,18 @@ const deletedAPI = 'https://server-shelf-stacker.onrender.com/api/vouchers/delet
 const restoreAPI = id => `${apiURL}/restore/${id}`;
 const trashVoucherGrid = document.getElementById('trashVoucherGrid');
 
+function getToken() {
+  return localStorage.getItem('authToken') || '';
+}
+
 // Gọi API để lấy danh sách voucher đã xóa gần đây
 async function fetchDeletedVouchers() {
   try {
-    const res = await fetch(deletedAPI);
+    const res = await fetch(deletedAPI, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    });
     const data = await res.json();
     renderDeletedVouchers(data);
   } catch (err) {
@@ -46,7 +54,10 @@ function restoreVoucher(id) {
   if (!confirm('Khôi phục voucher này?')) return;
 
   fetch(restoreAPI(id), {
-    method: 'PATCH'
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Bearer ' + getToken()
+    }
   })
     .then(res => res.json())
     .then(data => {
