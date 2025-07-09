@@ -119,9 +119,11 @@ if (thumbUrl.startsWith('http://localhost:3000')) {
   thumbUrl = thumbUrl.replace('http://localhost:3000', 'https://server-shelf-stacker.onrender.com');
 }
 
+let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
 let imagesHtml = thumbUrl
-  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.src='/assets/images/default-thumbnail.png'" style="max-width:80px; margin:2px;">`
-  : `<img src="/assets/images/default-thumbnail.png" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
+  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
+  : `<img src="${fallbackThumb}" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
+
 
 
 
@@ -627,6 +629,15 @@ addBookForm.addEventListener('submit', async function(e) {
   // --- HẾT SỬA ---
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
 
+  const campaignSelect = document.getElementById('bookCampaign');
+let campaigns = [];
+
+if (campaignSelect.choicesInstance) {
+  campaigns = campaignSelect.choicesInstance.getValue(true); // ✅ Choices.js
+} else {
+  campaigns = Array.from(campaignSelect.selectedOptions).map(opt => opt.value);
+}
+
   const payload = {
     campaigns , title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
   };
@@ -672,6 +683,7 @@ addBookForm.addEventListener('submit', async function(e) {
 });
 
 // Lấy danh sách ảnh đã upload
+// Lấy danh sách ảnh đã upload
 fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
   .then(res => res.json())
   .then(data => {
@@ -688,6 +700,7 @@ fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
     console.error('Lỗi lấy danh sách ảnh:', err);
     alert('Không thể tải danh sách ảnh');
   });
+
 function CustomUploadAdapterPlugin(editor) {
   editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
     return new MyUploadAdapter(loader);
