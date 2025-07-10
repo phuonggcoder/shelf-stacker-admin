@@ -1,38 +1,33 @@
-// ✅ Tải danh sách đơn hàng từ API
+const STATUS_MAP = {
+  "Pending": "Chờ xác nhận",
+  "Shipped": "Đã giao"
+};
+
+
+const REV_MAP = Object.fromEntries(Object.entries(STATUS_MAP).map(([k, v]) => [v, k]));
+
+
 async function loadOrders(orderId = '') {
   const token = localStorage.getItem('authToken');
-  if (!token) {
-    window.location.href = 'login.html';
-    return;
-  }
+  if (!token) return (window.location.href = 'login.html');
 
   let url = 'https://server-shelf-stacker.onrender.com/api/orders';
-  if (orderId) {
-    url += `/${orderId}`;
-  }
+  if (orderId) url += `/${orderId}`;
 
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
+        Authorization: 'Bearer ' + token
       }
     });
 
     if (!response.ok) throw new Error('Token hết hạn hoặc không hợp lệ');
 
     const data = await response.json();
-    console.log('[DEBUG] Kết quả API:', data);
-
-    if (orderId) {
-      window._loadedOrders = data ? [data] : [];
-      renderOrders(window._loadedOrders);
-    } else {
-      window._loadedOrders = data.orders || [];
-      renderOrders(window._loadedOrders);
-    }
-
+    window._loadedOrders = orderId ? [data] : data.orders || [];
+    renderOrders(window._loadedOrders);
   } catch (error) {
     console.error(error);
     alert('Bạn không có quyền truy cập hoặc phiên đăng nhập đã hết hạn');
@@ -41,7 +36,6 @@ async function loadOrders(orderId = '') {
   }
 }
 
-// ✅ Hiển thị danh sách đơn hàng
 function renderOrders(orders) {
   const tbody = document.getElementById('orders-body');
   if (!orders || orders.length === 0) {
@@ -51,23 +45,22 @@ function renderOrders(orders) {
 
   tbody.innerHTML = orders.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
-    const image =
-      book.thumbnail?.trim() !== ''
-        ? book.thumbnail
-        : (book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image');
+    const image = book.thumbnail?.trim() !== ''
+      ? book.thumbnail
+      : (book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image');
 
     const code = order.order_id || order._id || 'Không rõ';
     const customerName = order.user_id?.username || 'Không rõ';
     const createdAt = order.order_date || order.createdAt || '';
-    const status = order.order_status || 'Chưa rõ';
     const total = order.total_amount?.toLocaleString() || '0';
+    const status = STATUS_MAP[order.order_status] || 'Chưa rõ';
 
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleTimeString() + ' ' + new Date(createdAt).toLocaleDateString()
       : 'Chưa rõ';
 
     return `
-      <tr>
+      <tr data-id="${order._id}">
         <td><img src="${image}" alt="Ảnh bìa" class="thumb" /></td>
         <td>${code}</td>
         <td>${customerName}</td>
@@ -87,118 +80,117 @@ function renderOrders(orders) {
   addOrderEventListeners();
 }
 
-// ✅ Gán sự kiện cho các nút chức năng
 function addOrderEventListeners() {
   document.querySelectorAll('.btn-detail').forEach((btn, index) => {
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', () => {
       const order = window._loadedOrders?.[index];
-      if (order) {
-        showOrderDetails(order);
-      } else {
-        alert('Không tìm thấy dữ liệu đơn hàng');
-      }
+      if (order) showOrderDetails(order);
     });
   });
 
   document.querySelectorAll('.btn-update').forEach((btn, index) => {
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', () => {
       const order = window._loadedOrders?.[index];
-      if (!order) return alert('Không tìm thấy đơn hàng');
+      if (!order) return;
 
       const modal = document.getElementById('updateStatusModal');
-      modal.dataset.orderId = order.order_id;
+      modal.dataset.orderId = order._id;
       document.getElementById('modalOrderCode').innerText = order.order_id;
-      document.getElementById('statusSelect').value = order.order_status || 'Chờ xác nhận';
+
+      const viStatus = STATUS_MAP[order.order_status] || 'Chờ xác nhận';
+      document.getElementById('statusSelect').value = viStatus;
       modal.style.display = 'flex';
     });
   });
-
-  document.querySelectorAll('.btn-confirm').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const orderCode = this.closest('tr').children[1].innerText;
-      alert('✅ Xác nhận đơn hàng: ' + orderCode);
-    });
-  });
-
-  document.querySelectorAll('.btn-return').forEach(btn => {
-    btn.addEventListener('click', function () {
-      const orderCode = this.closest('tr').children[1].innerText;
-      alert('↩️ Trả hàng đơn: ' + orderCode);
-    });
-  });
 }
-
-// ✅ Modal cập nhật trạng thái đơn hàng
-const modalUpdateHTML = `
-  <div id="updateStatusModal" class="modal-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 9999;">
-    <div class="modal-content" style="background: white; padding: 20px; border-radius: 10px; width: 300px;">
-      <h3 style="text-align: center;">🔄 Cập nhật trạng thái</h3>
-      <p><strong>Mã đơn hàng:</strong> <span id="modalOrderCode"></span></p>
-      <label for="statusSelect">Trạng thái mới:</label>
-      <select id="statusSelect" style="width: 100%; margin: 8px 0;">
-        <option value="Chờ xác nhận">Chờ xác nhận</option>
-        <option value="Đang giao">Đang giao</option>
-        <option value="Đã giao">Đã giao</option>
-        <option value="Đã huỷ">Đã huỷ</option>
-        <option value="Trả hàng">Trả hàng</option>
-      </select>
-      <div style="text-align: right;">
-        <button id="btnSaveStatus" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 6px;">Lưu</button>
-        <button onclick="closeUpdateModal()" style="margin-left: 10px; background: #ccc; padding: 6px 12px; border: none; border-radius: 6px;">Huỷ</button>
-      </div>
-    </div>
-  </div>
-`;
-document.body.insertAdjacentHTML('beforeend', modalUpdateHTML);
 
 function closeUpdateModal() {
   document.getElementById('updateStatusModal').style.display = 'none';
 }
 
 setTimeout(() => {
-  document.getElementById('btnSaveStatus').addEventListener('click', async function () {
+  document.getElementById('btnSaveStatus').addEventListener('click', async () => {
     const modal = document.getElementById('updateStatusModal');
     const orderId = modal.dataset.orderId;
-    const newStatus = document.getElementById('statusSelect').value;
-
+    const viStatus = document.getElementById('statusSelect').value;
+    const newStatus = REV_MAP[viStatus];
     const token = localStorage.getItem('authToken');
-    if (!token) return alert('Chưa đăng nhập');
+
+    if (!token) {
+      alert('Chưa đăng nhập.');
+      return (window.location.href = 'login.html');
+    }
 
     try {
       const response = await fetch(`https://server-shelf-stacker.onrender.com/api/orders/${orderId}/status`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
+          Authorization: 'Bearer ' + token
         },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ order_status: newStatus })
       });
 
       const result = await response.json();
-      if (!response.ok) {
-        console.warn('[Lỗi cập nhật]:', result);
-        throw new Error(result.message || 'Cập nhật thất bại');
-      }
-
-      alert('✅ Đã cập nhật trạng thái đơn hàng');
-      modal.style.display = 'none';
-      loadOrders();
+      if (!response.ok) throw new Error(result.message || 'Lỗi cập nhật');
+      alert('✅ Cập nhật trạng thái thành công');
+      closeUpdateModal();
+      loadOrders(); // Tải lại đơn hàng để cập nhật trạng thái
     } catch (err) {
-      console.error(err);
-      alert('❌ Lỗi khi cập nhật đơn hàng');
+      console.error('[Cập nhật lỗi]:', err);
+      alert('❌ ' + err.message);
     }
   });
 }, 100);
 
-// ✅ Xử lý sự kiện tìm kiếm đơn hàng
-document.getElementById('btn-order-search').addEventListener('click', function () {
-  const orderId = document.getElementById('order-search').value.trim();
-  if (orderId) {
-    loadOrders(orderId);
-  } else {
-    loadOrders();
-  }
+function showOrderDetails(order) {
+  const contentEl = document.getElementById('orderDetailsContent');
+  const items = order.order_items || [];
+
+  const rows = items.map(item => {
+    const book = item.book_id || {};
+    const title = book.title || 'Không rõ';
+    const quantity = item.quantity || 0;
+    const price = item.price || 0;
+    const image = book.thumbnail || book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image';
+
+    return `
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <img src="${image}" alt="${title}" style="width:60px; height:80px; object-fit:cover; border-radius:4px;">
+        <div>
+          <strong>${title}</strong><br>
+          Số lượng: ${quantity}<br>
+          Giá: ${price.toLocaleString()}₫
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const customer = order.user_id || {};
+  const total = order.total_amount?.toLocaleString() || '0';
+  const createdAt = new Date(order.createdAt).toLocaleString();
+
+  contentEl.innerHTML = `
+    <p><strong>Mã đơn hàng:</strong> ${order.order_id}</p>
+    <p><strong>Khách hàng:</strong> ${customer.username || 'Không rõ'}</p>
+    <p><strong>Ngày tạo:</strong> ${createdAt}</p>
+    <p><strong>Trạng thái:</strong> ${STATUS_MAP[order.order_status] || order.order_status}</p>
+    <p><strong>Tổng tiền:</strong> ${total}₫</p>
+    <hr />
+    <h4>Sản phẩm:</h4>
+    ${rows || '<p>Không có sản phẩm</p>'}
+  `;
+
+  document.getElementById('orderDetailsModal').style.display = 'flex';
+}
+
+function closeOrderDetailsModal() {
+  document.getElementById('orderDetailsModal').style.display = 'none';
+}
+
+document.getElementById('btn-order-search').addEventListener('click', () => {
+  const keyword = document.getElementById('order-search').value.trim();
+  loadOrders(keyword);
 });
 
-// ✅ Gọi hàm khi mở trang
 loadOrders();
