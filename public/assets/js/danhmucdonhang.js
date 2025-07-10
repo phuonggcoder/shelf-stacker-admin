@@ -100,10 +100,16 @@ function addOrderEventListeners() {
     });
   });
 
-  document.querySelectorAll('.btn-update').forEach(btn => {
+  document.querySelectorAll('.btn-update').forEach((btn, index) => {
     btn.addEventListener('click', function () {
-      const orderCode = this.closest('tr').children[1].innerText;
-      alert('🛠️ Cập nhật đơn hàng: ' + orderCode);
+      const order = window._loadedOrders?.[index];
+      if (!order) return alert('Không tìm thấy đơn hàng');
+
+      const modal = document.getElementById('updateStatusModal');
+      modal.dataset.orderId = order.order_id;
+      document.getElementById('modalOrderCode').innerText = order.order_id;
+      document.getElementById('statusSelect').value = order.order_status || 'Chờ xác nhận';
+      modal.style.display = 'flex';
     });
   });
 
@@ -122,73 +128,67 @@ function addOrderEventListeners() {
   });
 }
 
-// ✅ Hiển thị chi tiết đơn hàng trong popup
-function showOrderDetails(order) {
-  const book = order.order_items?.[0]?.book_id || {};
-  const payment = order.payment_id || {};
-  const address = order.address_id || {};
-
-  const image = book.thumbnail || book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image';
-
-  const html = `
-    <div style="font-size: 14px; line-height: 1.6;">
-      <div><span style="font-weight: bold;">📦 Mã đơn hàng:</span> ${order.order_id}</div>
-      <div><span style="font-weight: bold;">👤 Khách hàng:</span> ${order.user_id?.username} (${order.user_id?.email})</div>
-      <div><span style="font-weight: bold;">📚 Sản phẩm:</span> ${book.title} - ${book.author}</div>
-      <div><img src="${image}" alt="Ảnh bìa" style="margin: 8px 0; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);" width="80"></div>
-      <div><span style="font-weight: bold;">💰 Giá:</span> ${book.price?.toLocaleString()}₫ × ${order.order_items[0]?.quantity}</div>
-      <div><span style="font-weight: bold;">🧮 Tổng tiền:</span> ${order.total_amount?.toLocaleString()}₫</div>
-      <div><span style="font-weight: bold;">📍 Địa chỉ:</span> ${address.receiver_name} - ${address.phone_number}</div>
-      <div style="padding-left: 1em;">${address.address_detail}, ${address.ward}, ${address.district}, ${address.province}</div>
-      <div><span style="font-weight: bold;">💳 Thanh toán:</span> ${payment.payment_method} - ${payment.payment_status}</div>
-      <div><span style="font-weight: bold;">🕒 Ngày đặt:</span> ${new Date(order.order_date).toLocaleString()}</div>
-      <div><span style="font-weight: bold;">🔄 Trạng thái:</span> ${order.order_status}</div>
-    </div>
-  `;
-
-  const modal = document.createElement('div');
-  modal.innerHTML = `
-    <div style="
-      background: white;
-      padding: 25px;
-      border-radius: 12px;
-      max-width: 500px;
-      width: 90%;
-      margin: 60px auto;
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-      font-family: 'Segoe UI', sans-serif;
-    ">
-      <h2 style="text-align: center; margin-bottom: 15px; color: #333;">📝 Chi tiết đơn hàng</h2>
-      ${html}
-      <div style="text-align: center; margin-top: 20px;">
-        <button onclick="this.closest('.modal-overlay').remove()" style="
-          background: #007bff;
-          color: white;
-          padding: 8px 16px;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-size: 14px;
-        ">Đóng</button>
+// ✅ Modal cập nhật trạng thái đơn hàng
+const modalUpdateHTML = `
+  <div id="updateStatusModal" class="modal-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 9999;">
+    <div class="modal-content" style="background: white; padding: 20px; border-radius: 10px; width: 300px;">
+      <h3 style="text-align: center;">🔄 Cập nhật trạng thái</h3>
+      <p><strong>Mã đơn hàng:</strong> <span id="modalOrderCode"></span></p>
+      <label for="statusSelect">Trạng thái mới:</label>
+      <select id="statusSelect" style="width: 100%; margin: 8px 0;">
+        <option value="Chờ xác nhận">Chờ xác nhận</option>
+        <option value="Đang giao">Đang giao</option>
+        <option value="Đã giao">Đã giao</option>
+        <option value="Đã huỷ">Đã huỷ</option>
+        <option value="Trả hàng">Trả hàng</option>
+      </select>
+      <div style="text-align: right;">
+        <button id="btnSaveStatus" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 6px;">Lưu</button>
+        <button onclick="closeUpdateModal()" style="margin-left: 10px; background: #ccc; padding: 6px 12px; border: none; border-radius: 6px;">Huỷ</button>
       </div>
     </div>
-  `;
+  </div>
+`;
+document.body.insertAdjacentHTML('beforeend', modalUpdateHTML);
 
-  Object.assign(modal.style, {
-    position: 'fixed',
-    top: '0',
-    left: '0',
-    width: '100vw',
-    height: '100vh',
-    background: 'rgba(0,0,0,0.4)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 9999
-  });
-  modal.classList.add('modal-overlay');
-  document.body.appendChild(modal);
+function closeUpdateModal() {
+  document.getElementById('updateStatusModal').style.display = 'none';
 }
+
+setTimeout(() => {
+  document.getElementById('btnSaveStatus').addEventListener('click', async function () {
+    const modal = document.getElementById('updateStatusModal');
+    const orderId = modal.dataset.orderId;
+    const newStatus = document.getElementById('statusSelect').value;
+
+    const token = localStorage.getItem('authToken');
+    if (!token) return alert('Chưa đăng nhập');
+
+    try {
+      const response = await fetch(`https://server-shelf-stacker.onrender.com/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        console.warn('[Lỗi cập nhật]:', result);
+        throw new Error(result.message || 'Cập nhật thất bại');
+      }
+
+      alert('✅ Đã cập nhật trạng thái đơn hàng');
+      modal.style.display = 'none';
+      loadOrders();
+    } catch (err) {
+      console.error(err);
+      alert('❌ Lỗi khi cập nhật đơn hàng');
+    }
+  });
+}, 100);
 
 // ✅ Xử lý sự kiện tìm kiếm đơn hàng
 document.getElementById('btn-order-search').addEventListener('click', function () {

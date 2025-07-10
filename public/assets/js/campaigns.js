@@ -52,10 +52,17 @@ function loadCampaigns() {
     });
 }
 
+function getBookIdsFromInput() {
+  const raw = document.getElementById('campaign-books').value.trim();
+  if (!raw) return [];
+  return raw.split(',').map(id => id.trim()).filter(id => id);
+}
+
 document.getElementById('btn-add-campaign').addEventListener('click', () => {
   editingId = null;
   document.getElementById('campaign-form').reset();
   if (editorInstance) editorInstance.setData('');
+  document.getElementById('campaign-books').value = '';
   document.getElementById('save-campaign-btn').style.display = 'block';
   document.getElementById('update-campaign-btn').style.display = 'none';
   document.getElementById('campaign-modal').style.display = 'flex';
@@ -74,6 +81,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
+  const books = getBookIdsFromInput();
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
@@ -86,7 +94,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
       'Authorization': token,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name, description, startDate, endDate, type, books: [] })
+    body: JSON.stringify({ name, description, startDate, endDate, type, books })
   })
     .then(res => {
       if (!res.ok) return res.json().then(data => {
@@ -118,6 +126,7 @@ function editCampaign(id) {
       document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
       document.getElementById('campaign-type').value = c.type;
       editorInstance.setData(c.description || '');
+      document.getElementById('campaign-books').value = (c.books || []).join(', ');
 
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -137,6 +146,7 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
+  const books = getBookIdsFromInput();
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ thông tin');
@@ -149,7 +159,7 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
       'Authorization': token,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name, description, startDate, endDate, type })
+    body: JSON.stringify({ name, description, startDate, endDate, type, books })
   })
     .then(res => {
       if (!res.ok) throw new Error('Cập nhật thất bại');
