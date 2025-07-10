@@ -253,7 +253,7 @@
   <!-- Sidebar chính -->
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User">
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User    ">
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
@@ -303,7 +303,7 @@
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." />
-      <img class="avatar" id="headerAvatar" src="https://graph.facebook.com/4/picture?width=40&height=40" alt="User">
+      <img class="avatar" id="headerAvatar" src="https://graph.facebook.com/4/picture?width=40&height=40" alt="User    ">
     </div>
   </header>
 
@@ -377,19 +377,33 @@
       return;
     }
 
-    const reader = new FileReader();  // tạo đối tượng FileReader để đọc ảnh
+    const formData = new FormData();
+    formData.append('file', file); // Đảm bảo tên trường là 'file' theo yêu cầu của API
 
-    reader.onload = () => {
-      document.getElementById('sidebarAvatar').src = reader.result;  // cập nhật ảnh sidebar
-      document.getElementById('headerAvatar').src = reader.result;  // cập nhật ảnh header
+    // Gọi API upload ảnh
+    fetch('https://server-shelf-stacker.onrender.com/api/upload/avatar', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+      if (response.ok) {
+        return response.json(); // Giả sử API trả về URL của ảnh đã tải lên
+      } else {
+        throw new Error('Có lỗi xảy ra khi tải ảnh lên.');
+      }
+    })
+    .then(data => {
+      // Cập nhật ảnh chỉ khi tải lên thành công
+      const imageUrl = data.imageUrl; // Giả sử API trả về URL của ảnh
+      document.getElementById('sidebarAvatar').src = imageUrl;  // cập nhật ảnh sidebar
+      document.getElementById('headerAvatar').src = imageUrl;  // cập nhật ảnh header
       document.getElementById('uploadMessage').style.display = 'block';  // hiện thông báo đã tải ảnh
-
-      // nếu muốn gọi API upload ảnh thì viết thêm fetch ở đây
-    };
-
-    reader.readAsDataURL(file);  // đọc file thành chuỗi base64
+    })
+    .catch(error => {
+      alert(error.message); // Hiển thị thông báo lỗi
+    });
   };
-</script>
+  </script>
 
 </body>
 </html>
