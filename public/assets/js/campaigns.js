@@ -1,3 +1,5 @@
+// campaigns.js
+
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/campaigns';
 const tableBody = document.getElementById('campaign-table-body');
 
@@ -52,12 +54,6 @@ function loadCampaigns() {
     });
 }
 
-function getBookIdsFromInput() {
-  const raw = document.getElementById('campaign-books').value.trim();
-  if (!raw) return [];
-  return raw.split(',').map(id => id.trim()).filter(id => id);
-}
-
 document.getElementById('btn-add-campaign').addEventListener('click', () => {
   editingId = null;
   document.getElementById('campaign-form').reset();
@@ -81,7 +77,8 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
-  const books = getBookIdsFromInput();
+  const rawBooks = document.getElementById('campaign-books').value.trim();
+  const books = rawBooks ? rawBooks.split(',').map(id => id.trim()) : [];
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
@@ -126,7 +123,7 @@ function editCampaign(id) {
       document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
       document.getElementById('campaign-type').value = c.type;
       editorInstance.setData(c.description || '');
-      document.getElementById('campaign-books').value = (c.books || []).join(', ');
+      document.getElementById('campaign-books').value = Array.isArray(c.books) ? c.books.join(', ') : '';
 
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -146,7 +143,8 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
-  const books = getBookIdsFromInput();
+  const rawBooks = document.getElementById('campaign-books').value.trim();
+  const books = rawBooks ? rawBooks.split(',').map(id => id.trim()) : [];
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ thông tin');
@@ -198,6 +196,9 @@ function deleteCampaign(id) {
       alert('❌ Lỗi khi xóa chiến dịch');
     });
 }
+
+
+
 
 // 🔍 Tìm kiếm theo tên
 document.getElementById('btn-search').addEventListener('click', function () {
