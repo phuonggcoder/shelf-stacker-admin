@@ -1,25 +1,261 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/assets/css/home.css">
-  <title>Sleek Admin - Basic</title>
+  <title>Sleek Admin - Dashboard</title>
+  <style>
+    :root {
+      --theme: #6c63ff;
+      --danger: #ff4d4f;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+      object-fit: cover;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
+    .breadcrumb h2 {
+      font-size: 28px;
+      color: #0ea5e9;
+      margin: 0;
+    }
+
+    .breadcrumb p {
+      color: #555;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h3 {
+      color: #0ea5e9;
+      font-size: 32px;
+    }
+
+    .table-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .table-section h3 {
+      color: #0ea5e9;
+    }
+
+    .table-section table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table-section th,
+    .table-section td {
+      padding: 10px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .btn-primary {
+      background-color: #0ea5e9;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-primary:hover {
+      background-color: #38bdf8;
+    }
+
+    .btn-danger {
+      background-color: #ff4d4f;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-danger:hover {
+      background-color: #ff7875;
+    }
+
+    dialog {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      width: 300px;
+      max-width: 90%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .notification {
+      background-color: #f0f9ff;
+      border: 1px solid #28a745;
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <header class="header">
-    <div class="logo">SleekAdmin</div>
-    <div class="user">
-      <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img src="https://i.pravatar.cc/40" alt="User " class="avatar" />
-    </div>
-  </header>
 
-  <aside class="sidebar">
+  <!-- Sidebar chính -->
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User  Profile" />
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User">
       <h3>Tuấn Anh</h3>
-      <p>Nhà thiết kế UI/UX </p>
+      <p>Nhà thiết kế UI/UX</p>
     </div>
     <nav>
       <ul>
@@ -28,88 +264,133 @@
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
         <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
-        <li><a href="danhmucdaxoa" class="active">DANH MỤC ĐÃ XÓA</a></li>
-        <li><a href="trashbooks" class="active">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
-        <li><a href="voucher" class="active">QUẢN LÝ VOUCHER</a></li>
-        <li><a href="khoiphucvoucher" class="active">VOUCHER XÓA GẦN ĐÂY</a></li>
-        <li><a href="campaigns" class="active">QUẢN LÝ CHIẾN DỊCH</a></li>
-
+        <li><a href="danhmucdaxoa">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
+        <li><a href="voucher">QUẢN LÝ VOUCHER</a></li>
+        <li><a href="khoiphucvoucher">VOUCHER XÓA GẦN ĐÂY</a></li>
+        <li><a href="campaigns">QUẢN LÝ CHIẾN DỊCH</a></li>
+        <li><a href="#" id="settingsLink">CÀI ĐẶT</a></li>
       </ul>
     </nav>
   </aside>
 
+  <!-- Sidebar Cài đặt -->
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
+        <li><button id="changeAvatarButton" class="btn-primary">Thay ảnh đại diện</button></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Hộp thoại upload ảnh -->
+  <dialog id="uploadDialog">
+    <h4>Chọn ảnh mới</h4>
+    <input type="file" id="avatarUpload" accept="image/*" />
+    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;">Tải lên</button>
+    <div id="uploadMessage" class="notification">✅ Ảnh đã được tải lên thành công!</div>
+    <button onclick="uploadDialog.close()" class="btn-danger" style="margin-top: 10px;">Đóng</button>
+  </dialog>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">SleekAdmin</div>
+    <div class="user">
+      <input type="text" placeholder="Tìm kiếm..." />
+      <img class="avatar" id="headerAvatar" src="https://graph.facebook.com/4/picture?width=40&height=40" alt="User">
+    </div>
+  </header>
+
+  <!-- Nội dung chính -->
   <div class="main-content">
-    <div class="content">
-      <h5>Dashboard</h5>
-      <div class="button-container">
-        <div class="row">
-          <!-- Các phần hiển thị -->
-        </div>
-      </div>
-      <div class="mt-1 mb-3 p-3 button-container bg-white shadow-sm border" style="margin-top:32px;">
-        <!-- Analytics overview -->
-      </div>
-      <div class="mt-4 mb-4 p-3 bg-white border shadow-sm lh-sm">
-        <div class="product-list">
-          <div class="row border-bottom mb-4" style="display:flex;justify-content:space-between;align-items:center;">
-            <div><h6 class="mb-4 bc-header">Order listing</h6></div>
-            <div>
-              <button type="button" class="btn btn-danger icon-round shadow"><b>🗑️</b></button>
-              <select class="shadow bg-secondary bulk-actions" style="padding:5px 10px;border-radius:4px;border:1px solid #ccc;">
-                <option>Status options</option>
-                <option>Pending</option>
-                <option>Cancelled</option>
-                <option>Delivered</option>
-              </select>
-            </div>
-          </div>
-          <div class="table-responsive product-list">
-            <table>
-              <thead>
-                <tr>
-                  <th><input type="checkbox"></th>
-                  <th>Order ID</th>
-                  <th>Customer</th>
-                  <th>Status</th>
-                  <th>Total</th>
-                  <th>Order date</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><input type="checkbox"></td>
-                  <td>Ord#13</td>
-                  <td>Stephanie Cott</td>
-                  <td><span class="badge badge-warning">Pending</span></td>
-                  <td>$200</td>
-                  <td>15/09/2018</td>
-                  <td>
-                    <button class="btn btn-theme">👁️</button>
-                    <button class="btn btn-success">✏️</button>
-                    <button class="btn btn-danger">🗑️</button>
-                  </td>
-                </tr>
-                <!-- Các dòng khác -->
-              </tbody>
-            </table>
-            <div style="text-align:right;">
-              <button class="btn btn-outline-theme">👁️ View full orders</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div class="breadcrumb">
+      <h2>Trang chủ</h2>
+      <p>Chào mừng quay lại, Tuấn Anh 👋</p>
+    </div>
+
+    <div class="stats">
+      <div class="card"><h3>12</h3><p>Danh mục</p></div>
+      <div class="card"><h3>324</h3><p>Truyện tranh</p></div>
+      <div class="card"><h3>56</h3><p>Đơn hàng</p></div>
+      <div class="card"><h3>5</h3><p>Voucher</p></div>
+    </div>
+
+    <div class="table-section">
+      <h3>Danh sách truyện nổi bật</h3>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Tên truyện</th><th>Danh mục</th><th>Trạng thái</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>One Piece</td><td>Phiêu lưu</td><td>Hiển thị</td></tr>
+          <tr><td>2</td><td>Attack on Titan</td><td>Hành động</td><td>Ẩn</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- SCRIPT KIỂM TRA TOKEN -->
+  <!-- JavaScript -->
   <script>
-    // Kiểm tra token khi trang load
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      // Chưa đăng nhập => quay về login
-      window.location.href = 'login.html';
+  const uploadDialog = document.getElementById('uploadDialog');
+
+  document.getElementById('settingsLink').onclick = () => {
+    document.getElementById('mainSidebar').classList.add('hidden');  // ẩn sidebar chính
+    document.getElementById('settingsSidebar').classList.remove('hidden');  // hiện sidebar cài đặt
+  };
+
+  document.getElementById('backButton').onclick = () => {
+    document.getElementById('settingsSidebar').classList.add('hidden');  // ẩn sidebar cài đặt
+    document.getElementById('mainSidebar').classList.remove('hidden');  // hiện sidebar chính
+  };
+
+  document.getElementById('logoutButton').onclick = () => {
+    fetch('login')
+      .then(res => {
+        if (res.ok) {
+          alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');  // đăng xuất thành công
+          window.location.href = 'login';  // chuyển trang
+        } else {
+          alert('Không tìm thấy file login.html, vui lòng tạo file này.');  // file không tồn tại
+        }
+      })
+      .catch(() => {
+        alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');  // lỗi gọi fetch
+      });
+  };
+
+  document.getElementById('changeAvatarButton').onclick = () => {
+    uploadDialog.showModal();  // mở hộp thoại chọn ảnh
+    document.getElementById('uploadMessage').style.display = 'none';  // ẩn thông báo cũ nếu có
+  };
+
+  document.getElementById('uploadButton').onclick = () => {
+    const file = document.getElementById('avatarUpload').files[0];  // lấy file được chọn
+
+    if (!file) {
+      alert('Vui lòng chọn một ảnh.');  // không có file thì thông báo
+      return;
     }
-  </script>
+
+    const reader = new FileReader();  // tạo đối tượng FileReader để đọc ảnh
+
+    reader.onload = () => {
+      document.getElementById('sidebarAvatar').src = reader.result;  // cập nhật ảnh sidebar
+      document.getElementById('headerAvatar').src = reader.result;  // cập nhật ảnh header
+      document.getElementById('uploadMessage').style.display = 'block';  // hiện thông báo đã tải ảnh
+
+      // nếu muốn gọi API upload ảnh thì viết thêm fetch ở đây
+    };
+
+    reader.readAsDataURL(file);  // đọc file thành chuỗi base64
+  };
+</script>
+
 </body>
 </html>
+<!-- End of views/home.html -->
