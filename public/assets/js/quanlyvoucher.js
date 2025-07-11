@@ -1,5 +1,3 @@
-// /assets/js/quanlyvoucher.js
-
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/vouchers';
 const voucherTableBody = document.getElementById('voucher-table-body');
 const addVoucherBtn = document.getElementById('btnAddVoucher');
@@ -7,21 +5,37 @@ const searchInput = document.getElementById('searchVoucher');
 const statusFilter = document.getElementById('voucherStatusFilter');
 
 let allVouchers = [];
+let editingVoucherId = null;
 
-// Gọi API để lấy danh sách voucher
 async function fetchVouchers() {
   try {
-    const res = await fetch(apiURL);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert('Vui lòng đăng nhập.');
+      window.location.href = 'login.html';
+      return;
+    }
+
+    const res = await fetch(apiURL, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) throw new Error(`Lỗi khi gọi API: ${res.status}`);
+
     const data = await res.json();
-    allVouchers = data;
-    renderVouchers(data);
+    allVouchers = data.vouchers;
+    renderVouchers(allVouchers);
   } catch (err) {
     console.error('Lỗi khi tải voucher:', err);
     voucherTableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:red">Không tải được dữ liệu.</td></tr>';
   }
 }
 
-// Hiển thị danh sách voucher ra bảng
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN');
+}
+
 function renderVouchers(vouchers) {
   if (!vouchers.length) {
     voucherTableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Không có voucher nào.</td></tr>';
@@ -35,9 +49,8 @@ function renderVouchers(vouchers) {
       <td>${voucher.voucher_id}</td>
       <td>${voucher.voucher_type}</td>
       <td>${voucher.discount_value}</td>
-      <td>${voucher.min_order_value}</td>
-      <td>${voucher.usage_limit}</td>
-      <td>${voucher.max_per_user}</td>
+      <td>${formatDate(voucher.start_date)}</td>
+      <td>${formatDate(voucher.end_date)}</td>
       <td>${voucher.is_active ? 'Đang hoạt động' : 'Ngưng hoạt động'}</td>
       <td class="actions">
         <button class="btn btn-edit" onclick="editVoucher('${voucher._id}')">Sửa</button>
@@ -48,12 +61,13 @@ function renderVouchers(vouchers) {
   });
 }
 
-// Hàm xóa voucher
 function deleteVoucher(id) {
   if (!confirm('Bạn có chắc chắn muốn xóa voucher này?')) return;
 
+  const token = localStorage.getItem('authToken');
   fetch(`${apiURL}/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: { 'Authorization': `Bearer ${token}` }
   })
     .then(response => {
       if (!response.ok) throw new Error('Xóa thất bại');
@@ -69,87 +83,11 @@ function deleteVoucher(id) {
     });
 }
 
-// Tìm kiếm và lọc trạng thái
-searchInput.addEventListener('input', filterVouchers);
-statusFilter.addEventListener('change', filterVouchers);
-
-function filterVouchers() {
-  const keyword = searchInput.value.trim().toLowerCase();
-  const status = statusFilter.value;
-
-  const filtered = allVouchers.filter(v => {
-    const matchesKeyword = v.voucher_id.toLowerCase().includes(keyword);
-    const matchesStatus =
-      !status ||
-      (status === 'active' && v.is_active) ||
-      (status === 'inactive' && !v.is_active);
-    return matchesKeyword && matchesStatus;
-  });
-
-  renderVouchers(filtered);
-}
-
-// Các phần còn lại giữ nguyên
-
-// Tạo form sửa và thêm voucher (cập nhật thêm ngày bắt đầu / kết thúc)
-const dialogHTML = `
-  <div id="voucherEditDialog" class="dialog-overlay" style="display:none; overflow-y:auto; max-height:100vh;">
-    <div class="dialog-box">
-      <h2>Cập nhật voucher</h2>
-      <label>Mã voucher:</label><input type="text" id="edit-voucher-id" disabled />
-      <label>Loại:</label>
-      <select id="edit-voucher-type">
-        <option value="percent">Phần trăm</option>
-        <option value="fixed">Giảm cố định</option>
-      </select>
-      <label>Giá trị giảm:</label><input type="number" id="edit-discount-value" />
-      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="edit-min-order" />
-      <label>Số lần sử dụng:</label><input type="number" id="edit-usage-limit" />
-      <label>Số lần tối đa mỗi người:</label><input type="number" id="edit-max-per-user" />
-      <label>Trạng thái:</label>
-      <select id="edit-is-active">
-        <option value="true">Đang hoạt động</option>
-        <option value="false">Ngưng hoạt động</option>
-      </select>
-      <div class="dialog-actions">
-        <button onclick="submitEditVoucher()">Cập nhật</button>
-        <button onclick="closeEditDialog()">Hủy</button>
-      </div>
-    </div>
-  </div>
-  <div id="voucherAddDialog" class="dialog-overlay" style="display:none; overflow-y:auto; max-height:100vh;">
-    <div class="dialog-box">
-      <h2>Thêm voucher mới</h2>
-      <label>Mã voucher:</label><input type="text" id="add-voucher-id" />
-      <label>Loại:</label>
-      <select id="add-voucher-type">
-        <option value="percent">Phần trăm</option>
-        <option value="fixed">Giảm cố định</option>
-      </select>
-      <label>Giá trị giảm:</label><input type="number" id="add-discount-value" />
-      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="add-min-order" />
-      <label>Số lần sử dụng:</label><input type="number" id="add-usage-limit" />
-      <label>Số lần tối đa mỗi người:</label><input type="number" id="add-max-per-user" />
-      <label>Ngày bắt đầu:</label><input type="datetime-local" id="add-start-date" />
-      <label>Ngày kết thúc:</label><input type="datetime-local" id="add-end-date" />
-      <label>Trạng thái:</label>
-      <select id="add-is-active">
-        <option value="true">Đang hoạt động</option>
-        <option value="false">Ngưng hoạt động</option>
-      </select>
-      <div class="dialog-actions">
-        <button onclick="submitAddVoucher()">Thêm mới</button>
-        <button onclick="closeAddDialog()">Hủy</button>
-      </div>
-    </div>
-  </div>
-`;
-document.body.insertAdjacentHTML('beforeend', dialogHTML);
-
-let editingVoucherId = null;
-
 function editVoucher(id) {
-  fetch(`${apiURL}/${id}`)
+  const token = localStorage.getItem('authToken');
+  fetch(`${apiURL}/${id}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  })
     .then(res => res.json())
     .then(data => {
       editingVoucherId = id;
@@ -169,6 +107,7 @@ function editVoucher(id) {
 }
 
 function submitEditVoucher() {
+  const token = localStorage.getItem('authToken');
   const updated = {
     voucher_type: document.getElementById('edit-voucher-type').value,
     discount_value: parseInt(document.getElementById('edit-discount-value').value),
@@ -180,7 +119,10 @@ function submitEditVoucher() {
 
   fetch(`${apiURL}/${editingVoucherId}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
     body: JSON.stringify(updated)
   })
     .then(res => {
@@ -209,23 +151,43 @@ function openAddDialog() {
 function closeAddDialog() {
   document.getElementById('voucherAddDialog').style.display = 'none';
 }
-
 function submitAddVoucher() {
+  const token = localStorage.getItem('authToken');
+
+  // Lấy dữ liệu từ form
+  const voucher_id = document.getElementById('add-voucher-id').value.trim();
+  const voucher_type = document.getElementById('add-voucher-type').value;
+  const discount_value = parseFloat(document.getElementById('add-discount-value').value);
+  const min_order_value = parseFloat(document.getElementById('add-min-order').value);
+  const usage_limit = parseInt(document.getElementById('add-usage-limit').value);
+  const max_per_user = parseInt(document.getElementById('add-max-per-user').value);
+  const start_date = document.getElementById('add-start-date').value;
+  const end_date = document.getElementById('add-end-date').value;
+  const is_active = document.getElementById('add-is-active').value === 'true';
+
+  if (!voucher_id || !voucher_type || isNaN(discount_value) || isNaN(min_order_value) || isNaN(usage_limit) || isNaN(max_per_user) || !start_date || !end_date) {
+    alert('Vui lòng nhập đầy đủ thông tin hợp lệ.');
+    return;
+  }
+
   const newVoucher = {
-    voucher_id: document.getElementById('add-voucher-id').value,
-    voucher_type: document.getElementById('add-voucher-type').value,
-    discount_value: parseInt(document.getElementById('add-discount-value').value),
-    min_order_value: parseInt(document.getElementById('add-min-order').value),
-    usage_limit: parseInt(document.getElementById('add-usage-limit').value),
-    max_per_user: parseInt(document.getElementById('add-max-per-user').value),
-    is_active: document.getElementById('add-is-active').value === 'true',
-    start_date: new Date(document.getElementById('add-start-date').value).toISOString(),
-    end_date: new Date(document.getElementById('add-end-date').value).toISOString()
+    voucher_id,
+    voucher_type,
+    discount_value,
+    min_order_value,
+    usage_limit,
+    max_per_user,
+    start_date: new Date(start_date).toISOString(),
+    end_date: new Date(end_date).toISOString(),
+    is_active
   };
 
   fetch(apiURL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
     body: JSON.stringify(newVoucher)
   })
     .then(res => {
@@ -243,8 +205,27 @@ function submitAddVoucher() {
     });
 }
 
-// Gắn sự kiện mở form thêm voucher
+
+searchInput.addEventListener('input', filterVouchers);
+statusFilter.addEventListener('change', filterVouchers);
+
+function filterVouchers() {
+  const keyword = searchInput.value.trim().toLowerCase();
+  const status = statusFilter.value;
+
+  const filtered = allVouchers.filter(v => {
+    const matchesKeyword = v.voucher_id.toLowerCase().includes(keyword);
+    const matchesStatus =
+      !status ||
+      (status === 'active' && v.is_active) ||
+      (status === 'inactive' && !v.is_active);
+    return matchesKeyword && matchesStatus;
+  });
+
+  renderVouchers(filtered);
+}
+
 addVoucherBtn.addEventListener('click', openAddDialog);
 
-// Khởi động khi load trang
+// Gọi lần đầu khi trang load
 fetchVouchers();

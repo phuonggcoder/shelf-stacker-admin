@@ -19,7 +19,6 @@
     .restore-btn:hover {
       background: #218838;
     }
-
     .voucher-card {
       background: #fff6f6;
       border: 1px solid #eee;
@@ -49,20 +48,20 @@
     <div class="profile">
       <img src="https://i.pravatar.cc/100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
-      <p>Nhà thiết kế UI/UX </p>
+      <p>Nhà thiết kế UI/UX</p>
     </div>
     <nav>
       <ul>
-   <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
         <li><a href="danhmucdonhang">QUẢN LÝ ĐƠN HÀNG</a></li>
-        <li><a href="danhmucdaxoa" class="active">DANH MỤC ĐÃ XÓA</a></li>
-        <li><a href="trashbooks" class="active">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
-        <li><a href="voucher" class="active">QUẢN LÝ VOUCHER</a></li>
+        <li><a href="danhmucdaxoa">DANH MỤC ĐÃ XÓA</a></li>
+        <li><a href="trashbooks">SẢN PHẨM XÓA GẦN ĐÂY</a></li>
+        <li><a href="voucher">QUẢN LÝ VOUCHER</a></li>
         <li><a href="khoiphucvoucher" class="active">VOUCHER XÓA GẦN ĐÂY</a></li>
-        <li><a href="campaigns" class="active">QUẢN LÝ CHIẾN DỊCH</a></li>
+        <li><a href="campaigns">QUẢN LÝ CHIẾN DỊCH</a></li>
       </ul>
     </nav>
   </aside>
@@ -71,6 +70,15 @@
     <section class="management-section">
       <h1 class="title" style="color:#dc3545;">Voucher đã xóa gần đây</h1>
       <div id="trashVoucherGrid" class="product-grid"></div>
+
+      <!-- ✅ Phần chọn sách áp dụng -->
+      <div style="margin-top: 30px;">
+        <label>Chọn sách áp dụng:</label>
+        <div id="add-book-select" class="book-checkbox-group"
+             style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; border-radius: 6px;">
+          <!-- Checkbox sẽ được render ở đây -->
+        </div>
+      </div>
     </section>
   </main>
 

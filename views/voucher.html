@@ -23,7 +23,7 @@
     </div>
     <nav>
       <ul>
-         <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
@@ -72,7 +72,60 @@
     </section>
   </main>
 
-  <script src="/public/config.js"></script>
+  <!-- Dialogs -->
+  <div id="voucherEditDialog" class="dialog-overlay" style="display:none;">
+    <div class="dialog-box">
+      <h2>Sửa Voucher</h2>
+      <label>Mã voucher:</label><input type="text" id="edit-voucher-id" disabled />
+      <label>Loại:</label>
+      <select id="edit-voucher-type">
+        <option value="percentage">Phần trăm</option>
+        <option value="fixed">Giảm cố định</option>
+      </select>
+      <label>Giá trị giảm:</label><input type="number" id="edit-discount-value" />
+      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="edit-min-order" />
+      <label>Số lần sử dụng:</label><input type="number" id="edit-usage-limit" />
+      <label>Số lần tối đa mỗi người:</label><input type="number" id="edit-max-per-user" />
+      <label>Trạng thái:</label>
+      <select id="edit-is-active">
+        <option value="true">Đang hoạt động</option>
+        <option value="false">Ngưng hoạt động</option>
+      </select>
+      <div class="dialog-actions">
+        <button onclick="submitEditVoucher()">Cập nhật</button>
+        <button onclick="closeEditDialog()">Hủy</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="voucherAddDialog" class="dialog-overlay" style="display:none;">
+    <div class="dialog-box">
+      <h2>Thêm Voucher</h2>
+      <label>Mã voucher:</label><input type="text" id="add-voucher-id" />
+      <label>Loại:</label>
+     <select id="add-voucher-type">
+  <option value="percentage">Phần trăm</option>
+  <option value="fixed">Giảm cố định</option>
+</select>
+
+      <label>Giá trị giảm:</label><input type="number" id="add-discount-value" />
+      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="add-min-order" />
+      <label>Số lần sử dụng:</label><input type="number" id="add-usage-limit" />
+      <label>Số lần tối đa mỗi người:</label><input type="number" id="add-max-per-user" />
+      <label>Ngày bắt đầu:</label><input type="datetime-local" id="add-start-date" />
+      <label>Ngày kết thúc:</label><input type="datetime-local" id="add-end-date" />
+      <label>Trạng thái:</label>
+      <select id="add-is-active">
+        <option value="true">Đang hoạt động</option>
+        <option value="false">Ngưng hoạt động</option>
+      </select>
+      <div class="dialog-actions">
+        <button onclick="submitAddVoucher()">Thêm mới</button>
+        <button onclick="closeAddDialog()">Hủy</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/assets/js/quanlyvoucher.js"></script>
 </body>
 </html>

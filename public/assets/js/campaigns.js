@@ -1,6 +1,6 @@
-// campaigns.js
-
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/campaigns';
+const bookAPI = 'https://server-shelf-stacker.onrender.com/api/books';
+const bookAllAPI = `${bookAPI}/all`;
 const tableBody = document.getElementById('campaign-table-body');
 
 const rawToken = localStorage.getItem('authToken');
@@ -54,14 +54,58 @@ function loadCampaigns() {
     });
 }
 
+function loadBooks() {
+  fetch(bookAllAPI, {
+    headers: { 'Authorization': token }
+  })
+    .then(res => res.json())
+    .then(books => {
+      console.log('✅ Danh sách sách:', books);
+      const select = document.getElementById('campaign-books');
+      if (!select) {
+        console.warn('Không tìm thấy thẻ select #campaign-books');
+        return;
+      }
+      select.innerHTML = '';
+
+      if (!Array.isArray(books)) {
+        console.error('❌ Dữ liệu sách không đúng định dạng:', books);
+        return;
+      }
+
+      books.forEach(book => {
+        const option = document.createElement('option');
+        option.value = book._id;
+
+        const title = book.title || book.name || book.slug || 'Không tên';
+        option.textContent = `${title}`;
+        select.appendChild(option);
+      });
+    })
+    .catch(err => {
+      console.error('❌ Không thể tải danh sách sách:', err);
+      const select = document.getElementById('campaign-books');
+      if (select) {
+        select.innerHTML = `<option disabled>Không tải được dữ liệu</option>`;
+      }
+    });
+}
+
+function getSelectedBooks() {
+  const options = document.getElementById('campaign-books').selectedOptions;
+  return Array.from(options).map(opt => opt.value);
+}
+
 document.getElementById('btn-add-campaign').addEventListener('click', () => {
   editingId = null;
   document.getElementById('campaign-form').reset();
   if (editorInstance) editorInstance.setData('');
-  document.getElementById('campaign-books').value = '';
   document.getElementById('save-campaign-btn').style.display = 'block';
   document.getElementById('update-campaign-btn').style.display = 'none';
   document.getElementById('campaign-modal').style.display = 'flex';
+
+  const select = document.getElementById('campaign-books');
+  Array.from(select.options).forEach(opt => (opt.selected = false));
 });
 
 document.getElementById('close-campaign-modal').addEventListener('click', () => {
@@ -77,8 +121,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
-  const rawBooks = document.getElementById('campaign-books').value.trim();
-  const books = rawBooks ? rawBooks.split(',').map(id => id.trim()) : [];
+  const books = getSelectedBooks();
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
@@ -93,12 +136,19 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
     },
     body: JSON.stringify({ name, description, startDate, endDate, type, books })
   })
-    .then(res => {
-      if (!res.ok) return res.json().then(data => {
-        console.error('❌ Chi tiết lỗi:', data);
-        throw new Error('Thêm chiến dịch thất bại');
+    .then(res => res.json())
+    .then(campaign => {
+      const updatePromises = books.map(bookId => {
+        return fetch(`${bookAPI}/${bookId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ campaigns: [campaign._id] })
+        });
       });
-      return res.json();
+      return Promise.all(updatePromises);
     })
     .then(() => {
       alert('✅ Thêm thành công!');
@@ -123,7 +173,12 @@ function editCampaign(id) {
       document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
       document.getElementById('campaign-type').value = c.type;
       editorInstance.setData(c.description || '');
-      document.getElementById('campaign-books').value = Array.isArray(c.books) ? c.books.join(', ') : '';
+
+      const select = document.getElementById('campaign-books');
+      const selectedBooks = Array.isArray(c.books) ? c.books : [];
+      Array.from(select.options).forEach(opt => {
+        opt.selected = selectedBooks.includes(opt.value);
+      });
 
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -143,8 +198,7 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   const startDate = document.getElementById('campaign-start').value;
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
-  const rawBooks = document.getElementById('campaign-books').value.trim();
-  const books = rawBooks ? rawBooks.split(',').map(id => id.trim()) : [];
+  const books = getSelectedBooks();
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ thông tin');
@@ -159,9 +213,19 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     },
     body: JSON.stringify({ name, description, startDate, endDate, type, books })
   })
-    .then(res => {
-      if (!res.ok) throw new Error('Cập nhật thất bại');
-      return res.json();
+    .then(res => res.json())
+    .then(() => {
+      const updatePromises = books.map(bookId => {
+        return fetch(`${bookAPI}/${bookId}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': token,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ campaigns: [editingId] })
+        });
+      });
+      return Promise.all(updatePromises);
     })
     .then(() => {
       alert('✅ Đã cập nhật chiến dịch');
@@ -179,9 +243,7 @@ function deleteCampaign(id) {
 
   fetch(`${apiURL}/${id}`, {
     method: 'DELETE',
-    headers: {
-      'Authorization': token
-    }
+    headers: { 'Authorization': token }
   })
     .then(res => {
       if (!res.ok) throw new Error('Xóa thất bại');
@@ -197,10 +259,6 @@ function deleteCampaign(id) {
     });
 }
 
-
-
-
-// 🔍 Tìm kiếm theo tên
 document.getElementById('btn-search').addEventListener('click', function () {
   const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
 
@@ -218,23 +276,21 @@ document.getElementById('btn-search').addEventListener('click', function () {
     });
 });
 
-// ⌨️ Enter để tìm
 document.getElementById('search-campaign').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
     document.getElementById('btn-search').click();
   }
 });
 
-// CKEditor + load initial
 document.addEventListener('DOMContentLoaded', function () {
   ClassicEditor
     .create(document.querySelector('#campaign-desc'))
     .then(editor => {
       editorInstance = editor;
+      loadBooks();
+      loadCampaigns();
     })
     .catch(error => {
       console.error('CKEditor lỗi:', error);
     });
-
-  loadCampaigns();
 });
