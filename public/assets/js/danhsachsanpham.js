@@ -210,15 +210,16 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
     document.getElementById('bookPublisher').value = book.publisher || '';
     document.getElementById('bookLanguage').value = book.language || '';
 
-    const thumb = book.thumbnail || '';
-    const fullThumb = thumb.startsWith('/')
-      ? 'https://server-shelf-stacker.onrender.com' + thumb
-      : thumb;
+const thumb = book.thumbnail || '';
+const fullThumb = thumb.startsWith('/')
+  ? 'https://server-shelf-stacker.onrender.com' + thumb
+  : thumb;
 
-    document.getElementById('bookThumbnail').value = fullThumb;
-    thumbnailPreview.innerHTML = fullThumb
-      ? `<img src="${fullThumb}" style="max-width:100px;">`
-      : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
+document.getElementById('bookThumbnail').value = thumb; // ✅ chỉ lưu đường dẫn tương đối
+thumbnailPreview.innerHTML = fullThumb
+  ? `<img src="${fullThumb}" style="max-width:100px;">`
+  : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
+
 
     initCKEditorIfNeeded().then(() => {
       if (bookDescEditor) bookDescEditor.setData(book.description || '');
@@ -774,13 +775,15 @@ thumbnailInput.addEventListener('change', async () => {
     }
 
     const data = await res.json();
+
+    // ✅ CHỈ lưu đường dẫn tương đối
+    thumbnailHiddenInput.value = data.url;
+
+    // ✅ Hiển thị preview ảnh dùng full URL
     const fullUrl = data.url.startsWith('/')
       ? 'https://server-shelf-stacker.onrender.com' + data.url
       : data.url;
 
-    thumbnailHiddenInput.value = fullUrl;
-
-    // Hiển thị preview
     thumbnailPreview.innerHTML = `
       <img src="${fullUrl}" style="max-width:100px; margin-top:5px;">
     `;
@@ -791,6 +794,7 @@ thumbnailInput.addEventListener('change', async () => {
     alert('Upload thumbnail thất bại: ' + err.message);
   }
 });
+
 async function fetchCategoriesForSelect() {
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
