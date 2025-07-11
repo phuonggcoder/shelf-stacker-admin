@@ -1,17 +1,23 @@
+const BASE_URL = 'https://server-shelf-stacker.onrender.com';
+
 const STATUS_MAP = {
   "Pending": "Chờ xác nhận",
   "Shipped": "Đã giao"
 };
 
-
 const REV_MAP = Object.fromEntries(Object.entries(STATUS_MAP).map(([k, v]) => [v, k]));
 
+function getFullImageURL(path) {
+  if (!path) return 'https://via.placeholder.com/60x80?text=No+Image';
+  if (path.startsWith('http')) return path;
+  return BASE_URL + path;
+}
 
 async function loadOrders(orderId = '') {
   const token = localStorage.getItem('authToken');
   if (!token) return (window.location.href = 'login.html');
 
-  let url = 'https://server-shelf-stacker.onrender.com/api/orders';
+  let url = BASE_URL + '/api/orders';
   if (orderId) url += `/${orderId}`;
 
   try {
@@ -45,9 +51,8 @@ function renderOrders(orders) {
 
   tbody.innerHTML = orders.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
-    const image = book.thumbnail?.trim() !== ''
-      ? book.thumbnail
-      : (book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image');
+    const rawImage = book.thumbnail?.trim() || book.cover_image?.[0];
+    const image = getFullImageURL(rawImage);
 
     const code = order.order_id || order._id || 'Không rõ';
     const customerName = order.user_id?.username || 'Không rõ';
@@ -122,7 +127,7 @@ setTimeout(() => {
     }
 
     try {
-      const response = await fetch(`https://server-shelf-stacker.onrender.com/api/orders/${orderId}/status`, {
+      const response = await fetch(`${BASE_URL}/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +157,8 @@ function showOrderDetails(order) {
     const title = book.title || 'Không rõ';
     const quantity = item.quantity || 0;
     const price = item.price || 0;
-    const image = book.thumbnail || book.cover_image?.[0] || 'https://via.placeholder.com/60x80?text=No+Image';
+    const rawImage = book.thumbnail || book.cover_image?.[0];
+    const image = getFullImageURL(rawImage);
 
     return `
       <div style="display:flex; gap:10px; margin-bottom:10px;">
