@@ -112,13 +112,6 @@ if (isLong) {
     // Hình ảnh
    // Hiển thị ảnh thumbnail thay vì cover_image
 let thumbUrl = product.thumbnail || '';
-if (thumbUrl && thumbUrl.startsWith('/')) {
-  thumbUrl = 'https://server-shelf-stacker.onrender.com' + thumbUrl;
-}
-if (thumbUrl.startsWith('http://localhost:3000')) {
-  thumbUrl = thumbUrl.replace('http://localhost:3000', 'https://server-shelf-stacker.onrender.com');
-}
-
 let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
 let imagesHtml = thumbUrl
   ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
@@ -685,22 +678,7 @@ if (campaignSelect.choicesInstance) {
 
 // Lấy danh sách ảnh đã upload
 // Lấy danh sách ảnh đã upload
-fetch('https://server-shelf-stacker.onrender.com/api/upload/list-images')
-  .then(res => res.json())
-  .then(data => {
-    const previewDiv = document.getElementById('uploadedImagesPreview');
-    previewDiv.innerHTML = '';
-    data.files.forEach(path => {
-      const img = document.createElement('img');
-      img.src = `https://server-shelf-stacker.onrender.com${path}`;  // ✅ Đảm bảo đầy đủ URL
-      img.style = 'max-width:50px; margin:5px;';
-      previewDiv.appendChild(img);
-    });
-  })
-  .catch(err => {
-    console.error('Lỗi lấy danh sách ảnh:', err);
-    alert('Không thể tải danh sách ảnh');
-  });
+
 
 function CustomUploadAdapterPlugin(editor) {
   editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
@@ -761,10 +739,10 @@ thumbnailInput.addEventListener('change', async () => {
   if (!file) return;
 
   const formData = new FormData();
-  formData.append('upload', file);
+  formData.append('imageFile', file);
 
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/book-upload/thumbnail', {
       method: 'POST',
       body: formData
     });
@@ -775,18 +753,8 @@ thumbnailInput.addEventListener('change', async () => {
     }
 
     const data = await res.json();
-
-    // ✅ CHỈ lưu đường dẫn tương đối
     thumbnailHiddenInput.value = data.url;
-
-    // ✅ Hiển thị preview ảnh dùng full URL
-    const fullUrl = data.url.startsWith('/')
-      ? 'https://server-shelf-stacker.onrender.com' + data.url
-      : data.url;
-
-    thumbnailPreview.innerHTML = `
-      <img src="${fullUrl}" style="max-width:100px; margin-top:5px;">
-    `;
+    thumbnailPreview.innerHTML = `<img src="${data.url}" style="max-width:100px; margin-top:5px;">`;
 
     alert('Upload thumbnail thành công!');
   } catch (err) {
@@ -835,7 +803,6 @@ async function fetchCampaignsForSelect() {
 
     const select = document.getElementById('bookCampaign');
     select.innerHTML = '';
-
     data.forEach(camp => {
       const option = document.createElement('option');
       option.value = camp._id;

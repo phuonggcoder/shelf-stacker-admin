@@ -1,4 +1,4 @@
-  let categories = [];
+let categories = [];
   let catCurrentPage = 1;
   const catPageSize = 6;
   let editingCategoryId = null; // ✅ Thêm khai báo global cho biến này
@@ -251,7 +251,6 @@
 
     const name = document.getElementById('cat-name').value.trim();
     const slug = document.getElementById('cat-slug').value.trim();
-    const image = document.getElementById('cat-image').value.trim();
     await initCatDescEditorIfNeeded();
     const description = catDescEditor ? catDescEditor.getData() : '';
     const isVisible = document.getElementById('cat-status').value === 'true';
@@ -261,23 +260,59 @@
       return;
     }
 
-    const payload = { name, slug, description, image, isVisible };
-    console.log('➡ Dữ liệu gửi lên server:', payload);
-
     try {
+      // 1. Tạo mới danh mục trước
       const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + getToken()
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ name, slug, description, isVisible })
       });
 
       const result = await res.json();
-      console.log('⬅ Phản hồi server:', result);
 
       if (res.ok) {
+        // 2. Nếu có chọn file ảnh, upload ảnh với categoryId vừa tạo
+        const file = document.getElementById('cat-upload').files[0];
+        let imageUrl = '';
+        if (file) {
+          const formData = new FormData();
+          formData.append('imageFile', file);
+          formData.append('categoryId', result._id); // hoặc editingCategoryId khi sửa
+
+          const uploadRes = await fetch('https://server-shelf-stacker.onrender.com/api/category-upload/image', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + getToken() },
+            body: formData
+          });
+          const data = await uploadRes.json();
+          console.log('Upload response:', data, uploadRes.status);
+          if (uploadRes.ok && data.category && data.category.image) {
+            imageUrl = data.category.image;
+            // Cập nhật input và preview
+            document.getElementById('cat-image').value = imageUrl;
+            const preview = document.getElementById('preview-image');
+            preview.src = imageUrl;
+            preview.style.display = 'block';
+          } else {
+            alert('Upload thất bại: ' + (data.message || 'Lỗi không xác định!'));
+          }
+        }
+
+        // 3. Nếu có ảnh, cập nhật lại trường image cho danh mục
+        if (imageUrl) {
+          await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${result._id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + getToken()
+            },
+            body: JSON.stringify({ image: imageUrl })
+          });
+        }
+
         alert('✅ Thêm danh mục thành công!');
         document.getElementById('add-category-modal').style.display = 'none';
         this.reset();
@@ -286,9 +321,7 @@
       } else {
         alert('❌ Thêm thất bại: ' + (result.message || 'Lỗi không xác định!'));
       }
-
     } catch (err) {
-      console.error('🚫 Lỗi kết nối:', err);
       alert('Lỗi kết nối hoặc server không phản hồi');
     }
   });
@@ -411,6 +444,10 @@
   const inputFile = document.getElementById('cat-upload');
 
   document.getElementById('btn-select-image').addEventListener('click', function() {
+    if (!editingCategoryId) {
+      alert('Chỉ upload ảnh khi đang sửa hoặc vừa tạo mới danh mục!');
+      return;
+    }
     if (confirm('Bạn muốn tải ảnh mới lên? (OK: tải mới, Cancel: chọn từ server)')) {
       inputFile.click();
     } else {
@@ -420,27 +457,36 @@
 
   inputFile.onchange = async function(event) {
     const file = event.target.files[0];
-    if (file) {
+    if (file && editingCategoryId) {
       const formData = new FormData();
-      formData.append('upload', file);
+      formData.append('imageFile', file);
+      formData.append('categoryId', editingCategoryId);
 
       try {
-        const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
+        const res = await fetch('https://server-shelf-stacker.onrender.com/api/category-upload/image', {
           method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + getToken()
+          },
           body: formData
         });
-        if (res.ok) {
-          const data = await res.json();
-          const imageUrl = data.url.startsWith('/')
-            ? `https://server-shelf-stacker.onrender.com${data.url}`
-            : data.url;
-          updateImageSelection(imageUrl);
+        const data = await res.json();
+        console.log('Upload response:', data, res.status);
+        if (res.ok && data.category && data.category.image) {
+          imageUrl = data.category.image;
+          // Cập nhật input và preview
+          document.getElementById('cat-image').value = imageUrl;
+          const preview = document.getElementById('preview-image');
+          preview.src = imageUrl;
+          preview.style.display = 'block';
         } else {
-          alert('Upload thất bại');
+          alert('Upload thất bại: ' + (data.message || 'Lỗi không xác định!'));
         }
-      } catch {
+      } catch (err) {
         alert('Lỗi kết nối khi upload');
       }
+    } else if (!editingCategoryId) {
+      alert('Chỉ upload ảnh khi đã có categoryId (sửa hoặc vừa tạo mới)!');
     }
   };
 
@@ -585,9 +631,11 @@
     document.getElementById('add-category-modal').style.display = 'none';
 
     // Reset nút
-    document.getElementById('save-category-btn').style.display = 'z';
+    document.getElementById('save-category-btn').style.display = 'block'; // ✅ Đúng
     document.getElementById('update-category-btn').style.display = 'none';
 
     // Reset ID
     editingCategoryId = null;
   }
+  console.log('Token:', getToken());
+  console.log('editingCategoryId:', editingCategoryId);
