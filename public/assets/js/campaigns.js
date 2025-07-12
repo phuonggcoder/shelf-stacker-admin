@@ -12,6 +12,7 @@ const token = `Bearer ${rawToken}`;
 
 let editingId = null;
 let editorInstance = null;
+window.allBooks = [];
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -53,6 +54,95 @@ function loadCampaigns() {
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Lỗi tải dữ liệu.</td></tr>`;
     });
 }
+
+function loadBooksForSearch(selectedIds = []) {
+  fetch('https://server-shelf-stacker.onrender.com/api/books/all', {
+    headers: { 'Authorization': token }
+  })
+    .then(res => res.json())
+    .then(books => {
+      window.allBooks = books;
+      // Đổ option vào select ẩn (nếu chưa có)
+      const select = document.getElementById('campaign-books');
+      select.innerHTML = '';
+      books.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b._id;
+        opt.textContent = b.title || b.name;
+        if (selectedIds.includes(b._id)) opt.selected = true;
+        select.appendChild(opt);
+      });
+      renderBookSearchList(books, selectedIds);
+    });
+}
+
+function renderBookSearchList(books, selectedIds = []) {
+  const listDiv = document.getElementById('book-search-list');
+  listDiv.innerHTML = '';
+  books.forEach(book => {
+    const isSelected = selectedIds.includes(book._id);
+    const div = document.createElement('div');
+    div.style = `
+      width: 180px; border: 1px solid #ddd; border-radius: 6px; padding: 8px; 
+      display: flex; flex-direction: column; align-items: center; background: ${isSelected ? '#e0f7fa' : '#fff'};
+    `;
+    div.innerHTML = `
+      <img src="${book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png'}" 
+           style="width: 60px; height: 80px; object-fit: cover; margin-bottom: 6px;">
+      <div style="font-weight: bold; font-size: 14px; text-align: center;">${book.title || book.name}</div>
+      <div style="color: #e53935; font-size: 13px;">${book.price ? Number(book.price).toLocaleString('vi-VN') + '₫' : ''}</div>
+      <button class="btn-select-book" data-id="${book._id}" style="margin-top: 6px; background: #2196f3; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; cursor: pointer;">
+        ${isSelected ? 'Bỏ chọn' : 'Chọn'}
+      </button>
+    `;
+    listDiv.appendChild(div);
+  });
+
+  // Sự kiện chọn/bỏ chọn
+  listDiv.querySelectorAll('.btn-select-book').forEach(btn => {
+    btn.onclick = function() {
+      const id = this.getAttribute('data-id');
+      const select = document.getElementById('campaign-books');
+      let selected = Array.from(select.options).filter(opt => opt.selected).map(opt => opt.value);
+      if (selected.includes(id)) {
+        Array.from(select.options).find(opt => opt.value === id).selected = false;
+      } else {
+        Array.from(select.options).find(opt => opt.value === id).selected = true;
+      }
+      renderBookSearchList(window.allBooks, Array.from(select.options).filter(opt => opt.selected).map(opt => opt.value));
+    };
+  });
+}
+
+// Load sách khi mở modal
+function loadBooksForSearch(selectedIds = []) {
+  fetch('https://server-shelf-stacker.onrender.com/api/books/all', { headers: { 'Authorization': token } })
+    .then(res => res.json())
+    .then(books => {
+      window.allBooks = books;
+      // Đổ option vào select ẩn (nếu chưa có)
+      const select = document.getElementById('campaign-books');
+      select.innerHTML = '';
+      books.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b._id;
+        opt.textContent = b.title || b.name;
+        if (selectedIds.includes(b._id)) opt.selected = true;
+        select.appendChild(opt);
+      });
+      renderBookSearchList(books, selectedIds);
+    });
+}
+
+// Tìm kiếm realtime
+document.getElementById('book-search-input').addEventListener('input', function() {
+  const keyword = this.value.trim().toLowerCase();
+  const select = document.getElementById('campaign-books');
+  const filtered = window.allBooks.filter(b =>
+    (b.title || b.name || '').toLowerCase().includes(keyword)
+  );
+  renderBookSearchList(filtered, Array.from(select.options).filter(opt => opt.selected).map(opt => opt.value));
+});
 
 function loadBooks() {
   fetch(bookAllAPI, {
@@ -106,13 +196,13 @@ document.getElementById('btn-add-campaign').addEventListener('click', () => {
 
   const select = document.getElementById('campaign-books');
   Array.from(select.options).forEach(opt => (opt.selected = false));
+  loadBooksForSearch();
 });
 
 document.getElementById('close-campaign-modal').addEventListener('click', () => {
   document.getElementById('campaign-modal').style.display = 'none';
   editingId = null;
 });
-
 document.getElementById('save-campaign-btn').addEventListener('click', function (e) {
   e.preventDefault();
 
@@ -128,16 +218,29 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
     return;
   }
 
+  // 1. Tạo campaign
   fetch(apiURL, {
     method: 'POST',
     headers: {
       'Authorization': token,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ name, description, startDate, endDate, type, books })
+    body: JSON.stringify({ name, description, startDate, endDate, type })
   })
     .then(res => res.json())
     .then(campaign => {
+      // 2. Gán books cho campaign (vì POST không tự lưu books)
+      return fetch(`${apiURL}/${campaign._id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ books })
+      }).then(() => campaign); // Trả lại campaign sau khi PUT
+    })
+    .then(campaign => {
+      // 3. Gán campaign ID vào các book (2 chiều)
       const updatePromises = books.map(bookId => {
         return fetch(`${bookAPI}/${bookId}`, {
           method: 'PUT',
@@ -161,6 +264,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
     });
 });
 
+
 function editCampaign(id) {
   fetch(`${apiURL}/${id}`, {
     headers: { 'Authorization': token }
@@ -175,10 +279,14 @@ function editCampaign(id) {
       editorInstance.setData(c.description || '');
 
       const select = document.getElementById('campaign-books');
-      const selectedBooks = Array.isArray(c.books) ? c.books : [];
-      Array.from(select.options).forEach(opt => {
-        opt.selected = selectedBooks.includes(opt.value);
-      });
+     const selectedBooks = Array.isArray(c.books) 
+  ? c.books.map(b => typeof b === 'object' ? b._id : b) 
+  : [];
+
+Array.from(select.options).forEach(opt => {
+  opt.selected = selectedBooks.includes(opt.value);
+});
+
 
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -293,4 +401,19 @@ document.addEventListener('DOMContentLoaded', function () {
     .catch(error => {
       console.error('CKEditor lỗi:', error);
     });
+});
+
+const toggleBtn = document.getElementById('toggle-book-list');
+const bookSearchWrap = document.getElementById('book-search-wrap');
+let isBookListOpen = false;
+
+toggleBtn.addEventListener('click', function() {
+  isBookListOpen = !isBookListOpen;
+  bookSearchWrap.style.display = isBookListOpen ? 'block' : 'none';
+  toggleBtn.innerHTML = isBookListOpen
+    ? '<i class="fa fa-chevron-up"></i>'
+    : '<i class="fa fa-chevron-down"></i>';
+  if (isBookListOpen && (!window.allBooks || window.allBooks.length === 0)) {
+    loadBooksForSearch();
+  }
 });

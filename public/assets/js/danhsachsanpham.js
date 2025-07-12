@@ -111,7 +111,7 @@ if (isLong) {
 
     // Hình ảnh
    // Hiển thị ảnh thumbnail thay vì cover_image
-let thumbUrl = product.thumbnail || '';
+let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
 let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
 let imagesHtml = thumbUrl
   ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
@@ -203,15 +203,12 @@ document.querySelectorAll('.edit-btn').forEach(btn => {
     document.getElementById('bookPublisher').value = book.publisher || '';
     document.getElementById('bookLanguage').value = book.language || '';
 
-const thumb = book.thumbnail || '';
-const fullThumb = thumb.startsWith('/')
-  ? 'https://server-shelf-stacker.onrender.com' + thumb
-  : thumb;
-
-document.getElementById('bookThumbnail').value = thumb; // ✅ chỉ lưu đường dẫn tương đối
-thumbnailPreview.innerHTML = fullThumb
-  ? `<img src="${fullThumb}" style="max-width:100px;">`
-  : `<img src="/assets/default-thumbnail.png" style="max-width:100px;">`;
+const thumb = book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : '';
+const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+document.getElementById('bookThumbnail').value = thumb;
+thumbnailPreview.innerHTML = thumb
+  ? `<img src="${thumb}" style="max-width:100px;" onerror="this.onerror=null;this.src='${fallbackThumb}'">`
+  : `<img src="${fallbackThumb}" style="max-width:100px;">`;
 
 
     initCKEditorIfNeeded().then(() => {
@@ -603,7 +600,9 @@ document.addEventListener('click', function (e) {
 // Lưu thông tin sách
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
-  const thumbnail = document.getElementById('bookThumbnail').value;
+  let thumbnail = document.getElementById('bookThumbnail').value;
+  if (!thumbnail || thumbnail === 'undefined') thumbnail = '';
+
   const id = addBookForm.getAttribute('data-edit-id');
   const title = document.getElementById('bookName').value.trim();
   const author = document.getElementById('bookAuthor').value.trim();
@@ -633,7 +632,7 @@ if (campaignSelect.choicesInstance) {
 }
 
   const payload = {
-    campaigns , title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
+    campaigns, title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
   };
 
   // Thêm hàm lấy token
@@ -738,8 +737,16 @@ thumbnailInput.addEventListener('change', async () => {
   const file = thumbnailInput.files[0];
   if (!file) return;
 
+  // Lấy bookId từ form
+  const bookId = addBookForm.getAttribute('data-edit-id');
+  if (!bookId) {
+    alert('Chỉ upload thumbnail khi đang sửa sách!');
+    return;
+  }
+
   const formData = new FormData();
   formData.append('imageFile', file);
+  formData.append('bookId', bookId);
 
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/book-upload/thumbnail', {
@@ -755,6 +762,8 @@ thumbnailInput.addEventListener('change', async () => {
     const data = await res.json();
     thumbnailHiddenInput.value = data.url;
     thumbnailPreview.innerHTML = `<img src="${data.url}" style="max-width:100px; margin-top:5px;">`;
+    // Đảm bảo trường thumbnail sẽ được lưu khi submit form
+    document.getElementById('bookThumbnail').value = data.url;
 
     alert('Upload thumbnail thành công!');
   } catch (err) {
@@ -826,3 +835,7 @@ async function fetchCampaignsForSelect() {
     alert('Không thể tải danh sách chiến dịch!');
   }
 }
+
+// Thêm đoạn mã này vào cuối file
+let thumbnail = document.getElementById('bookThumbnail').value;
+if (!thumbnail || thumbnail === 'undefined') thumbnail = '';

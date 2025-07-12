@@ -582,3 +582,25 @@ td.actions {
 #campaign-modal {
   display: none;
 }
+
+#toggle-book-list {
+  font-size: 20px;
+  cursor: pointer;
+}
+
+#toggle-book-list i {
+  transition: transform 0.3s ease;
+}
+
+#toggle-book-list.active i {
+  transform: rotate(180deg);
+}
+#book-search-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  max-height: 450px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+

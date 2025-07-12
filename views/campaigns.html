@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quản Lý Chiến Dịch</title>
   <link rel="stylesheet" href="/assets/css/campaigns.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
   <style>
     .btn-action {
@@ -28,6 +29,27 @@
     .btn-delete:hover {
       background-color: #c82333;
     }
+    #book-search-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    #campaign-form {
+      background: #fff;
+      padding: 32px;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 640px;
+      max-height: 90vh;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -47,7 +69,7 @@
     </div>
     <nav>
       <ul>
-         <li><a href="home">TRANG CHỦ</a></li>
+        <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
         <li><a href="danhgiasanpham">DANH SÁCH TRUYỆN TRANH</a></li>
         <li><a href="quanlynguoidung">QUẢN LÝ NGƯỜI DÙNG</a></li>
@@ -89,16 +111,40 @@
     <div class="pagination"></div>
 
     <!-- Modal thêm/cập nhật -->
-    <div id="campaign-modal" style="display:none; position:fixed; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
-      <form id="campaign-form" style="background:#fff; padding:32px; border-radius:12px; width:100%; max-width:640px; box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:16px;">
+   <div id="campaign-modal" style="
+  display: none;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  overflow-y: auto;
+  padding: 40px 0;
+  align-items: center;
+  justify-content: center;
+">
+      <form id="campaign-form">
         <h2 style="text-align:center; color:#007bff; margin-bottom:8px;">🎯 Thêm / Cập nhật Chiến Dịch</h2>
 
         <input type="text" id="campaign-name" class="form-input" placeholder="Tên chiến dịch" required />
 
         <textarea id="campaign-desc" placeholder="Mô tả chiến dịch"></textarea>
-<label for="campaign-books"><strong>Chọn sách áp dụng:</strong></label>
-<select id="campaign-books" multiple style="height:100px; width:100%; border:1px solid #ccc; border-radius:6px;"></select>
 
+        <label for="campaign-books" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          <strong>Chọn sách áp dụng:</strong>
+          <span id="toggle-book-list" style="font-size:20px;cursor:pointer;">
+            <i class="fa fa-chevron-down"></i>
+          </span>
+        </label>
+
+        <div id="book-search-wrap" style="display:none;">
+          <input type="text" id="book-search-input" placeholder="Tìm sách...">
+          <div id="book-search-list"></div>
+        </div>
+
+        <select id="campaign-books" multiple style="display:none"></select>
 
         <div style="display:flex; gap:12px;">
           <select id="campaign-type" class="form-select" style="flex:1;">
@@ -106,7 +152,6 @@
             <option value="event">Sự kiện</option>
           </select>
 
-          <!-- Giữ lại status cho việc lưu backend (mặc dù không hiển thị trong bảng nữa) -->
           <select id="campaign-status" class="form-select" style="flex:1;">
             <option value="true">Hiển thị</option>
             <option value="false">Ẩn</option>
