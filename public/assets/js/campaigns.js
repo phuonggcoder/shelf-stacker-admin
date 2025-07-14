@@ -254,7 +254,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
       return Promise.all(updatePromises);
     })
     .then(() => {
-      alert('✅ Thêm thành công!');
+      showSuccessAddCampaignDialog();
       document.getElementById('campaign-modal').style.display = 'none';
       loadCampaigns();
     })
