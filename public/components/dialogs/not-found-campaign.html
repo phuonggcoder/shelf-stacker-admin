@@ -1,0 +1,22 @@
+<div id="dialog-campaign-not-found" style="
+  position: fixed; inset: 0; z-index: 9999;
+  background-color: rgba(0,0,0,0.5);
+  display: flex; justify-content: center; align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+">
+  <div style="background: white; border-radius: 16px; padding: 32px; max-width: 380px; width: 100%; text-align: center;">
+    <img src="https://img.icons8.com/color/48/000000/error--v1.png" alt="not found">
+    <h3 style="margin: 16px 0 8px; font-size: 18px;">Không tìm thấy chiến dịch !</h3>
+    <p style="margin-bottom: 24px; font-size: 14px; color: #555;">0 mục khớp với từ khóa tìm kiếm của bạn</p>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+      <button onclick="document.getElementById('dialog-campaign-not-found').remove()" style="
+        flex: 1; padding: 10px; background: #ffecec; border: none; border-radius: 8px;
+        color: #d9534f; font-weight: bold; cursor: pointer;
+      ">Hủy</button>
+      <button onclick="document.getElementById('dialog-campaign-not-found').remove()" style="
+        flex: 1; padding: 10px; background: #00cfff; border: none; border-radius: 8px;
+        color: white; font-weight: bold; cursor: pointer;
+      ">Thử lại</button>
+    </div>
+  </div>
+</div>

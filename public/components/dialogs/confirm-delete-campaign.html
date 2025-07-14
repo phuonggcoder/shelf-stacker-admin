@@ -1,0 +1,33 @@
+<!-- confirm-delete-campaign.html -->
+<div id="dialog-confirm-delete-campaign" style="
+  position: fixed; inset: 0; z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex; justify-content: center; align-items: center;
+  font-family: Arial, sans-serif;
+">
+  <div style="
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    width: 360px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  ">
+    <p style="font-size: 15px; margin-bottom: 16px;">
+      Bạn có chắc muốn xóa chiến dịch này?
+    </p>
+    <hr style="border: none; border-top: 2px solid #00d4ff; margin-bottom: 16px;" />
+    <div style="display: flex; justify-content: center; gap: 12px;">
+      <button id="cancel-delete-campaign-btn" style="
+        background-color: #fff0f0;
+        color: red; border: none; border-radius: 20px;
+        padding: 8px 20px; font-weight: bold; cursor: pointer;
+      ">Hủy</button>
+      <button id="confirm-delete-campaign-btn" style="
+        background-color: #00cfff;
+        color: white; border: none; border-radius: 20px;
+        padding: 8px 20px; font-weight: bold; cursor: pointer;
+      ">OK</button>
+    </div>
+  </div>
+</div>

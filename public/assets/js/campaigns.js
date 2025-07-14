@@ -336,7 +336,8 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
       return Promise.all(updatePromises);
     })
     .then(() => {
-      alert('✅ Đã cập nhật chiến dịch');
+      showSuccessUpdateCampaignDialog();
+
       document.getElementById('campaign-modal').style.display = 'none';
       loadCampaigns();
     })
@@ -346,26 +347,49 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     });
 });
 
+// xóa
 function deleteCampaign(id) {
-  if (!confirm('Bạn có chắc chắn muốn xóa chiến dịch này?')) return;
+  showConfirmDeleteCampaignDialog();
 
-  fetch(`${apiURL}/${id}`, {
-    method: 'DELETE',
-    headers: { 'Authorization': token }
-  })
-    .then(res => {
-      if (!res.ok) throw new Error('Xóa thất bại');
-      return res.json();
-    })
-    .then(() => {
-      alert('✅ Đã xóa chiến dịch');
-      loadCampaigns();
-    })
-    .catch(err => {
-      console.error(err);
-      alert('❌ Lỗi khi xóa chiến dịch');
-    });
+  // Đợi DOM hiển thị dialog rồi gán sự kiện
+  const observer = new MutationObserver((mutations, obs) => {
+    const dialog = document.getElementById('dialog-confirm-delete-campaign');
+    const cancelBtn = document.getElementById('cancel-delete-campaign-btn');
+    const confirmBtn = document.getElementById('confirm-delete-campaign-btn');
+
+    if (dialog && cancelBtn && confirmBtn) {
+      obs.disconnect(); // Ngưng quan sát sau khi tìm thấy dialog
+
+      cancelBtn.addEventListener('click', () => dialog.remove());
+
+      confirmBtn.addEventListener('click', () => {
+        dialog.remove();
+
+        fetch(`${apiURL}/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': token }
+        })
+          .then(res => {
+            if (!res.ok) throw new Error('Xóa thất bại');
+            return res.json();
+          })
+          .then(() => {
+            showSuccessDeleteCampaignDialog();
+            loadCampaigns();
+          })
+          .catch(err => {
+            console.error(err);
+            alert('❌ Lỗi khi xóa chiến dịch');
+          });
+      });
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
 }
+
+
+
 
 document.getElementById('btn-search').addEventListener('click', function () {
   const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
@@ -376,13 +400,19 @@ document.getElementById('btn-search').addEventListener('click', function () {
     .then(res => res.json())
     .then(data => {
       const filtered = data.filter(c => c.name.toLowerCase().includes(keyword));
-      renderCampaigns(filtered);
+      if (filtered.length === 0) {
+        showNotFoundCampaignDialog();
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Không tìm thấy chiến dịch nào.</td></tr>`;
+      } else {
+        renderCampaigns(filtered);
+      }
     })
     .catch(err => {
       console.error('❌ Lỗi tìm kiếm:', err);
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
     });
 });
+
 
 document.getElementById('search-campaign').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
@@ -417,3 +447,26 @@ toggleBtn.addEventListener('click', function() {
     loadBooksForSearch();
   }
 });
+function showSuccessUpdateCampaignDialog() {
+  fetch('/components/dialogs/success-update-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+
+function showSuccessDeleteCampaignDialog() {
+  fetch('/components/dialogs/success-delete-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+
+function showNotFoundCampaignDialog() {
+  fetch('/components/dialogs/not-found-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+function showConfirmDeleteCampaignDialog() {
+  fetch('/components/dialogs/confirm-delete-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+
