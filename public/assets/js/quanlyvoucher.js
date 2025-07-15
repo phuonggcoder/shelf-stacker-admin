@@ -6,6 +6,7 @@ const statusFilter = document.getElementById('voucherStatusFilter');
 
 let allVouchers = [];
 let editingVoucherId = null;
+let pendingDeleteVoucherId = null;
 
 async function fetchVouchers() {
   try {
@@ -62,9 +63,31 @@ function renderVouchers(vouchers) {
 }
 
 function deleteVoucher(id) {
-  if (!confirm('Bạn có chắc chắn muốn xóa voucher này?')) return;
+  pendingDeleteVoucherId = id;
 
+  fetch('/components/dialogs/confirm-delete-voucher.html')
+    .then(res => res.text())
+    .then(html => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div);
+    })
+    .catch(err => {
+      console.error('Không thể hiển thị hộp thoại xác nhận:', err);
+    });
+}
+
+function cancelDeleteVoucher() {
+  const dialog = document.getElementById('dialog-confirm-delete-voucher');
+  if (dialog) dialog.remove();
+  pendingDeleteVoucherId = null;
+}
+
+function confirmDeleteVoucher() {
   const token = localStorage.getItem('authToken');
+  const id = pendingDeleteVoucherId;
+  if (!id) return;
+
   fetch(`${apiURL}/${id}`, {
     method: 'DELETE',
     headers: { 'Authorization': `Bearer ${token}` }
@@ -74,13 +97,20 @@ function deleteVoucher(id) {
       return response.json();
     })
     .then(() => {
-      alert('Đã xóa voucher thành công');
+      closeConfirmDeleteVoucherDialog();
+      showDeleteVoucherSuccessDialog();
       fetchVouchers();
     })
     .catch(err => {
       console.error(err);
       alert('Lỗi khi xóa voucher.');
     });
+}
+
+function closeConfirmDeleteVoucherDialog() {
+  const dialog = document.getElementById('dialog-confirm-delete-voucher');
+  if (dialog) dialog.remove();
+  pendingDeleteVoucherId = null;
 }
 
 function editVoucher(id) {
@@ -130,7 +160,7 @@ function submitEditVoucher() {
       return res.json();
     })
     .then(() => {
-      alert('Cập nhật thành công');
+      showUpdateVoucherSuccessDialog();
       closeEditDialog();
       fetchVouchers();
     })
@@ -140,21 +170,9 @@ function submitEditVoucher() {
     });
 }
 
-function closeEditDialog() {
-  document.getElementById('voucherEditDialog').style.display = 'none';
-}
-
-function openAddDialog() {
-  document.getElementById('voucherAddDialog').style.display = 'flex';
-}
-
-function closeAddDialog() {
-  document.getElementById('voucherAddDialog').style.display = 'none';
-}
 function submitAddVoucher() {
   const token = localStorage.getItem('authToken');
 
-  // Lấy dữ liệu từ form
   const voucher_id = document.getElementById('add-voucher-id').value.trim();
   const voucher_type = document.getElementById('add-voucher-type').value;
   const discount_value = parseFloat(document.getElementById('add-discount-value').value);
@@ -195,7 +213,7 @@ function submitAddVoucher() {
       return res.json();
     })
     .then(() => {
-      alert('Thêm voucher thành công');
+      showAddVoucherSuccessDialog();
       closeAddDialog();
       fetchVouchers();
     })
@@ -205,9 +223,72 @@ function submitAddVoucher() {
     });
 }
 
+function openAddDialog() {
+  document.getElementById('voucherAddDialog').style.display = 'flex';
+}
 
+function closeAddDialog() {
+  document.getElementById('voucherAddDialog').style.display = 'none';
+}
+
+function closeEditDialog() {
+  document.getElementById('voucherEditDialog').style.display = 'none';
+}
+
+// --- Dialog helpers ---
+function showAddVoucherSuccessDialog() {
+  fetch('/components/dialogs/add-Voucher.html')
+    .then(res => res.text())
+    .then(html => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div);
+    })
+    .catch(err => {
+      console.error('Không thể hiển thị dialog thêm:', err);
+    });
+}
+
+function closeAddVoucherSuccessDialog() {
+  const dialog = document.getElementById('addVoucherSuccessDialog');
+  if (dialog) dialog.remove();
+}
+
+function showUpdateVoucherSuccessDialog() {
+  fetch('/components/dialogs/update-Voucher.html')
+    .then(res => res.text())
+    .then(html => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div);
+    })
+    .catch(err => {
+      console.error('Không thể hiển thị dialog sửa:', err);
+    });
+}
+
+function showDeleteVoucherSuccessDialog() {
+  fetch('/components/dialogs/delete-voucher.html')
+    .then(res => res.text())
+    .then(html => {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      document.body.appendChild(div);
+    })
+    .catch(err => {
+      console.error('Không thể hiển thị dialog xóa:', err);
+    });
+}
+
+function closeDeleteVoucherSuccessDialog() {
+  const dialog = document.getElementById('deleteVoucherSuccessDialog');
+  if (dialog) dialog.remove();
+}
+
+// --- Lọc tìm kiếm ---
 searchInput.addEventListener('input', filterVouchers);
 statusFilter.addEventListener('change', filterVouchers);
+addVoucherBtn.addEventListener('click', openAddDialog);
 
 function filterVouchers() {
   const keyword = searchInput.value.trim().toLowerCase();
@@ -225,7 +306,5 @@ function filterVouchers() {
   renderVouchers(filtered);
 }
 
-addVoucherBtn.addEventListener('click', openAddDialog);
-
-// Gọi lần đầu khi trang load
+// --- Load khi trang mở ---
 fetchVouchers();
