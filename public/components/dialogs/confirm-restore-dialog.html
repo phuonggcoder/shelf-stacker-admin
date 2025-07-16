@@ -1,0 +1,59 @@
+<!-- confirm-restore-dialog.html -->
+<div id="confirm-restore-dialog" style="display: none;" class="dialog-overlay">
+  <div class="dialog-box">
+    <div class="dialog-icon">❓</div>
+    <p class="dialog-message">Bạn có chắc muốn khôi phục voucher này?</p>
+    <div class="dialog-actions">
+      <button class="btn-ok">OK</button>
+      <button class="btn-cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .dialog-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  .dialog-box {
+    background: white;
+    border-radius: 10px;
+    padding: 20px 30px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  .dialog-icon {
+    font-size: 36px;
+    color: #00c3ff;
+    margin-bottom: 12px;
+  }
+  .dialog-message {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  .dialog-actions {
+    display: flex;
+    justify-content: space-around;
+  }
+  .btn-ok, .btn-cancel {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  .btn-ok {
+    background-color: #00c3ff;
+    color: white;
+  }
+  .btn-cancel {
+    background-color: #ccc;
+  }
+</style>

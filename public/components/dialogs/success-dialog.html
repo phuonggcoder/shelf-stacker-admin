@@ -1,0 +1,60 @@
+<!-- success-dialog.html -->
+<div id="success-dialog" style="display: none;" class="success-dialog-overlay">
+  <div class="success-dialog">
+    <div class="success-icon">✔</div>
+    <p class="success-message">Thao tác thành công!</p>
+    <button class="btn-ok">OK</button>
+  </div>
+</div>
+
+<style>
+  .success-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .success-dialog {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 30px;
+    max-width: 300px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    font-family: sans-serif;
+    position: relative;
+  }
+
+  .success-icon {
+    color: #00d5ff;
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+
+  .success-message {
+    margin: 0 0 20px;
+    color: #333;
+    font-weight: bold;
+  }
+
+  .btn-ok {
+    background: #00d5ff;
+    border: none;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  .btn-ok:hover {
+    background: #00b8e6;
+  }
+</style>

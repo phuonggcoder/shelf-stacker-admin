@@ -4,7 +4,85 @@ function getToken() {
   return localStorage.getItem('authToken') || '';
 }
 
-// Lấy danh sách người dùng từ API
+let currentUserId = null;
+let currentUserIsActive = true;
+
+// Load dialog khóa người dùng
+async function loadLockUserDialogHTML() {
+  const res = await fetch('components/dialogs/dialog-lock-user.html');
+  const html = await res.text();
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.querySelector('#dialog-lock-user .cancel-btn')
+    .addEventListener('click', cancelLockUser);
+  document.querySelector('#dialog-lock-user .confirm-btn')
+    .addEventListener('click', confirmLockUser);
+}
+
+// Load dialog thông báo thành công
+async function loadSuccessDialogHTML() {
+  const res = await fetch('components/dialogs/success-dialog.html');
+  const html = await res.text();
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.querySelector('#success-dialog .btn-ok')
+    .addEventListener('click', () => {
+      document.getElementById('success-dialog').style.display = 'none';
+    });
+}
+
+// Hiển thị dialog thành công
+function showSuccessDialog(message = 'Thao tác thành công!') {
+  const dialog = document.getElementById('success-dialog');
+  if (!dialog) return;
+
+  dialog.querySelector('.success-message').textContent = message;
+  dialog.style.display = 'flex';
+}
+
+// Mở dialog xác nhận khóa/mở khóa
+function showLockUserDialog(userId, isActive) {
+  currentUserId = userId;
+  currentUserIsActive = isActive;
+
+  const dialog = document.getElementById('dialog-lock-user');
+  if (!dialog) return;
+
+  document.getElementById('lock-user-message').textContent =
+    isActive ? 'Bạn có chắc muốn khóa người dùng này?' : 'Bạn có chắc muốn mở khóa người dùng này?';
+
+  dialog.style.display = 'flex';
+}
+
+function cancelLockUser() {
+  document.getElementById('dialog-lock-user').style.display = 'none';
+  currentUserId = null;
+}
+
+// Xác nhận khóa/mở khóa người dùng
+async function confirmLockUser() {
+  const res = await fetch(`https://server-shelf-stacker.onrender.com/auth/users/${currentUserId}/lock`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    },
+    body: JSON.stringify({ isActive: !currentUserIsActive })
+  });
+
+  if (res.ok) {
+    showSuccessDialog(`${currentUserIsActive ? 'Khóa' : 'Mở khóa'} người dùng thành công!`);
+    fetchUsers();
+  } else {
+    const err = await res.json();
+    alert('Thất bại: ' + (err.message || 'Lỗi không xác định!'));
+  }
+
+  document.getElementById('dialog-lock-user').style.display = 'none';
+  currentUserId = null;
+}
+
+// Lấy danh sách người dùng
 async function fetchUsers() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
@@ -22,7 +100,7 @@ async function fetchUsers() {
   }
 }
 
-// Hiển thị danh sách người dùng
+// Render danh sách người dùng
 function renderUsers(users) {
   const tbody = document.getElementById('user-table-body');
   if (!users.length) {
@@ -65,6 +143,7 @@ function renderUsers(users) {
   });
 }
 
+// Tìm kiếm người dùng
 function filterAndRenderUsers() {
   const keyword = document.querySelector('.search-filter .input').value.trim().toLowerCase();
   const status = document.querySelector('.search-filter .select').value;
@@ -78,15 +157,16 @@ function filterAndRenderUsers() {
   renderUsers(filtered);
 }
 
-// Khởi chạy khi DOM sẵn sàng
+// DOM ready
 document.addEventListener('DOMContentLoaded', () => {
+  loadLockUserDialogHTML();
+  loadSuccessDialogHTML(); // Tải dialog thành công
   fetchUsers();
 
   document.querySelector('.search-filter .input').addEventListener('input', filterAndRenderUsers);
   document.querySelector('.search-filter .select').addEventListener('change', filterAndRenderUsers);
 
-  document.getElementById('user-table-body').addEventListener('click', async function(e) {
-    // Mở/ẩn chi tiết
+  document.getElementById('user-table-body').addEventListener('click', function (e) {
     if (e.target.classList.contains('btn-detail')) {
       const idx = e.target.getAttribute('data-idx');
       const detailRow = document.getElementById('detail-row-' + idx);
@@ -99,32 +179,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // Khóa / Mở khóa người dùng
     if (e.target.classList.contains('btn-lock-toggle')) {
       const id = e.target.getAttribute('data-id');
       const isActive = e.target.getAttribute('data-active') === 'true';
-      if (confirm(`Bạn có chắc chắn muốn ${isActive ? 'khóa' : 'mở khóa'} người dùng này?`)) {
-        try {
-          const res = await fetch(`https://server-shelf-stacker.onrender.com/auth/users/${id}/lock`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ' + getToken()
-            },
-            body: JSON.stringify({ isActive: !isActive })
-          });
-          if (res.ok) {
-            alert(`${isActive ? 'Khóa' : 'Mở khóa'} người dùng thành công!`);
-            fetchUsers(); // Tải lại danh sách người dùng
-          } else {
-            const err = await res.json();
-            alert('Thao tác thất bại: ' + (err.message || 'Lỗi không xác định!'));
-          }
-        } catch (err) {
-          alert('Lỗi kết nối!');
-        }
-      }
+      showLockUserDialog(id, isActive);
     }
   });
 });
-

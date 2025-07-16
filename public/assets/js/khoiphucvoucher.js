@@ -1,12 +1,53 @@
-// /assets/js/khoiphucvoucher.js
-
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/vouchers';
 const deletedAPI = 'https://server-shelf-stacker.onrender.com/api/vouchers/deleted';
 const restoreAPI = id => `${apiURL}/restore/${id}`;
 const trashVoucherGrid = document.getElementById('trashVoucherGrid');
 
+let currentRestoreVoucherId = null;
+
 function getToken() {
   return localStorage.getItem('authToken') || '';
+}
+
+// Load dialog xác nhận khôi phục
+async function loadRestoreDialogHTML() {
+  const res = await fetch('components/dialogs/confirm-restore-dialog.html');
+  const html = await res.text();
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.querySelector('#confirm-restore-dialog .btn-cancel')
+    .addEventListener('click', () => {
+      document.getElementById('confirm-restore-dialog').style.display = 'none';
+      currentRestoreVoucherId = null;
+    });
+
+  document.querySelector('#confirm-restore-dialog .btn-ok')
+    .addEventListener('click', () => {
+      if (currentRestoreVoucherId) {
+        sendRestoreRequest(currentRestoreVoucherId);
+        document.getElementById('confirm-restore-dialog').style.display = 'none';
+        currentRestoreVoucherId = null;
+      }
+    });
+}
+
+// Load dialog thông báo thành công
+async function loadSuccessDialogHTML() {
+  const res = await fetch('components/dialogs/success-restore-dialog.html');
+  const html = await res.text();
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.getElementById('close-success-restore')
+    .addEventListener('click', () => {
+      document.getElementById('success-restore-dialog').style.display = 'none';
+    });
+}
+
+function showSuccessDialog() {
+  const dialog = document.getElementById('success-restore-dialog');
+  if (dialog) {
+    dialog.style.display = 'flex';
+  }
 }
 
 // Gọi API để lấy danh sách voucher đã xóa gần đây
@@ -43,16 +84,23 @@ function renderDeletedVouchers(vouchers) {
       <div>Đơn tối thiểu: ${v.min_order_value}</div>
       <div>Lượt dùng: ${v.usage_limit}</div>
       <div>Dùng tối đa/1 người: ${v.max_per_user}</div>
-      <button class="restore-btn" onclick="restoreVoucher('${v._id}')">Khôi phục</button>
+      <button class="restore-btn" onclick="confirmRestoreVoucher('${v._id}')">Khôi phục</button>
     `;
     trashVoucherGrid.appendChild(div);
   });
 }
 
-// Gửi yêu cầu khôi phục voucher
-function restoreVoucher(id) {
-  if (!confirm('Khôi phục voucher này?')) return;
+// Hiển thị dialog xác nhận khôi phục
+function confirmRestoreVoucher(id) {
+  currentRestoreVoucherId = id;
+  const dialog = document.getElementById('confirm-restore-dialog');
+  if (dialog) {
+    dialog.style.display = 'flex';
+  }
+}
 
+// Gửi yêu cầu khôi phục voucher
+function sendRestoreRequest(id) {
   fetch(restoreAPI(id), {
     method: 'PATCH',
     headers: {
@@ -61,8 +109,8 @@ function restoreVoucher(id) {
   })
     .then(res => res.json())
     .then(data => {
-      alert(data.message || 'Đã khôi phục');
       fetchDeletedVouchers();
+      showSuccessDialog(); // ✅ dùng dialog UI đẹp thay alert
     })
     .catch(err => {
       console.error(err);
@@ -71,4 +119,8 @@ function restoreVoucher(id) {
 }
 
 // Khởi động
-fetchDeletedVouchers();
+document.addEventListener('DOMContentLoaded', () => {
+  loadRestoreDialogHTML();
+  loadSuccessDialogHTML(); // ✅ load thêm dialog thành công
+  fetchDeletedVouchers();
+});
