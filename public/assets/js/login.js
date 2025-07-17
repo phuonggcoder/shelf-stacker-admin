@@ -22,13 +22,14 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
     const data = await response.json();
 
     if (response.ok) {
-      // Nếu có token, lưu vào localStorage
       if (data.token) {
         localStorage.setItem('authToken', data.token);
       }
+      if (data.user && data.user.id) {
+        localStorage.setItem('userId', data.user.id);  // Sửa từ _id thành id
+      }
 
-      // Điều hướng sang trang chính
-      window.location.href = 'home';
+      window.location.href = 'home';  // hoặc đường dẫn trang chính
     } else {
       errorMsg.textContent = data.message || 'Tên người dùng hoặc mật khẩu không đúng.';
     }

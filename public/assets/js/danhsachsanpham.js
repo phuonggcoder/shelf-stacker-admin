@@ -160,7 +160,13 @@ function renderProducts(products) {
       const id = this.getAttribute('data-id');
       if (confirm('Bạn có chắc muốn xóa truyện này?')) {
         try {
-          const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, { method: 'DELETE' });
+          const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
+  }
+});
+
           if (!res.ok) {
             const errText = await res.text();
             alert('Xóa thất bại!\n' + errText);

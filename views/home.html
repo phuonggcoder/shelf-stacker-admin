@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sleek Admin - Dashboard</title>
   <style>
     :root {
@@ -38,6 +38,7 @@
       overflow-y: auto;
       transition: transform 0.3s ease;
       box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
     }
 
     .sidebar.hidden {
@@ -89,6 +90,7 @@
       transition: all 0.2s;
       font-weight: 500;
       cursor: pointer;
+      font-size: 14px;
     }
 
     .sidebar nav ul li a:hover,
@@ -130,6 +132,7 @@
       border: 1.5px solid #bae6fd;
       border-radius: 20px;
       background: #f0f9ff;
+      font-size: 14px;
     }
 
     .avatar {
@@ -154,6 +157,8 @@
 
     .breadcrumb p {
       color: #555;
+      margin-top: 4px;
+      font-size: 16px;
     }
 
     .stats {
@@ -174,16 +179,25 @@
     .card h3 {
       color: #0ea5e9;
       font-size: 32px;
+      margin: 0;
+    }
+
+    .card p {
+      margin-top: 8px;
+      font-size: 14px;
+      color: #666;
     }
 
     .table-section {
       background: #fff;
       padding: 20px;
       border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
     .table-section h3 {
       color: #0ea5e9;
+      margin-bottom: 15px;
     }
 
     .table-section table {
@@ -195,6 +209,8 @@
     .table-section td {
       padding: 10px;
       border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      text-align: left;
     }
 
     .btn-primary {
@@ -205,10 +221,17 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
     }
 
-    .btn-primary:hover {
+    .btn-primary:hover:not(:disabled) {
       background-color: #38bdf8;
+    }
+
+    .btn-primary:disabled {
+      background-color: #9ecffb;
+      cursor: not-allowed;
     }
 
     .btn-danger {
@@ -219,6 +242,8 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
     }
 
     .btn-danger:hover {
@@ -232,6 +257,8 @@
       width: 300px;
       max-width: 90%;
       box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      z-index: 1002;
     }
 
     dialog::backdrop {
@@ -240,11 +267,19 @@
 
     .notification {
       background-color: #f0f9ff;
-      border: 1px solid #28a745;
+      border: 1px solid var(--success);
       border-radius: 8px;
       padding: 10px;
       margin-top: 10px;
       display: none;
+      font-size: 14px;
+      color: var(--success);
+    }
+
+    .notification.error-message {
+      background-color: #fff0f0;
+      border-color: var(--danger);
+      color: var(--danger);
     }
   </style>
 </head>
@@ -253,7 +288,7 @@
   <!-- Sidebar chính -->
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User    ">
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
@@ -277,134 +312,232 @@
   <!-- Sidebar Cài đặt -->
   <aside class="sidebar hidden" id="settingsSidebar">
     <div class="profile" style="text-align: left;">
-      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
         <span style="font-size: 20px;">←</span> Quay lại
       </button>
     </div>
     <nav>
       <ul>
         <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
-        <li><button id="changeAvatarButton" class="btn-primary">Thay ảnh đại diện</button></li>
       </ul>
     </nav>
   </aside>
 
-  <!-- Hộp thoại upload ảnh -->
-  <dialog id="uploadDialog">
-    <h4>Chọn ảnh mới</h4>
-    <input type="file" id="avatarUpload" accept="image/*" />
-    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;">Tải lên</button>
-    <div id="uploadMessage" class="notification">✅ Ảnh đã được tải lên thành công!</div>
-    <button onclick="uploadDialog.close()" class="btn-danger" style="margin-top: 10px;">Đóng</button>
-  </dialog>
-
   <!-- Header -->
   <header class="header">
-    <div class="logo">SleekAdmin</div>
+    <h1 class="logo">Sleek Admin</h1>
     <div class="user">
-      <input type="text" placeholder="Tìm kiếm..." />
-      <img class="avatar" id="headerAvatar" src="https://graph.facebook.com/4/picture?width=40&height=40" alt="User    ">
+      <input type="search" placeholder="Search..." />
+      <img id="headerAvatar" class="avatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Avatar" />
     </div>
   </header>
 
   <!-- Nội dung chính -->
-  <div class="main-content">
-    <div class="breadcrumb">
-      <h2>Trang chủ</h2>
-      <p>Chào mừng quay lại, Tuấn Anh 👋</p>
-    </div>
+  <main class="main-content">
+    <section class="breadcrumb">
+      <h2>Dashboard</h2>
+      <p>Chào mừng trở lại!</p>
+    </section>
 
-    <div class="stats">
-      <div class="card"><h3>12</h3><p>Danh mục</p></div>
-      <div class="card"><h3>324</h3><p>Truyện tranh</p></div>
-      <div class="card"><h3>56</h3><p>Đơn hàng</p></div>
-      <div class="card"><h3>5</h3><p>Voucher</p></div>
-    </div>
+    <section class="stats">
+      <div class="card">
+        <h3>1,325</h3>
+        <p>Người dùng mới</p>
+      </div>
+      <div class="card">
+        <h3>7,245</h3>
+        <p>Doanh thu tháng</p>
+      </div>
+      <div class="card">
+        <h3>98</h3>
+        <p>Đơn hàng mới</p>
+      </div>
+      <div class="card">
+        <h3>320</h3>
+        <p>Sản phẩm tồn kho</p>
+      </div>
+    </section>
 
-    <div class="table-section">
-      <h3>Danh sách truyện nổi bật</h3>
+    <section class="table-section">
+      <h3>Quản lý đơn hàng</h3>
       <table>
         <thead>
-          <tr><th>#</th><th>Tên truyện</th><th>Danh mục</th><th>Trạng thái</th></tr>
+          <tr>
+            <th>Mã đơn hàng</th>
+            <th>Khách hàng</th>
+            <th>Trạng thái</th>
+            <th>Ngày đặt</th>
+          </tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td>One Piece</td><td>Phiêu lưu</td><td>Hiển thị</td></tr>
-          <tr><td>2</td><td>Attack on Titan</td><td>Hành động</td><td>Ẩn</td></tr>
+          <tr>
+            <td>DH001</td>
+            <td>Nguyễn Văn A</td>
+            <td>Đang xử lý</td>
+            <td>15/07/2025</td>
+          </tr>
+          <tr>
+            <td>DH002</td>
+            <td>Trần Thị B</td>
+            <td>Hoàn thành</td>
+            <td>14/07/2025</td>
+          </tr>
+          <tr>
+            <td>DH003</td>
+            <td>Phạm Văn C</td>
+            <td>Đang giao</td>
+            <td>13/07/2025</td>
+          </tr>
         </tbody>
       </table>
-    </div>
-  </div>
+    </section>
 
-  <!-- JavaScript -->
+    <button id="changeAvatarButton" class="btn-primary" style="margin-top: 40px; max-width: 260px;">Đổi ảnh đại diện</button>
+  </main>
+
+  <!-- Dialog Upload Avatar -->
+  <dialog id="uploadDialog">
+    <h4>Chọn ảnh mới</h4>
+    <input type="file" id="avatarUpload" accept="image/*" />
+    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;">Tải lên</button>
+    <div id="uploadMessage" class="notification"></div>
+    <button id="cancelButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
+  </dialog>
+
   <script>
-  const uploadDialog = document.getElementById('uploadDialog');
+    const uploadDialog = document.getElementById('uploadDialog');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const uploadButton = document.getElementById('uploadButton');
+    const cancelButton = document.getElementById('cancelButton');
+    const changeAvatarButton = document.getElementById('changeAvatarButton');
 
-  document.getElementById('settingsLink').onclick = () => {
-    document.getElementById('mainSidebar').classList.add('hidden');  // ẩn sidebar chính
-    document.getElementById('settingsSidebar').classList.remove('hidden');  // hiện sidebar cài đặt
-  };
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
 
-  document.getElementById('backButton').onclick = () => {
-    document.getElementById('settingsSidebar').classList.add('hidden');  // ẩn sidebar cài đặt
-    document.getElementById('mainSidebar').classList.remove('hidden');  // hiện sidebar chính
-  };
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
 
-  document.getElementById('logoutButton').onclick = () => {
-    fetch('login')
-      .then(res => {
-        if (res.ok) {
-          alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');  // đăng xuất thành công
-          window.location.href = 'login';  // chuyển trang
-        } else {
-          alert('Không tìm thấy file login.html, vui lòng tạo file này.');  // file không tồn tại
-        }
-      })
-      .catch(() => {
-        alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');  // lỗi gọi fetch
-      });
-  };
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
 
-  document.getElementById('changeAvatarButton').onclick = () => {
-    uploadDialog.showModal();  // mở hộp thoại chọn ảnh
-    document.getElementById('uploadMessage').style.display = 'none';  // ẩn thông báo cũ nếu có
-  };
+    changeAvatarButton.onclick = () => {
+      uploadDialog.showModal();
+      resetUploadDialog();
+    };
 
-  document.getElementById('uploadButton').onclick = () => {
-    const file = document.getElementById('avatarUpload').files[0];  // lấy file được chọn
+    cancelButton.onclick = () => {
+      uploadDialog.close();
+    };
 
-    if (!file) {
-      alert('Vui lòng chọn một ảnh.');  // không có file thì thông báo
-      return;
+    uploadDialog.addEventListener('close', () => {
+      resetUploadDialog();
+    });
+
+    function resetUploadDialog() {
+      document.getElementById('avatarUpload').value = '';
+      uploadMessage.style.display = 'none';
+      uploadMessage.textContent = '';
+      uploadMessage.className = 'notification';
+      uploadButton.disabled = false;
+      uploadButton.textContent = 'Tải lên';
     }
 
-    const formData = new FormData();
-    formData.append('file', file); // Đảm bảo tên trường là 'file' theo yêu cầu của API
+   uploadButton.onclick = async () => {
+  const fileInput = document.getElementById('avatarUpload');
+  const file = fileInput.files[0];
 
-    // Gọi API upload ảnh
-    fetch('https://server-shelf-stacker.onrender.com/api/upload/avatar', {
+  if (!file) {
+    alert('Vui lòng chọn một ảnh.');
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    alert('Vui lòng chọn một file ảnh hợp lệ.');
+    return;
+  }
+
+  const token = localStorage.getItem('authToken');
+  const userId = localStorage.getItem('userId');  // Lấy userId từ localStorage
+
+  if (!token) {
+    alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+    return;
+  }
+
+  if (!userId) {
+    alert('Thiếu userId. Vui lòng đăng nhập lại.');
+    return;
+  }
+
+  uploadButton.disabled = true;
+  uploadButton.textContent = 'Đang tải...';
+
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('userId', userId); // Thêm userId vào formData
+
+    const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
       method: 'POST',
-      body: formData,
-    })
-    .then(response => {
-      if (response.ok) {
-        return response.json(); // Giả sử API trả về URL của ảnh đã tải lên
-      } else {
-        throw new Error('Có lỗi xảy ra khi tải ảnh lên.');
-      }
-    })
-    .then(data => {
-      // Cập nhật ảnh chỉ khi tải lên thành công
-      const imageUrl = data.imageUrl; // Giả sử API trả về URL của ảnh
-      document.getElementById('sidebarAvatar').src = imageUrl;  // cập nhật ảnh sidebar
-      document.getElementById('headerAvatar').src = imageUrl;  // cập nhật ảnh header
-      document.getElementById('uploadMessage').style.display = 'block';  // hiện thông báo đã tải ảnh
-    })
-    .catch(error => {
-      alert(error.message); // Hiển thị thông báo lỗi
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     });
-  };
+
+    if (!response.ok) {
+      let errorMsg = 'Lỗi khi tải ảnh lên';
+      try {
+        const errData = await response.json();
+        if (errData.message) errorMsg = errData.message;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+
+    const imageUrl = data.avatar || URL.createObjectURL(file);
+
+    document.getElementById('sidebarAvatar').src = imageUrl;
+    document.getElementById('headerAvatar').src = imageUrl;
+
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+    uploadMessage.className = 'notification success-message';
+
+    setTimeout(() => {
+      uploadDialog.close();
+    }, 2000);
+
+  } catch (error) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Lỗi: ' + error.message;
+    uploadMessage.className = 'notification error-message';
+    uploadButton.disabled = false;
+    uploadButton.textContent = 'Tải lên';
+  }
+};
+
   </script>
 
 </body>
 </html>
-<!-- End of views/home.html -->
