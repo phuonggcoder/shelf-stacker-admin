@@ -9,16 +9,13 @@ const closeDialogBtn = document.getElementById('closeDialogBtn');
 const addBookForm = document.getElementById('addBookForm');
 const dialogTitle = document.getElementById('dialogTitle');
 
-let uploadedImageFiles = []; // Mảng lưu File ảnh cover
 // CKEditor 5 setup
 let bookDescEditor = null;
 let ckeditorPromise = null;
 function initCKEditorIfNeeded() {
   if (!ckeditorPromise) {
     ckeditorPromise = ClassicEditor
-      .create(document.querySelector('#bookDesc'), {
-        extraPlugins: [CustomUploadAdapterPlugin]
-      })
+      .create(document.querySelector('#bookDesc'))
       .then(editor => {
         bookDescEditor = editor;
         return editor;
@@ -30,8 +27,6 @@ function initCKEditorIfNeeded() {
   return ckeditorPromise;
 }
 
-
-
 // Khởi tạo CKEditor khi trang load
 initCKEditorIfNeeded();
 
@@ -39,9 +34,14 @@ initCKEditorIfNeeded();
 addBookBtn.addEventListener('click', function () {
   dialogTitle.textContent = 'Thêm truyện mới';
   addBookForm.reset();
-  uploadedImageUrls = [];
-  previewDiv.innerHTML = '';
-  document.getElementById('bookImages').value = '';
+  
+  // Reset file inputs
+  document.getElementById('bookImageUpload').value = '';
+  document.getElementById('bookThumbnailUpload').value = '';
+  
+  // Clear previews
+  document.getElementById('uploadedImagesPreview').innerHTML = '';
+  document.getElementById('thumbnailPreview').innerHTML = '';
 
   // Xóa CKEditor nội dung
   setTimeout(() => {
@@ -54,8 +54,7 @@ addBookBtn.addEventListener('click', function () {
   dialogOverlay.classList.add('active');
 
   fetchCategoriesForSelect();
-    fetchCampaignsForSelect(); // <-- Thêm dòng này vào
-
+  fetchCampaignsForSelect();
 });
 
 // Đóng dialog
@@ -88,59 +87,50 @@ function renderProducts(products) {
     card.className = 'product-card';
 
     // Xử lý mô tả
-    // Xử lý mô tả
-let desc = product.description || '';
+    let desc = product.description || '';
+    let temp = document.createElement('div');
+    temp.innerHTML = desc;
+    let plainText = temp.textContent || temp.innerText || '';
+    let isLong = plainText.length > 270;
+    let shortDesc = plainText.slice(0, 270) + '...';
 
-// Tạo thẻ ảo để lấy nội dung thuần văn bản
-let temp = document.createElement('div');
-temp.innerHTML = desc;
-let plainText = temp.textContent || temp.innerText || '';
-let isLong = plainText.length > 270;
-let shortDesc = plainText.slice(0, 270) + '...';
+    let descHtml = '';
+    if (isLong) {
+      descHtml = `
+        <div class="desc-short" id="desc-short-${idx}">${shortDesc}</div>
+        <div class="desc-full" id="desc-full-${idx}" style="display:none">${desc}</div>
+        <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
+      `;
+    } else {
+      descHtml = `<div>${desc}</div>`;
+    }
 
-let descHtml = '';
-if (isLong) {
-  descHtml = `
-    <div class="desc-short" id="desc-short-${idx}">${shortDesc}</div>
-    <div class="desc-full" id="desc-full-${idx}" style="display:none">${desc}</div>
-    <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
-  `;
-} else {
-  descHtml = `<div>${desc}</div>`;
-}
-
-
-    // Hình ảnh
-   // Hiển thị ảnh thumbnail thay vì cover_image
-let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
-let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
-let imagesHtml = thumbUrl
-  ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
-  : `<img src="${fallbackThumb}" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
-
-
-
-
+    // Hiển thị ảnh thumbnail
+    let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
+    let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+    let imagesHtml = thumbUrl
+      ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
+      : `<img src="${fallbackThumb}" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
 
     card.innerHTML = `
-  ${imagesHtml}
-  <div class="info">
-    <h3>${product.title || product.name}</h3>
-    <p><b>Tác giả:</b> ${product.author || ''}</p>
-    <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
-    <div class="desc-wrap">${descHtml}</div>
-    <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
-    <span><b>Chiến dịch:</b> ${(product.campaigns || []).map(c => c.name || c).join(', ')}</span><br> <!-- ✅ Thêm dòng này -->
-    <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
-    <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
-    <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
-    <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
-  </div>
-  <div class="actions">
-    <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
-    <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
-  </div>
-`;
+      ${imagesHtml}
+      <div class="info">
+        <h3>${product.title || product.name}</h3>
+        <p><b>Tác giả:</b> ${product.author || ''}</p>
+        <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
+        <div class="desc-wrap">${descHtml}</div>
+        <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
+        <span><b>Chiến dịch:</b> ${(product.campaigns || []).map(c => c.name || c).join(', ')}</span><br>
+        <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
+        <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
+        <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
+        <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
+      </div>
+      <div class="actions">
+        <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
+        <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
+      </div>
+    `;
 
     productGrid.appendChild(card);
   });
@@ -187,73 +177,76 @@ let imagesHtml = thumbUrl
   });
 
   // SỬA
-document.querySelectorAll('.edit-btn').forEach(btn => {
-  btn.addEventListener('click', function () {
-    const id = this.getAttribute('data-id');
-    const book = products.find(p => p._id === id);
-    if (!book) return;
+  document.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      const id = this.getAttribute('data-id');
+      const book = products.find(p => p._id === id);
+      if (!book) return;
 
-    dialogTitle.textContent = 'Cập nhật truyện';
-    addBookForm.reset();
+      dialogTitle.textContent = 'Cập nhật truyện';
+      addBookForm.reset();
 
-    document.getElementById('bookName').value = book.title || '';
-    document.getElementById('bookAuthor').value = book.author || '';
-    document.getElementById('bookPrice').value = book.price || '';
-    document.getElementById('bookStock').value = book.stock || '';
-    document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
-    document.getElementById('bookPublisher').value = book.publisher || '';
-    document.getElementById('bookLanguage').value = book.language || '';
+      document.getElementById('bookName').value = book.title || '';
+      document.getElementById('bookAuthor').value = book.author || '';
+      document.getElementById('bookPrice').value = book.price || '';
+      document.getElementById('bookStock').value = book.stock || '';
+      document.getElementById('bookPubDate').value = book.publication_date ? book.publication_date.substr(0, 10) : '';
+      document.getElementById('bookPublisher').value = book.publisher || '';
+      document.getElementById('bookLanguage').value = book.language || '';
 
-const thumb = book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : '';
-const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
-document.getElementById('bookThumbnail').value = thumb;
-thumbnailPreview.innerHTML = thumb
-  ? `<img src="${thumb}" style="max-width:100px;" onerror="this.onerror=null;this.src='${fallbackThumb}'">`
-  : `<img src="${fallbackThumb}" style="max-width:100px;">`;
+      // Hiển thị thumbnail preview khi edit
+      const thumbnailPreview = document.getElementById('thumbnailPreview');
+      const thumb = book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : '';
+      const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+      thumbnailPreview.innerHTML = thumb
+        ? `<img src="${thumb}" style="max-width:100px;" onerror="this.onerror=null;this.src='${fallbackThumb}'">`
+        : `<img src="${fallbackThumb}" style="max-width:100px;">`;
 
+      // Hiển thị cover images preview khi edit
+      const coverPreview = document.getElementById('uploadedImagesPreview');
+      const coverImages = book.cover_image || [];
+      coverPreview.innerHTML = coverImages.map(url => `
+        <img src="${url}" style="max-width:100px; margin:2px;">
+      `).join('');
 
-    initCKEditorIfNeeded().then(() => {
-      if (bookDescEditor) bookDescEditor.setData(book.description || '');
-    });
+      initCKEditorIfNeeded().then(() => {
+        if (bookDescEditor) bookDescEditor.setData(book.description || '');
+      });
 
-    uploadedImageUrls = book.cover_image || [];
-    document.getElementById('bookImages').value = uploadedImageUrls.join('\n');
-    renderUploadedImages();
+      addBookForm.setAttribute('data-edit-id', id);
+      dialogOverlay.classList.add('active');
 
-    addBookForm.setAttribute('data-edit-id', id);
-    dialogOverlay.classList.add('active');
+      // Load danh mục và set chọn lại
+      fetchCategoriesForSelect().then(() => {
+        const select = document.getElementById('bookCategory');
+        const ids = (book.categories || []).map(c => c._id || c);
 
-    // --- Load danh mục và set chọn lại ---
-    fetchCategoriesForSelect().then(() => {
-      const select = document.getElementById('bookCategory');
-      const ids = (book.categories || []).map(c => c._id || c);
+        if (select.choicesInstance) {
+          select.choicesInstance.removeActiveItems();
+          ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
+        } else {
+          Array.from(select.options).forEach(opt => {
+            opt.selected = ids.includes(opt.value);
+          });
+        }
+      });
 
-      if (select.choicesInstance) {
-        select.choicesInstance.removeActiveItems();
-        ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
-      } else {
-        Array.from(select.options).forEach(opt => {
-          opt.selected = ids.includes(opt.value);
-        });
-      }
-    });
+      // Load campaigns và set chọn lại
+      fetchCampaignsForSelect().then(() => {
+        const select = document.getElementById('bookCampaign');
+        const campaignIds = book.campaigns || [];
 
-    // --- Load campaigns và set chọn lại ---
-    fetchCampaignsForSelect().then(() => {
-      const select = document.getElementById('bookCampaign');
-      const campaignIds = book.campaigns || [];
-
-      if (select.choicesInstance) {
-        select.choicesInstance.removeActiveItems();
-        campaignIds.forEach(val => select.choicesInstance.setChoiceByValue(val));
-      } else {
-        Array.from(select.options).forEach(opt => {
-          opt.selected = campaignIds.includes(opt.value);
-        });
-      }
+        if (select.choicesInstance) {
+          select.choicesInstance.removeActiveItems();
+          campaignIds.forEach(val => select.choicesInstance.setChoiceByValue(val));
+        } else {
+          Array.from(select.options).forEach(opt => {
+            opt.selected = campaignIds.includes(opt.value);
+          });
+        }
+      });
     });
   });
-});
 }
 
 // Hàm lấy dữ liệu từ API
@@ -270,7 +263,7 @@ async function fetchProducts() {
   }
 }
 
-// Hàm lọc sản phẩm theo từ khóa (tìm trong tên, mô tả, tác giả)
+// Hàm lọc sản phẩm theo từ khóa
 function filterProducts(products, keyword) {
   const lower = keyword.toLowerCase();
   return products.filter(p =>
@@ -297,7 +290,7 @@ let products = [];
 let currentPage = 1;
 const pageSize = 6;
 
-// Thêm HTML cho phân trang vào sau productGrid
+// Thêm HTML cho phân trang
 const pagination = document.createElement('div');
 pagination.id = 'pagination';
 pagination.style = 'display:flex;justify-content:center;gap:10px;margin:20px 0;';
@@ -314,7 +307,6 @@ function renderProductsWithPagination(productsArr, page = 1) {
   if (page < 1) page = 1;
   currentPage = page;
 
-  // Lấy sản phẩm cho trang hiện tại
   const start = (page - 1) * pageSize;
   const end = start + pageSize;
   const pageProducts = productsArr.slice(start, end);
@@ -328,30 +320,14 @@ function renderProductsWithPagination(productsArr, page = 1) {
     prevBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     prevBtn.className = 'pagination-btn';
     prevBtn.disabled = page === 1;
-    prevBtn.style.background = "#fff";
-    prevBtn.style.border = "1px solid #007bff";
-    prevBtn.style.borderRadius = "50%";
-    prevBtn.style.width = "40px";
-    prevBtn.style.height = "40px";
-    prevBtn.style.display = "flex";
-    prevBtn.style.alignItems = "center";
-    prevBtn.style.justifyContent = "center";
-    prevBtn.style.margin = "0 6px";
+    prevBtn.style.cssText = "background:#fff;border:1px solid #007bff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 6px;";
     prevBtn.onclick = () => renderFilteredAndSorted(page - 1);
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     nextBtn.className = 'pagination-btn';
     nextBtn.disabled = page === totalPages;
-    nextBtn.style.background = "#fff";
-    nextBtn.style.border = "1px solid #007bff";
-    nextBtn.style.borderRadius = "50%";
-    nextBtn.style.width = "40px";
-    nextBtn.style.height = "40px";
-    nextBtn.style.display = "flex";
-    nextBtn.style.alignItems = "center";
-    nextBtn.style.justifyContent = "center";
-    nextBtn.style.margin = "0 6px";
+    nextBtn.style.cssText = "background:#fff;border:1px solid #007bff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 6px;";
     nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
 
     const pageInfo = document.createElement('span');
@@ -373,20 +349,158 @@ function renderFilteredAndSorted(page = 1) {
   renderProductsWithPagination(filtered, page);
 }
 
-// Nút tìm kiếm
+// Event listeners
 document.getElementById('btn-search').addEventListener('click', () => renderFilteredAndSorted(1));
-
-// Vẫn giữ chức năng lọc realtime khi gõ vào ô "Tìm truyện"
 searchBox.addEventListener('input', () => renderFilteredAndSorted(1));
 document.getElementById('sort-title').addEventListener('change', () => renderFilteredAndSorted(1));
 
-// Main chạy khi load trang
-document.addEventListener('DOMContentLoaded', async () => {
-  products = await fetchProducts();
-  renderFilteredAndSorted(1);
+// File upload handlers
+document.getElementById('btn-select-image').addEventListener('click', () => {
+  document.getElementById('bookImageUpload').click();
 });
 
-// --- Choices.js cho lọc danh mục ngoài thanh tìm kiếm với nút ẩn/hiện và icon lên/xuống ---
+document.getElementById('btn-select-thumbnail').addEventListener('click', () => {
+  document.getElementById('bookThumbnailUpload').click();
+});
+
+// Preview uploaded images
+document.getElementById('bookImageUpload').addEventListener('change', function() {
+  const files = this.files;
+  const preview = document.getElementById('uploadedImagesPreview');
+  preview.innerHTML = '';
+  
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'max-width:100px; margin:2px; border:1px solid #ddd;';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Preview thumbnail
+document.getElementById('bookThumbnailUpload').addEventListener('change', function() {
+  const file = this.files[0];
+  const preview = document.getElementById('thumbnailPreview');
+  
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.innerHTML = `<img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd;">`;
+    };
+    reader.readAsDataURL(file);
+  }
+});
+
+// Lưu thông tin sách với FormData
+addBookForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const id = addBookForm.getAttribute('data-edit-id');
+  const formData = new FormData();
+  
+  // Thêm text fields
+  formData.append('title', document.getElementById('bookName').value.trim());
+  formData.append('author', document.getElementById('bookAuthor').value.trim());
+  formData.append('price', document.getElementById('bookPrice').value);
+  formData.append('stock', document.getElementById('bookStock').value);
+  formData.append('publication_date', document.getElementById('bookPubDate').value);
+  formData.append('publisher', document.getElementById('bookPublisher').value.trim());
+  formData.append('language', document.getElementById('bookLanguage').value.trim());
+  
+  // Thêm description từ CKEditor
+  const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
+  formData.append('description', description);
+  
+  // Thêm categories
+  const select = document.getElementById('bookCategory');
+  let categories = [];
+  if (select.choicesInstance) {
+    categories = select.choicesInstance.getValue(true);
+  } else {
+    categories = Array.from(select.selectedOptions).map(opt => opt.value);
+  }
+  formData.append('categories', categories.join(','));
+  
+  // Thêm campaigns
+  const campaignSelect = document.getElementById('bookCampaign');
+  let campaigns = [];
+  if (campaignSelect.choicesInstance) {
+    campaigns = campaignSelect.choicesInstance.getValue(true);
+  } else {
+    campaigns = Array.from(campaignSelect.selectedOptions).map(opt => opt.value);
+  }
+  formData.append('campaigns', campaigns.join(','));
+  
+  // Thêm cover images
+  const coverFiles = document.getElementById('bookImageUpload').files;
+  for (let i = 0; i < coverFiles.length; i++) {
+    formData.append('cover_images', coverFiles[i]);
+  }
+  
+  // Thêm thumbnail
+  const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
+  if (thumbnailFile) {
+    formData.append('thumbnail', thumbnailFile);
+  }
+  
+  // Thêm token
+  function getToken() {
+    return localStorage.getItem('authToken') || '';
+  }
+  
+  try {
+    let res;
+    if (id) {
+      res = await fetch(`${apiPostURL}/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: formData
+      });
+    } else {
+      res = await fetch(apiPostURL, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + getToken()
+        },
+        body: formData
+      });
+    }
+    
+    if (!res.ok) {
+  let errMessage = 'Lỗi không xác định!';
+  try {
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const errJson = await res.json();
+      errMessage = errJson.message || JSON.stringify(errJson);
+    } else {
+      errMessage = await res.text(); // Fallback nếu không phải JSON
+    }
+  } catch (parseError) {
+    errMessage = 'Không thể phân tích lỗi từ server!';
+  }
+  alert('Lưu thất bại: ' + errMessage);
+  return;
+}
+
+    
+    alert('Lưu thành công!');
+    dialogOverlay.classList.remove('active');
+    products = await fetchProducts();
+    renderFilteredAndSorted(currentPage);
+  } catch (err) {
+    alert('Có lỗi khi lưu truyện!\n' + err.message);
+  }
+});
+
+// Category filter
 document.addEventListener('DOMContentLoaded', async () => {
   const filterCategorySelect = document.getElementById('filter-category');
   const toggleCategoryBtn = document.getElementById('toggle-category-btn');
@@ -405,7 +519,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         option.textContent = cat.name;
         filterCategorySelect.appendChild(option);
       });
-      // Khởi tạo Choices.js (chỉ 1 lần)
+      
       if (!filterCategoryChoices) {
         filterCategoryChoices = new Choices(filterCategorySelect, {
           removeItemButton: true,
@@ -417,41 +531,30 @@ document.addEventListener('DOMContentLoaded', async () => {
           itemSelectText: '',
           shouldSort: false
         });
-      } else {
-        filterCategoryChoices.setChoices(
-          data.map(cat => ({ value: cat._id, label: cat.name, selected: false })),
-          'value',
-          'label',
-          false
-        );
       }
-    } catch (err) {}
+    } catch (err) {
+      console.error('Lỗi load categories:', err);
+    }
   }
+  
   await fetchCategoriesForFilter();
 
-  // Nút mở/ẩn dropdown (ẩn/hiện select nằm trong ô tìm kiếm) + đổi icon lên/xuống
   toggleCategoryBtn.addEventListener('click', function(e) {
     e.preventDefault();
     isOpen = !isOpen;
     if (isOpen) {
       filterChoicesWrap.style.display = 'block';
       toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
-      setTimeout(() => {
-        const input = filterChoicesWrap.querySelector('.choices__input');
-        if (input) input.focus();
-      }, 100);
     } else {
       filterChoicesWrap.style.display = 'none';
       toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
     }
   });
 
-  // Khi chọn danh mục ở Choices, cũng lọc lại truyện
   filterCategorySelect.addEventListener('change', () => {
     renderFilteredAndSorted(1);
   });
 
-  // Lọc theo danh mục + từ khóa, sản phẩm có thể có nhiều danh mục, nếu không có thì báo không có sản phẩm
   window.filterProducts = function(products, keyword) {
     const lower = keyword.toLowerCase();
     const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
@@ -464,334 +567,21 @@ document.addEventListener('DOMContentLoaded', async () => {
       let matchCategory = true;
       if (selectedCats.length > 0) {
         const prodCatIds = (p.categories || []).map(c => c._id || c);
-        // Sản phẩm có ít nhất 1 danh mục trùng với lựa chọn
         matchCategory = selectedCats.some(catId => prodCatIds.includes(catId));
       }
       return matchText && matchCategory;
     });
   };
-
-  // Ẩn dropdown khi click ra ngoài
-  document.addEventListener('click', function(e) {
-    if (!filterChoicesWrap.contains(e.target) && !toggleCategoryBtn.contains(e.target)) {
-      filterChoicesWrap.style.display =      'none';
-      toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
-      isOpen = false;
-    }
-  });
 });
 
-// Upload ảnh
-const uploadInput = document.getElementById('bookImageUpload');
-const previewDiv = document.getElementById('uploadedImagesPreview');
-const bookImagesInput = document.getElementById('bookImages');
-let uploadedImageUrls = [];
-
-// Mở file picker khi bấm nút
-document.getElementById('btn-select-image').addEventListener('click', () => {
-  uploadInput.click();
-});
-
-// Khi chọn file
-uploadInput.addEventListener('change', async () => {
-  const file = uploadInput.files[0];
-  if (!file) return;
-
-  const formData = new FormData();
-  formData.append('upload', file);
-
-  try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text);
-    }
-
-    const data = await res.json();
-    uploadedImageUrls.push(data.url); // ✅ thêm ảnh mới vào mảng
-    bookImagesInput.value = uploadedImageUrls.join('\n');
-    renderUploadedImages();
-
-    alert('Upload thành công!');
-  } catch (err) {
-    console.error('Upload lỗi:', err);
-    alert('Upload thất bại: ' + err.message);
-  }
-});
-
-// Hàm render ảnh với nút xóa và thay ảnh
-function renderUploadedImages() {
-  previewDiv.innerHTML = uploadedImageUrls.map((url, index) => `
-    <div style="display:inline-block; position:relative; margin:5px;">
-      <img src="${url.startsWith('http') ? url : 'https://server-shelf-stacker.onrender.com' + url}" 
-           style="max-width:100px;">
-      <button class="remove-image-btn" data-idx="${index}"
-        style="position:absolute;top:0;right:0;background:red;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;">×</button>
-      <button class="replace-image-btn" data-idx="${index}"
-        style="position:absolute;top:0;left:0;background:blue;color:white;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;">✎</button>
-    </div>
-  `).join('');
-
-  // Gắn sự kiện cho nút xóa
-  previewDiv.querySelectorAll('.remove-image-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      uploadedImageUrls = []; // Xóa tất cả ảnh
-      bookImagesInput.value = uploadedImageUrls.join('\n');
-      renderUploadedImages(); // Cập nhật hiển thị ảnh
-    });
-  });
-
-  // Gắn sự kiện cho nút thay ảnh
-  previewDiv.querySelectorAll('.replace-image-btn').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      uploadInput.click(); // Mở file picker
-      uploadInput.onchange = async () => {
-        const file = uploadInput.files[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('upload', file);
-
-        try {
-          const res = await fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
-            method: 'POST',
-            body: formData
-          });
-
-          if (!res.ok) {
-            const text = await res.text();
-            throw new Error(text);
-          }
-
-          const data = await res.json();
-          uploadedImageUrls = [data.url]; // Chỉ giữ lại ảnh mới
-          bookImagesInput.value = uploadedImageUrls.join('\n');
-          renderUploadedImages(); // Cập nhật hiển thị ảnh
-
-          alert('Upload thành công!');
-        } catch (err) {
-          console.error('Upload lỗi:', err);
-          alert('Upload thất bại: ' + err.message);
-        }
-      };
-    });
-  });
-}
-
-// Khi click Sửa
-document.addEventListener('click', function (e) {
-  if (e.target.closest('.edit-btn')) {
-    const btn = e.target.closest('.edit-btn');
-    const id = btn.getAttribute('data-id');
-    const book = products.find(p => p._id === id);
-    if (!book) return;
-
-    uploadedImageUrls = book.cover_image || []; // Lấy ảnh từ sách
-    bookImagesInput.value = uploadedImageUrls.join('\n');
-    renderUploadedImages(); // Hiển thị ảnh
-  }
-});
-
-// Lưu thông tin sách
-
-addBookForm.addEventListener('submit', async function(e) {
-  e.preventDefault();
-  let thumbnail = document.getElementById('bookThumbnail').value;
-  if (!thumbnail || thumbnail === 'undefined') thumbnail = '';
-
-  const id = addBookForm.getAttribute('data-edit-id');
-  const title = document.getElementById('bookName').value.trim();
-  const author = document.getElementById('bookAuthor').value.trim();
-  const price = Number(document.getElementById('bookPrice').value);
-  const stock = Number(document.getElementById('bookStock').value);
-  const publication_date = document.getElementById('bookPubDate').value;
-  const publisher = document.getElementById('bookPublisher').value.trim();
-  const language = document.getElementById('bookLanguage').value.trim();
-  const select = document.getElementById('bookCategory');
-  // --- SỬA ĐOẠN NÀY ---
-  let categories = [];
-  if (select.choicesInstance) {
-    categories = select.choicesInstance.getValue(true); // Lấy array value đã chọn
-  } else {
-    categories = Array.from(select.selectedOptions).map(opt => opt.value);
-  }
-  // --- HẾT SỬA ---
-  const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
-
-  const campaignSelect = document.getElementById('bookCampaign');
-let campaigns = [];
-
-if (campaignSelect.choicesInstance) {
-  campaigns = campaignSelect.choicesInstance.getValue(true); // ✅ Choices.js
-} else {
-  campaigns = Array.from(campaignSelect.selectedOptions).map(opt => opt.value);
-}
-
-  const formData = new FormData();
-formData.append('title', title);
-formData.append('author', author);
-formData.append('price', price);
-formData.append('stock', stock);
-formData.append('publication_date', publication_date);
-formData.append('publisher', publisher);
-formData.append('language', language);
-formData.append('description', description);
-formData.append('thumbnail', thumbnail); // thumbnail là URL từ input hidden
-campaigns.forEach(id => formData.append('campaigns', id));
-categories.forEach(id => formData.append('categories', id));
-uploadedImageFiles.forEach(file => formData.append('cover_images', file)); // bạn sẽ tạo mảng này bên dưới
-
-
-  // Thêm hàm lấy token
-  function getToken() {
-    return localStorage.getItem('authToken') || '';
-  }
-
-  try {
-    let res;
-    if (id) {
-      res = await fetch(`${apiPostURL}/${id}`, {
-  method: 'PUT',
-  headers: {
-    'Authorization': 'Bearer ' + getToken()
-  },
-  body: formData
-});
-
-    } else {
-      res = await fetch(apiPostURL, {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer ' + getToken() // KHÔNG cần Content-Type khi dùng FormData
-  },
-  body: formData
-});
-
-    }
-    if (!res.ok) {
-      const err = await res.json();
-      alert('Lưu thất bại: ' + (err.message || 'Lỗi không xác định!'));
-      return;
-    }
-    alert('Lưu thành công!');
-    dialogOverlay.classList.remove('active');
-    products = await fetchProducts();
-    renderFilteredAndSorted(currentPage); // <-- Dùng trang hiện tại ✅
-  } catch (err) {
-    alert('Có lỗi khi lưu truyện!\n' + err.message);
-  }
-});
-
-// Lấy danh sách ảnh đã upload
-// Lấy danh sách ảnh đã upload
-
-
-function CustomUploadAdapterPlugin(editor) {
-  editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
-    return new MyUploadAdapter(loader);
-  };
-}
-class MyUploadAdapter {
-  constructor(loader) {
-    this.loader = loader;
-  }
-
- upload() {
-  return this.loader.file.then(file => new Promise((resolve, reject) => {
-    const data = new FormData();
-    data.append('upload', file);
-
-    fetch('https://server-shelf-stacker.onrender.com/api/upload/upload-image', {
-      method: 'POST',
-      body: data
-    })
-      .then(response => response.json())
-      .then(result => {
-        if (result.url) {
-          const fullUrl = result.url.startsWith('/')
-            ? 'https://server-shelf-stacker.onrender.com' + result.url
-            : result.url;
-
-          resolve({
-            default: fullUrl  // ✅ CHỈ URL thôi, KHÔNG phải <img>
-          });
-        } else {
-          reject('Không có đường dẫn ảnh!');
-        }
-      })
-      .catch(err => {
-        reject('Upload thất bại: ' + err.message);
-      });
-  }));
-}
-
-
-  abort() {
-    // Có thể bỏ trống hoặc xử lý nếu muốn
-  }
-}
-// --- Upload ảnh thumbnail ---
-const thumbnailInput = document.getElementById('bookThumbnailUpload');
-const thumbnailPreview = document.getElementById('thumbnailPreview');
-const thumbnailHiddenInput = document.getElementById('bookThumbnail');
-const btnSelectThumbnail = document.getElementById('btn-select-thumbnail');
-
-btnSelectThumbnail.addEventListener('click', () => {
-  thumbnailInput.click();
-});
-
-thumbnailInput.addEventListener('change', async () => {
-  const file = thumbnailInput.files[0];
-  if (!file) return;
-
-  // Lấy bookId từ form
-  const bookId = addBookForm.getAttribute('data-edit-id');
-  if (!bookId) {
-    alert('Chỉ upload thumbnail khi đang sửa sách!');
-    return;
-  }
-
-  const formData = new FormData();
-  formData.append('imageFile', file);
-  formData.append('bookId', bookId);
-
-  try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/book-upload/thumbnail', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(text);
-    }
-
-    const data = await res.json();
-    thumbnailHiddenInput.value = data.url;
-    thumbnailPreview.innerHTML = `<img src="${data.url}" style="max-width:100px; margin-top:5px;">`;
-    // Đảm bảo trường thumbnail sẽ được lưu khi submit form
-    document.getElementById('bookThumbnail').value = data.url;
-
-    alert('Upload thumbnail thành công!');
-  } catch (err) {
-    console.error('Upload thumbnail lỗi:', err);
-    alert('Upload thumbnail thất bại: ' + err.message);
-  }
-});
-
+// Fetch categories for form select
 async function fetchCategoriesForSelect() {
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
     const data = await res.json();
 
     const select = document.getElementById('bookCategory');
-    select.innerHTML = ''; // clear cũ
+    select.innerHTML = '';
 
     data.forEach(cat => {
       const option = document.createElement('option');
@@ -800,7 +590,6 @@ async function fetchCategoriesForSelect() {
       select.appendChild(option);
     });
 
-    // Khởi tạo Choices.js cho select nhiều danh mục (chỉ 1 lần)
     if (!select.choicesInstance) {
       select.choicesInstance = new Choices(select, {
         removeItemButton: true,
@@ -814,9 +603,10 @@ async function fetchCategoriesForSelect() {
     }
   } catch (error) {
     console.error('Lỗi lấy danh mục:', error);
-    alert('Không thể tải danh sách danh mục');
   }
 }
+
+// Fetch campaigns for form select
 async function fetchCampaignsForSelect() {
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/campaigns');
@@ -832,7 +622,6 @@ async function fetchCampaignsForSelect() {
       select.appendChild(option);
     });
 
-    // Khởi tạo Choices.js
     if (!select.choicesInstance) {
       select.choicesInstance = new Choices(select, {
         removeItemButton: true,
@@ -844,8 +633,12 @@ async function fetchCampaignsForSelect() {
       });
     }
   } catch (err) {
-    console.error('Lỗi lấy campaign:', err);  // Chính dòng này báo lỗi ở console
-    alert('Không thể tải danh sách chiến dịch!');
+    console.error('Lỗi lấy campaign:', err);
   }
 }
 
+// Main init
+document.addEventListener('DOMContentLoaded', async () => {
+  products = await fetchProducts();
+  renderFilteredAndSorted(1);
+});
