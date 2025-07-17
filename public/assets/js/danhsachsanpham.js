@@ -9,6 +9,7 @@ const closeDialogBtn = document.getElementById('closeDialogBtn');
 const addBookForm = document.getElementById('addBookForm');
 const dialogTitle = document.getElementById('dialogTitle');
 
+let uploadedImageFiles = []; // Mảng lưu File ảnh cover
 // CKEditor 5 setup
 let bookDescEditor = null;
 let ckeditorPromise = null;
@@ -598,6 +599,7 @@ document.addEventListener('click', function (e) {
 });
 
 // Lưu thông tin sách
+
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   let thumbnail = document.getElementById('bookThumbnail').value;
@@ -631,9 +633,20 @@ if (campaignSelect.choicesInstance) {
   campaigns = Array.from(campaignSelect.selectedOptions).map(opt => opt.value);
 }
 
-  const payload = {
-    campaigns, title, author, price, cover_image: uploadedImageUrls, stock, publication_date, publisher, language, categories, description, thumbnail
-  };
+  const formData = new FormData();
+formData.append('title', title);
+formData.append('author', author);
+formData.append('price', price);
+formData.append('stock', stock);
+formData.append('publication_date', publication_date);
+formData.append('publisher', publisher);
+formData.append('language', language);
+formData.append('description', description);
+formData.append('thumbnail', thumbnail); // thumbnail là URL từ input hidden
+campaigns.forEach(id => formData.append('campaigns', id));
+categories.forEach(id => formData.append('categories', id));
+uploadedImageFiles.forEach(file => formData.append('cover_images', file)); // bạn sẽ tạo mảng này bên dưới
+
 
   // Thêm hàm lấy token
   function getToken() {
@@ -644,22 +657,22 @@ if (campaignSelect.choicesInstance) {
     let res;
     if (id) {
       res = await fetch(`${apiPostURL}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + getToken()
-        },
-        body: JSON.stringify(payload)
-      });
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer ' + getToken()
+  },
+  body: formData
+});
+
     } else {
       res = await fetch(apiPostURL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + getToken()
-        },
-        body: JSON.stringify(payload)
-      });
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer ' + getToken() // KHÔNG cần Content-Type khi dùng FormData
+  },
+  body: formData
+});
+
     }
     if (!res.ok) {
       const err = await res.json();
@@ -836,6 +849,3 @@ async function fetchCampaignsForSelect() {
   }
 }
 
-// Thêm đoạn mã này vào cuối file
-let thumbnail = document.getElementById('bookThumbnail').value;
-if (!thumbnail || thumbnail === 'undefined') thumbnail = '';
