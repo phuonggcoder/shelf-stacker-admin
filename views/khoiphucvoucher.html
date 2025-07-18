@@ -2,13 +2,170 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Voucher đã xóa gần đây</title>
   <link rel="stylesheet" href="/assets/css/khoiphucvoucher.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <style>
+    :root {
+      --theme: #6c63ff;
+      --danger: #ff4d4f;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+      object-fit: cover;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
+    .management-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+      color: #007bff;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
     .restore-btn {
-      background: #28a745;
+      background: var(--success);
       color: #fff;
       border: none;
       border-radius: 5px;
@@ -16,9 +173,11 @@
       font-size: 14px;
       cursor: pointer;
     }
+
     .restore-btn:hover {
       background: #218838;
     }
+
     .voucher-card {
       background: #fff6f6;
       border: 1px solid #eee;
@@ -29,28 +188,38 @@
       flex-direction: column;
       gap: 6px;
     }
+
     .voucher-id {
       font-weight: bold;
       font-size: 16px;
+    }
+
+    #add-book-select {
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 5px;
+      border-radius: 6px;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <header class="header">
-    <div class="logo">SleekAdmin</div>
+    <h1 class="logo">SleekAdmin</h1>
     <div class="user">
-      <span>Voucher đã xóa gần đây</span>
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+      <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
+      <img id="headerAvatar" class="avatar" src="https://i.pravatar.cc/40" alt="User Avatar" />
     </div>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://i.pravatar.cc/100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
-  <nav>
+    <nav>
       <ul>
         <li><a href="home">TRANG CHỦ</a></li>
         <li><a href="quanlydanhmuc">QUẢN LÝ DANH MỤC</a></li>
@@ -67,23 +236,69 @@
     </nav>
   </aside>
 
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger" style="background-color: var(--danger); color: white;">Đăng xuất</button></li>
+      </ul>
+    </nav>
+  </aside>
+
   <main class="main-content">
     <section class="management-section">
-      <h1 class="title" style="color:#dc3545;">Voucher đã xóa gần đây</h1>
+      <h1 class="title">Voucher đã xóa gần đây</h1>
       <div id="trashVoucherGrid" class="product-grid"></div>
 
-      <!-- ✅ Phần chọn sách áp dụng -->
-      <div style="margin-top: 30px;">
-        <label>Chọn sách áp dụng:</label>
-        <div id="add-book-select" class="book-checkbox-group"
-             style="max-height: 150px; overflow-y: auto; border: 1px solid #ccc; padding: 5px; border-radius: 6px;">
-          <!-- Checkbox sẽ được render ở đây -->
-        </div>
-      </div>
+    
     </section>
   </main>
 
   <script src="/public/config.js"></script>
   <script src="/assets/js/khoiphucvoucher.js"></script>
+  <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
+  </script>
 </body>
 </html>

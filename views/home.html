@@ -90,7 +90,7 @@
       transition: all 0.2s;
       font-weight: 500;
       cursor: pointer;
-      font-size: 14px;
+      font-size法: 14px;
     }
 
     .sidebar nav ul li a:hover,
@@ -408,6 +408,15 @@
   </dialog>
 
   <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
     const uploadDialog = document.getElementById('uploadDialog');
     const uploadMessage = document.getElementById('uploadMessage');
     const uploadButton = document.getElementById('uploadButton');
@@ -428,6 +437,8 @@
       fetch('login')
         .then(res => {
           if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';
           } else {
@@ -461,83 +472,85 @@
       uploadButton.textContent = 'Tải lên';
     }
 
-   uploadButton.onclick = async () => {
-  const fileInput = document.getElementById('avatarUpload');
-  const file = fileInput.files[0];
+    uploadButton.onclick = async () => {
+      const fileInput = document.getElementById('avatarUpload');
+      const file = fileInput.files[0];
 
-  if (!file) {
-    alert('Vui lòng chọn một ảnh.');
-    return;
-  }
+      if (!file) {
+        alert('Vui lòng chọn một ảnh.');
+        return;
+      }
 
-  if (!file.type.startsWith('image/')) {
-    alert('Vui lòng chọn một file ảnh hợp lệ.');
-    return;
-  }
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn một file ảnh hợp lệ.');
+        return;
+      }
 
-  const token = localStorage.getItem('authToken');
-  const userId = localStorage.getItem('userId');  // Lấy userId từ localStorage
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
 
-  if (!token) {
-    alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
-    return;
-  }
+      if (!token) {
+        alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+        return;
+      }
 
-  if (!userId) {
-    alert('Thiếu userId. Vui lòng đăng nhập lại.');
-    return;
-  }
+      if (!userId) {
+        alert('Thiếu userId. Vui lòng đăng nhập lại.');
+        return;
+      }
 
-  uploadButton.disabled = true;
-  uploadButton.textContent = 'Đang tải...';
+      uploadButton.disabled = true;
+      uploadButton.textContent = 'Đang tải...';
 
-  try {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    formData.append('userId', userId); // Thêm userId vào formData
-
-    const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Lỗi khi tải ảnh lên';
       try {
-        const errData = await response.json();
-        if (errData.message) errorMsg = errData.message;
-      } catch {}
-      throw new Error(errorMsg);
-    }
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('userId', userId);
 
-    const data = await response.json();
+        const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
 
-    const imageUrl = data.avatar || URL.createObjectURL(file);
+        if (!response.ok) {
+          let errorMsg = 'Lỗi khi tải ảnh lên';
+          try {
+            const errData = await response.json();
+            if (errData.message) errorMsg = errData.message;
+          } catch {}
+          throw new Error(errorMsg);
+        }
 
-    document.getElementById('sidebarAvatar').src = imageUrl;
-    document.getElementById('headerAvatar').src = imageUrl;
+        const data = await response.json();
 
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-    uploadMessage.className = 'notification success-message';
+        const imageUrl = data.avatar || URL.createObjectURL(file);
 
-    setTimeout(() => {
-      uploadDialog.close();
-    }, 2000);
+        // Update avatar images
+        document.getElementById('sidebarAvatar').src = imageUrl;
+        document.getElementById('headerAvatar').src = imageUrl;
 
-  } catch (error) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Lỗi: ' + error.message;
-    uploadMessage.className = 'notification error-message';
-    uploadButton.disabled = false;
-    uploadButton.textContent = 'Tải lên';
-  }
-};
+        // Store avatar URL in localStorage
+        localStorage.setItem('userAvatar', imageUrl);
 
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+        uploadMessage.className = 'notification success-message';
+
+        setTimeout(() => {
+          uploadDialog.close();
+        }, 2000);
+
+      } catch (error) {
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Lỗi: ' + error.message;
+        uploadMessage.className = 'notification error-message';
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Tải lên';
+      }
+    };
   </script>
-
 </body>
 </html>

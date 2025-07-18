@@ -5,20 +5,256 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Quản Lý Danh Mục</title>
   <link rel="stylesheet" href="/assets/css/DanhMuc.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
+  <style>
+    :root {
+      --theme: #6c63ff;
+      --danger: #ff4d4f;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+      object-fit: cover;
+    }
+
+    .main {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
+    .search-filter {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      font-size: 14px;
+      text-align: left;
+    }
+
+    #add-category-form {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #add-category-form input,
+    #add-category-form select,
+    #add-category-form textarea {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    #add-category-form button {
+      padding: 10px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #image-list-container img {
+      max-width: 100px;
+      cursor: pointer;
+      margin: 5px;
+    }
+
+    .btn-export {
+      background: #007bff;
+      color: #fff;
+      padding: 10px 18px;
+      font-size: 16px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn-export:hover {
+      background: #0056b3;
+    }
+
+    .btn-danger {
+      background-color: #ff4d4f;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-danger:hover {
+      background-color: #ff7875;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
-    <div class="logo">SleekAdmin</div>
+    <h1 class="logo">SleekAdmin</h1>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+      <img id="headerAvatar" class="avatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Avatar" />
     </div>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
@@ -35,6 +271,22 @@
         <li><a href="khoiphucvoucher">VOUCHER XÓA GẦN ĐÂY</a></li>
         <li><a href="campaigns">QUẢN LÝ CHIẾN DỊCH</a></li>
         <li><a href="#" id="settingsLink">CÀI ĐẶT</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
       </ul>
     </nav>
   </aside>
@@ -79,10 +331,9 @@
         <input type="text" id="cat-slug" placeholder="Slug (không dấu, viết liền)" required style="padding:10px; font-size:16px;">
         <div style="margin:10px 0;">
           <button type="button" id="btn-select-image">Chọn ảnh</button>
-<input type="file" id="cat-upload" style="display: none;" accept="image/*">
-<input type="hidden" id="cat-image">
-<img id="preview-image" src="" alt="Xem trước" style="max-width: 100px; display: none; margin-top: 10px;">
-
+          <input type="file" id="cat-upload" style="display: none;" accept="image/*">
+          <input type="hidden" id="cat-image">
+          <img id="preview-image" src="" alt="Xem trước" style="max-width: 100px; display: none; margin-top: 10px;">
         </div>
         <textarea id="cat-desc" placeholder="Mô tả"></textarea>
         <select id="cat-status" style="padding:10px; font-size:16px;">
@@ -108,5 +359,42 @@
   </main>
 
   <script src="/assets/js/quanlydanhmuc.js"></script>
+  <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
+  </script>
 </body>
 </html>

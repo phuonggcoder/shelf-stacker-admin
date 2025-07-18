@@ -3,21 +3,298 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/assets/css/DANHMUC1.css">
+  <link rel="stylesheet" href="/assets/css/DANHMUC1.css" />
   <title>Quản Lý Đơn Hàng</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --theme: #fbfafc;
+      --danger: #0ea5e9;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+      object-fit: cover;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
+    .management-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .title {
+      color: #007bff;
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    .search-filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-filter input[type="text"],
+    .search-filter select,
+    .search-filter input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .search-filter button {
+      padding: 8px 12px;
+      background-color: #0ea5e9;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .search-filter button:hover {
+      background-color: #38bdf8;
+    }
+
+    .btn-export {
+      padding: 8px 12px;
+      background-color: #ffc107;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-export:hover {
+      background-color: #e0a800;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+
+    th {
+      background-color: #f8f9fa;
+      color: #333;
+    }
+
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-content h3 {
+      text-align: center;
+      color: #007bff;
+      margin-bottom: 15px;
+    }
+
+    .modal-content select {
+      width: 100%;
+      margin: 8px 0;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .modal-content button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .modal-content button:first-child {
+      background: #28a745;
+      color: white;
+    }
+
+    .modal-content button:last-child {
+      background: #ccc;
+      color: #333;
+    }
+
+    #orderDetailsModal .modal-content {
+      width: 500px;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
-    <div class="logo">SleekAdmin</div>
+    <h1 class="logo">SleekAdmin</h1>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+      <img id="headerAvatar" class="avatar" src="https://i.pravatar.cc/40" alt="User Avatar" />
     </div>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://i.pravatar.cc/100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
@@ -38,17 +315,33 @@
     </nav>
   </aside>
 
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger" style="background-color: var(--danger); color: white;">Đăng xuất</button></li>
+      </ul>
+    </nav>
+  </aside>
+
   <main class="main-content">
     <div class="management-section">
       <h2 class="title">Quản Lý Đơn Hàng</h2>
       <div class="search-filter">
         <input type="text" id="order-search" placeholder="Tìm theo mã đơn / tên / SĐT" />
-        <button id="btn-order-search" type="button">Tìm kiếm</button>
+        <button id="btn-order-search" type="button" class="btn-primary">Tìm kiếm</button>
         <select>
-  <option value="">-- Trạng thái --</option>
-  <option value="pending">Chờ xác nhận</option>
-  <option value="delivered">Đã giao</option>
-</select>
+          <option value="">-- Trạng thái --</option>
+          <option value="pending">Chờ xác nhận</option>
+          <option value="delivered">Đã giao</option>
+        </select>
         <input type="date" />
         <input type="date" />
         <button class="btn-export">Xuất Dữ Liệu</button>
@@ -73,33 +366,79 @@
   </main>
 
   <!-- Modal: Cập nhật trạng thái đơn hàng -->
-  <div id="updateStatusModal" class="modal-overlay" style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.4); justify-content: center; align-items: center; z-index: 9999;">
-    <div class="modal-content" style="background: white; padding: 20px; border-radius: 10px; width: 300px;">
-      <h3 style="text-align: center;">🔄 Cập nhật trạng thái</h3>
+  <div id="updateStatusModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>🔄 Cập nhật trạng thái</h3>
       <p><strong>Mã đơn hàng:</strong> <span id="modalOrderCode"></span></p>
       <label for="statusSelect">Trạng thái mới:</label>
       <select id="statusSelect" style="width: 100%; margin: 8px 0;">
-   <option>Chờ xác nhận</option>
-  <option>Đã giao</option>
+        <option>Chờ xác nhận</option>
+        <option>Đã giao</option>
       </select>
       <div style="text-align: right;">
-        <button id="btnSaveStatus" style="background: #28a745; color: white; padding: 6px 12px; border: none; border-radius: 6px;">Lưu</button>
+        <button id="btnSaveStatus" class="btn-success" style="background: var(--success); color: white;">Lưu</button>
         <button onclick="closeUpdateModal()" style="margin-left: 10px; background: #ccc; padding: 6px 12px; border: none; border-radius: 6px;">Huỷ</button>
       </div>
     </div>
   </div>
 
   <!-- Modal: Chi tiết đơn hàng -->
-  <div id="orderDetailsModal" class="modal-overlay" style="display:none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); justify-content:center; align-items:center; z-index:9999;">
-    <div class="modal-content" style="background:white; padding:20px; border-radius:10px; width:500px; max-height:90vh; overflow-y:auto;">
-      <h3 style="text-align:center;">📦 Chi tiết đơn hàng</h3>
+  <div id="orderDetailsModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>📦 Chi tiết đơn hàng</h3>
       <div id="orderDetailsContent"></div>
       <div style="text-align:right; margin-top: 15px;">
-        <button onclick="closeOrderDetailsModal()" style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 6px;">Đóng</button>
+        <button onclick="closeOrderDetailsModal()" class="btn-danger" style="background: var(--danger); color: white;">Đóng</button>
       </div>
     </div>
   </div>
 
   <script src="/assets/js/danhmucdonhang.js"></script>
+  <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
+
+    // Modal functions (assuming they are defined in danhmucdonhang.js)
+    function closeUpdateModal() {
+      document.getElementById('updateStatusModal').style.display = 'none';
+    }
+
+    function closeOrderDetailsModal() {
+      document.getElementById('orderDetailsModal').style.display = 'none';
+    }
+  </script>
 </body>
 </html>

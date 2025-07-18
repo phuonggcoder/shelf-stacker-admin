@@ -7,25 +7,222 @@
   <link rel="stylesheet" href="/assets/css/DSsanpham.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
-  <!-- Thêm vào <head> để dùng Choices.js cho multi-select đẹp như hình -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   <script src="https://cdn.ckbox.io/CKFinder/CKFinder.js"></script>
   <style>
+    :root {
+      --theme: #6c63ff;
+      --danger: #ff4d4f;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+      object-fit: cover;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
+    .management-section {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .title {
+      font-size: 28px;
+      color: #0ea5e9;
+      margin: 0 0 20px;
+    }
+
+    .search-filter {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .search-filter .input {
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      flex: 1;
+    }
+
+    .search-filter select {
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .btn-add {
+      background: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 10px 18px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .btn-add:hover {
+      background: #218838;
+    }
+
     .dialog-overlay {
       display: none;
       position: fixed;
       z-index: 1000;
-      left: 0; top: 0; right: 0; bottom: 0;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(0,0,0,0.4);
       justify-content: center;
       align-items: center;
     }
+
     .dialog-overlay.active {
       display: flex;
     }
+
     .dialog-box {
-      background: #fff; 
+      background: #fff;
       border-radius: 8px;
       padding: 32px 24px 16px 24px;
       min-width: 340px;
@@ -34,40 +231,50 @@
       position: relative;
       animation: popup 0.2s;
     }
+
     @keyframes popup {
       from { transform: scale(0.9); opacity: 0; }
       to { transform: scale(1); opacity: 1; }
     }
+
     .dialog-box h2 {
       margin-top: 0;
       margin-bottom: 16px;
       font-size: 1.3rem;
       text-align: center;
     }
+
     .dialog-box .close-btn {
       position: absolute;
-      top: 12px; right: 16px;
+      top: 12px;
+      right: 16px;
       background: none;
       border: none;
       font-size: 1.3rem;
       cursor: pointer;
       color: #888;
     }
+
     .dialog-box form {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .dialog-box input, .dialog-box select, .dialog-box textarea {
+
+    .dialog-box input,
+    .dialog-box select,
+    .dialog-box textarea {
       padding: 7px 10px;
       border: 1px solid #ccc;
       border-radius: 4px;
       font-size: 1rem;
     }
+
     .dialog-box textarea {
       min-height: 80px;
       resize: vertical;
     }
+
     .dialog-box button[type="submit"] {
       margin-top: 10px;
       background: #007bff;
@@ -79,11 +286,11 @@
       cursor: pointer;
       transition: background 0.2s;
     }
+
     .dialog-box button[type="submit"]:hover {
       background: #0056b3;
     }
 
-    /* Thêm vào cuối <style> trong <head> */
     .pagination-btn {
       background: #fff;
       color: #007bff;
@@ -98,8 +305,9 @@
       font-size: 18px;
       cursor: pointer;
       transition: background 0.2s, box-shadow 0.2s;
-box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
+
     .pagination-btn:disabled {
       background: #eee;
       color: #aaa;
@@ -107,10 +315,12 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       cursor: not-allowed;
       box-shadow: none;
     }
+
     .desc-wrap {
       margin-bottom: 6px;
       line-height: 1.5;
     }
+
     .toggle-desc {
       color: #0ea5e9;
       cursor: pointer;
@@ -118,25 +328,42 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
       font-size: 14px;
       text-decoration: underline;
     }
+
     .ck-editor__editable[role="textbox"] {
-  min-height: 220px !important;
-}
+      min-height: 220px !important;
+    }
+
+    .btn-danger {
+      background-color: #ff4d4f;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-danger:hover {
+      background-color: #ff7875;
+    }
   </style>
 </head>
 <body>
-   <header class="header">
-    <div class="logo">SleekAdmin</div>
+  <header class="header">
+    <h1 class="logo">SleekAdmin</h1>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img src="https://i.pravatar.cc/40" alt="User " class="avatar" />
+      <img id="headerAvatar" class="avatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Avatar" />
     </div>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User  Profile" />
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
-      <p>Nhà thiết kế UI/UX </p>
+      <p>Nhà thiết kế UI/UX</p>
     </div>
     <nav>
       <ul>
@@ -155,6 +382,22 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     </nav>
   </aside>
 
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
+      </ul>
+    </nav>
+  </aside>
+
   <main class="main-content">
     <section class="management-section">
       <h2 class="title">Danh sách truyện tranh</h2>
@@ -162,7 +405,6 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         <div style="position:relative; flex:1; display:flex; align-items:center;">
           <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox"
             style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" />
-          <!-- Multi-select danh mục nằm đè lên input, chỉ hiện khi bấm nút -->
           <div id="category-filter-choices-wrap" style="position:absolute; left:0; top:0; width:100%; display:none; z-index:10;">
             <select id="filter-category" multiple></select>
           </div>
@@ -173,7 +415,10 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
         </div>
         <button id="btn-search" type="button"
           style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer; transition: background 0.2s;">
-<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/><path stroke="#fff" stroke-width="2" stroke-linecap="round" d="M20 20l-3-3"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/>
+            <path stroke="#fff" stroke-width="2" stroke-linecap="round" d="M20 20l-3-3"/>
+          </svg>
           Tìm kiếm
         </button>
         <select id="sort-title" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;">
@@ -189,46 +434,73 @@ box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     </section>
   </main>
 
-  <!-- Dialog Thêm/Sửa truyện -->
   <div class="dialog-overlay" id="dialogOverlay">
     <div class="dialog-box">
-      <button class="close-btn" id="closeDialogBtn" title="Đóng">&times;</button>
+      <button class="close-btn" id="closeDialogBtn" title="Đóng">×</button>
       <h2 id="dialogTitle">Thêm truyện mới</h2>
       <form id="addBookForm">
         <input type="text" id="bookName" placeholder="Tên truyện" required />
         <input type="text" id="bookAuthor" placeholder="Tác giả" required />
         <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
-        <!-- CKEditor 5 cho mô tả -->
         <textarea id="bookDesc" placeholder="Mô tả"></textarea>
-<button type="button" id="btn-select-image">Chọn thư viện ảnh </button>
-<input type="file" id="bookImageUpload" accept="image/*" style="display:none">
-<div id="uploadedImagesPreview" style="margin-top: 10px;"></div>
-<input type="hidden" id="bookImages">
-
-<label for="bookThumbnailUpload" style="margin-top:10px;">Chọn ảnh đại diện (thumbnail):</label>
-<input type="file" id="bookThumbnailUpload" accept="image/*" style="display:none">
-<button type="button" id="btn-select-thumbnail">Chọn ảnh đại diện</button>
-<div id="thumbnailPreview" style="margin-top: 10px;"></div>
-<input type="hidden" id="bookThumbnail">
-
-
-
+        <button type="button" id="btn-select-image">Chọn thư viện ảnh</button>
+        <input type="file" id="bookImageUpload" accept="image/*" style="display:none">
+        <div id="uploadedImagesPreview" style="margin-top: 10px;"></div>
+        <input type="hidden" id="bookImages">
+        <label for="bookThumbnailUpload" style="margin-top:10px;">Chọn ảnh đại diện (thumbnail):</label>
+        <input type="file" id="bookThumbnailUpload" accept="image/*" style="display:none">
+        <button type="button" id="btn-select-thumbnail">Chọn ảnh đại diện</button>
+        <div id="thumbnailPreview" style="margin-top: 10px;"></div>
+        <input type="hidden" id="bookThumbnail">
         <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
         <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required />
         <input type="text" id="bookPublisher" placeholder="Nhà xuất bản" required />
         <input type="text" id="bookLanguage" placeholder="Ngôn ngữ" required />
-        <!-- Thay input danh mục trong form thành select multiple -->
         <select id="bookCategory" multiple></select>
-       <label for="bookCampaign">Chiến dịch</label>
-<select id="bookCampaign" multiple></select>
-
-
+        <label for="bookCampaign">Chiến dịch</label>
+        <select id="bookCampaign" multiple></select>
         <button type="submit">Lưu</button>
       </form>
     </div>
   </div>
 
   <script src="/assets/js/danhsachsanpham.js"></script>
-  
+  <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
+
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
+  </script>
 </body>
 </html>

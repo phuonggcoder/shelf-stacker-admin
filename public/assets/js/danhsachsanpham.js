@@ -15,7 +15,11 @@ let ckeditorPromise = null;
 function initCKEditorIfNeeded() {
   if (!ckeditorPromise) {
     ckeditorPromise = ClassicEditor
-      .create(document.querySelector('#bookDesc'))
+      .create(document.querySelector('#bookDesc'), {
+        ckfinder: {
+          uploadUrl: '/api/upload' // Cấu hình upload nếu cần
+        }
+      })
       .then(editor => {
         bookDescEditor = editor;
         return editor;
@@ -30,14 +34,80 @@ function initCKEditorIfNeeded() {
 // Khởi tạo CKEditor khi trang load
 initCKEditorIfNeeded();
 
+// Theo dõi ảnh đã xóa tạm thời (chưa lưu)
+let deletedImageIndices = [];
+
+function showTemporaryDeleteDialog(index) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'temp-delete-overlay';
+    overlay.style.cssText = `
+      position: fixed; inset: 0; z-index: 9999;
+      background-color: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    `;
+    overlay.innerHTML = `
+      <div style="
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        max-width: 360px;
+        width: 100%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        text-align: left;
+      ">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
+          <span style="font-size: 15px;">Bạn có chắc muốn xóa ảnh này tạm thời? (Sẽ không lưu cho đến khi bạn nhấn Lưu)</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-delete-temp" style="
+            padding: 6px 16px;
+            background: #ffecec;
+            color: #f44336;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+          ">Hủy</button>
+          <button id="btn-ok-delete-temp" style="
+            padding: 6px 16px;
+            background: #00cfff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+          ">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-delete-temp').onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    overlay.querySelector('#btn-ok-delete-temp').onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
+  });
+}
+
 // Hiện dialog khi bấm Thêm truyện
 addBookBtn.addEventListener('click', function () {
   dialogTitle.textContent = 'Thêm truyện mới';
   addBookForm.reset();
   
-  // Reset file inputs
+  // Reset file inputs và trạng thái
   document.getElementById('bookImageUpload').value = '';
   document.getElementById('bookThumbnailUpload').value = '';
+  deletedImageIndices = []; // Reset danh sách ảnh đã xóa
   
   // Clear previews
   document.getElementById('uploadedImagesPreview').innerHTML = '';
@@ -63,6 +133,7 @@ closeDialogBtn.addEventListener('click', () => {
   addBookForm.reset();
   addBookForm.removeAttribute('data-edit-id');
   if (bookDescEditor) bookDescEditor.setData('');
+  deletedImageIndices = []; // Reset khi đóng dialog
 });
 
 // Đóng dialog khi bấm ra ngoài
@@ -72,6 +143,7 @@ dialogOverlay.addEventListener('click', (e) => {
     addBookForm.reset();
     addBookForm.removeAttribute('data-edit-id');
     if (bookDescEditor) bookDescEditor.setData('');
+    deletedImageIndices = []; // Reset khi đóng dialog
   }
 });
 
@@ -86,7 +158,6 @@ function renderProducts(products) {
     const card = document.createElement('div');
     card.className = 'product-card';
 
-    // Xử lý mô tả
     let desc = product.description || '';
     let temp = document.createElement('div');
     temp.innerHTML = desc;
@@ -105,7 +176,6 @@ function renderProducts(products) {
       descHtml = `<div>${desc}</div>`;
     }
 
-    // Hiển thị ảnh thumbnail
     let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
     let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
     let imagesHtml = thumbUrl
@@ -135,7 +205,6 @@ function renderProducts(products) {
     productGrid.appendChild(card);
   });
 
-  // Toggle mô tả
   document.querySelectorAll('.toggle-desc').forEach(btn => {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -154,13 +223,12 @@ function renderProducts(products) {
     });
   });
 
-  // XÓA
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', async function () {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog()) {
         try {
-          const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
+          const res = await fetch(`${apiPostURL}/${id}`, {
             method: 'DELETE',
             headers: {
               'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
@@ -180,7 +248,6 @@ function renderProducts(products) {
     });
   });
 
-  // SỬA
   document.querySelectorAll('.edit-btn').forEach(btn => {
     btn.addEventListener('click', function () {
       const id = this.getAttribute('data-id');
@@ -198,19 +265,21 @@ function renderProducts(products) {
       document.getElementById('bookPublisher').value = book.publisher || '';
       document.getElementById('bookLanguage').value = book.language || '';
 
-      // Hiển thị thumbnail preview khi edit
       const thumbnailPreview = document.getElementById('thumbnailPreview');
       const thumb = book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : '';
       const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
       thumbnailPreview.innerHTML = thumb
-        ? `<img src="${thumb}" style="max-width:100px;" onerror="this.onerror=null;this.src='${fallbackThumb}'">`
-        : `<img src="${fallbackThumb}" style="max-width:100px;">`;
+        ? `<div style="position: relative; display: inline-block;"><img src="${thumb}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'"><button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button><button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button></div>`
+        : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
-      // Hiển thị cover images preview khi edit
       const coverPreview = document.getElementById('uploadedImagesPreview');
       const coverImages = book.cover_image || [];
       coverPreview.innerHTML = coverImages.map(url => `
-        <img src="${url}" style="max-width:100px; margin:2px;">
+        <div style="position: relative; display: inline-block; margin: 2px;">
+          <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
+          <button class="delete-image-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+          <button class="edit-image-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+        </div>
       `).join('');
 
       initCKEditorIfNeeded().then(() => {
@@ -219,12 +288,11 @@ function renderProducts(products) {
 
       addBookForm.setAttribute('data-edit-id', id);
       dialogOverlay.classList.add('active');
+      deletedImageIndices = []; // Reset danh sách ảnh đã xóa khi chỉnh sửa
 
-      // Load danh mục và set chọn lại
       fetchCategoriesForSelect().then(() => {
         const select = document.getElementById('bookCategory');
         const ids = (book.categories || []).map(c => c._id || c);
-
         if (select.choicesInstance) {
           select.choicesInstance.removeActiveItems();
           ids.forEach(val => select.choicesInstance.setChoiceByValue(val));
@@ -235,11 +303,9 @@ function renderProducts(products) {
         }
       });
 
-      // Load campaigns và set chọn lại
       fetchCampaignsForSelect().then(() => {
         const select = document.getElementById('bookCampaign');
         const campaignIds = book.campaigns || [];
-
         if (select.choicesInstance) {
           select.choicesInstance.removeActiveItems();
           campaignIds.forEach(val => select.choicesInstance.setChoiceByValue(val));
@@ -253,7 +319,6 @@ function renderProducts(products) {
   });
 }
 
-// Hàm lấy dữ liệu từ API
 async function fetchProducts() {
   try {
     const response = await fetch(apiURL);
@@ -267,7 +332,6 @@ async function fetchProducts() {
   }
 }
 
-// Hàm lọc sản phẩm theo từ khóa
 function filterProducts(products, keyword) {
   const lower = keyword.toLowerCase();
   const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
@@ -286,7 +350,6 @@ function filterProducts(products, keyword) {
   });
 }
 
-// Hàm sắp xếp
 function sortByTitle(arr, order) {
   if (!order) return arr;
   return [...arr].sort((a, b) => {
@@ -298,12 +361,10 @@ function sortByTitle(arr, order) {
   });
 }
 
-// PHÂN TRANG
 let products = [];
 let currentPage = 1;
 const pageSize = 6;
 
-// Thêm HTML cho phân trang
 const pagination = document.createElement('div');
 pagination.id = 'pagination';
 pagination.style = 'display:flex;justify-content:center;gap:10px;margin:20px 0;';
@@ -326,7 +387,6 @@ function renderProductsWithPagination(productsArr, page = 1) {
 
   renderProducts(pageProducts);
 
-  // Render nút phân trang
   pagination.innerHTML = '';
   if (totalPages > 1) {
     const prevBtn = document.createElement('button');
@@ -353,7 +413,6 @@ function renderProductsWithPagination(productsArr, page = 1) {
   }
 }
 
-// Hàm kết hợp lọc, sắp xếp và phân trang
 function renderFilteredAndSorted(page = 1) {
   const keyword = searchBox.value.trim();
   const sortOrder = document.getElementById('sort-title').value;
@@ -362,12 +421,10 @@ function renderFilteredAndSorted(page = 1) {
   renderProductsWithPagination(filtered, page);
 }
 
-// Event listeners
 document.getElementById('btn-search').addEventListener('click', () => renderFilteredAndSorted(1));
 searchBox.addEventListener('input', () => renderFilteredAndSorted(1));
 document.getElementById('sort-title').addEventListener('change', () => renderFilteredAndSorted(1));
 
-// File upload handlers
 document.getElementById('btn-select-image').addEventListener('click', () => {
   document.getElementById('bookImageUpload').click();
 });
@@ -376,47 +433,140 @@ document.getElementById('btn-select-thumbnail').addEventListener('click', () => 
   document.getElementById('bookThumbnailUpload').click();
 });
 
-// Preview uploaded images
 document.getElementById('bookImageUpload').addEventListener('change', function() {
   const files = this.files;
   const preview = document.getElementById('uploadedImagesPreview');
   preview.innerHTML = '';
+  deletedImageIndices = []; // Reset khi thêm ảnh mới
   
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      img.style.cssText = 'max-width:100px; margin:2px; border:1px solid #ddd;';
-      preview.appendChild(img);
-    };
-    reader.readAsDataURL(file);
+  if (preview && files.length > 0) {
+    Array.from(files).forEach((file, i) => {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const div = document.createElement('div');
+        div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+        div.innerHTML = `
+          <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+          <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+          <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+        `;
+        preview.appendChild(div);
+      };
+      reader.readAsDataURL(file);
+    });
   }
 });
 
-// Preview thumbnail
 document.getElementById('bookThumbnailUpload').addEventListener('change', function() {
   const file = this.files[0];
   const preview = document.getElementById('thumbnailPreview');
+  preview.innerHTML = '';
   
-  if (file) {
+  if (preview && file) {
     const reader = new FileReader();
     reader.onload = function(e) {
-      preview.innerHTML = `<img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd;">`;
+      const div = document.createElement('div');
+      div.style.cssText = 'position: relative; display: inline-block;';
+      div.innerHTML = `
+        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+        <button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+      `;
+      preview.appendChild(div);
     };
     reader.readAsDataURL(file);
   }
 });
 
-// Lưu thông tin sách với FormData
+document.getElementById('uploadedImagesPreview').addEventListener('click', function(e) {
+  const preview = this;
+  const targetDiv = e.target.closest('div');
+  if (!targetDiv) return;
+
+  if (e.target.classList.contains('delete-image-btn') || e.target.closest('.delete-image-btn')) {
+    const index = parseInt((e.target.closest('.delete-image-btn') || e.target).getAttribute('data-index'));
+    showTemporaryDeleteDialog(index).then(async (confirm) => {
+      if (confirm) {
+        const input = document.getElementById('bookImageUpload');
+        const dataTransfer = new DataTransfer();
+        
+        Array.from(input.files).forEach((file, i) => {
+          if (i !== index) dataTransfer.items.add(file);
+        });
+        input.files = dataTransfer.files;
+
+        targetDiv.remove(); // Xóa div chứa ảnh
+        deletedImageIndices.push(index); // Ghi nhận index đã xóa tạm thời
+        // Cập nhật lại index cho các button còn lại
+        preview.querySelectorAll('.delete-image-btn, .edit-image-btn').forEach((btn, i) => {
+          btn.setAttribute('data-index', i);
+        });
+      }
+    });
+  } else if (e.target.classList.contains('edit-image-btn') || e.target.closest('.edit-image-btn')) {
+    const index = parseInt((e.target.closest('.edit-image-btn') || e.target).getAttribute('data-index'));
+    document.getElementById('bookImageUpload').click();
+    document.getElementById('bookImageUpload').addEventListener('change', function replaceImage(e) {
+      const newFile = e.target.files[0];
+      if (newFile) {
+        const input = document.getElementById('bookImageUpload');
+        const dataTransfer = new DataTransfer();
+        Array.from(input.files).forEach((file, i) => {
+          dataTransfer.items.add(i === index ? newFile : file);
+        });
+        input.files = dataTransfer.files;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          targetDiv.innerHTML = `
+            <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+            <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+            <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+          `;
+        };
+        reader.readAsDataURL(newFile);
+      }
+      input.removeEventListener('change', replaceImage);
+    }, { once: true });
+  }
+});
+
+document.getElementById('thumbnailPreview').addEventListener('click', function(e) {
+  const preview = this;
+  if (e.target.classList.contains('delete-thumbnail-btn') || e.target.closest('.delete-thumbnail-btn')) {
+    document.getElementById('bookThumbnailUpload').value = '';
+    preview.innerHTML = '';
+  } else if (e.target.classList.contains('edit-thumbnail-btn') || e.target.closest('.edit-thumbnail-btn')) {
+    document.getElementById('bookThumbnailUpload').click();
+    document.getElementById('bookThumbnailUpload').addEventListener('change', function replaceThumbnail(e) {
+      const newFile = e.target.files[0];
+      if (newFile) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.innerHTML = `
+            <div style="position: relative; display: inline-block;">
+              <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+              <button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+              <button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+            </div>
+          `;
+        };
+        reader.readAsDataURL(newFile);
+      }
+      input.removeEventListener('change', replaceThumbnail);
+    }, { once: true });
+  }
+});
+
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   
+  // Đảm bảo tất cả thay đổi (như xóa ảnh) đã được áp dụng trước khi submit
+  await new Promise(resolve => setTimeout(resolve, 0)); // Đợi một chu kỳ sự kiện để đồng bộ hóa
+
   const id = addBookForm.getAttribute('data-edit-id');
   const formData = new FormData();
   
-  // Thêm text fields
   formData.append('title', document.getElementById('bookName').value.trim());
   formData.append('author', document.getElementById('bookAuthor').value.trim());
   formData.append('price', document.getElementById('bookPrice').value);
@@ -425,11 +575,9 @@ addBookForm.addEventListener('submit', async function(e) {
   formData.append('publisher', document.getElementById('bookPublisher').value.trim());
   formData.append('language', document.getElementById('bookLanguage').value.trim());
   
-  // Thêm description từ CKEditor
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
   formData.append('description', description);
   
-  // Thêm categories dưới dạng mảng
   const select = document.getElementById('bookCategory');
   let categories = [];
   if (select.choicesInstance) {
@@ -439,7 +587,6 @@ addBookForm.addEventListener('submit', async function(e) {
   }
   categories.forEach(cat => formData.append('categories[]', cat));
   
-  // Thêm campaigns
   const campaignSelect = document.getElementById('bookCampaign');
   let campaigns = [];
   if (campaignSelect.choicesInstance) {
@@ -449,19 +596,24 @@ addBookForm.addEventListener('submit', async function(e) {
   }
   campaigns.forEach(camp => formData.append('campaigns[]', camp));
   
-  // Thêm cover images
   const coverFiles = document.getElementById('bookImageUpload').files;
-  for (let i = 0; i < coverFiles.length; i++) {
-    formData.append('cover_images', coverFiles[i]);
+  const remainingFiles = new DataTransfer();
+  // Chỉ thêm các file không nằm trong deletedImageIndices
+  Array.from(coverFiles).forEach((file, i) => {
+    if (!deletedImageIndices.includes(i)) {
+      remainingFiles.items.add(file);
+    }
+  });
+  document.getElementById('bookImageUpload').files = remainingFiles.files;
+  for (let i = 0; i < remainingFiles.files.length; i++) {
+    formData.append('cover_images', remainingFiles.files[i]);
   }
   
-  // Thêm thumbnail
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
   }
   
-  // Thêm token
   function getToken() {
     return localStorage.getItem('authToken') || '';
   }
@@ -503,8 +655,9 @@ addBookForm.addEventListener('submit', async function(e) {
       return;
     }
     
-    showAddBookSuccessDialog(id ? 'update' : 'add');
+    showAddBookSuccessDialog(id ? 'update' : 'add', 'Dữ liệu đã được lưu thành công!');
     dialogOverlay.classList.remove('active');
+    deletedImageIndices = []; // Reset sau khi lưu
     products = await fetchProducts();
     renderFilteredAndSorted(currentPage);
   } catch (err) {
@@ -512,7 +665,6 @@ addBookForm.addEventListener('submit', async function(e) {
   }
 });
 
-// Category filter
 document.addEventListener('DOMContentLoaded', async () => {
   const filterCategorySelect = document.getElementById('filter-category');
   const toggleCategoryBtn = document.getElementById('toggle-category-btn');
@@ -586,7 +738,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   };
 });
 
-// Fetch categories for form select
 async function fetchCategoriesForSelect() {
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
@@ -618,7 +769,6 @@ async function fetchCategoriesForSelect() {
   }
 }
 
-// Fetch campaigns for form select
 async function fetchCampaignsForSelect() {
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/campaigns');
@@ -649,7 +799,6 @@ async function fetchCampaignsForSelect() {
   }
 }
 
-// Hàm hiển thị dialog lỗi
 function showErrorDialog(title, message) {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-error';
@@ -674,7 +823,6 @@ function showErrorDialog(title, message) {
   document.body.appendChild(dialog);
 }
 
-// Hàm hiển thị dialog thành công khi xóa
 function showSuccessDeletebook() {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-success-delete-book';
@@ -698,7 +846,6 @@ function showSuccessDeletebook() {
   document.body.appendChild(dialog);
 }
 
-// Hàm đóng dialog xóa và tải lại dữ liệu
 function closeDeleteDialog() {
   const dialog = document.getElementById('dialog-success-delete-book');
   if (dialog) {
@@ -710,8 +857,7 @@ function closeDeleteDialog() {
   }
 }
 
-// Hàm hiển thị dialog thành công khi thêm/sửa
-function showAddBookSuccessDialog(action = 'add') {
+function showAddBookSuccessDialog(action = 'add', message = '') {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-success-add-book';
   dialog.style.cssText = `
@@ -725,6 +871,7 @@ function showAddBookSuccessDialog(action = 'add') {
     <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
       <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
+      <p style="color: #2e7d32;">${message}</p>
       <button onclick="closeAddBookDialog()" style="
         margin-top: 20px; padding: 8px 24px;
         background: #00cfff; color: white; border: none; border-radius: 6px;
@@ -735,13 +882,11 @@ function showAddBookSuccessDialog(action = 'add') {
   document.body.appendChild(dialog);
 }
 
-// Hàm đóng dialog thêm/sửa
 function closeAddBookDialog() {
   const dialog = document.getElementById('dialog-success-add-book');
   if (dialog) dialog.remove();
 }
 
-// Hàm hiển thị dialog xác nhận xóa
 function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyện này?') {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
@@ -804,7 +949,6 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
   });
 }
 
-// Main init
 document.addEventListener('DOMContentLoaded', async () => {
   products = await fetchProducts();
   renderFilteredAndSorted(1);

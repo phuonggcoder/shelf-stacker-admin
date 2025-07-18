@@ -4,22 +4,43 @@
   <meta charset="UTF-8" />
   <title>Quản Lý Voucher</title>
   <link rel="stylesheet" href="/assets/css/quanlyvoucher.css" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Add minimal styles for settings sidebar and logout button */
+    .sidebar.hidden {
+      display: none;
+    }
+    .btn-danger {
+      background-color: #0ea5e9;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+    .btn-danger:hover {
+      background-color: #e0e0e0;
+    }
+  </style>
 </head>
 <body>
   <header class="header">
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm voucher..." id="searchVoucherInput" />
-      <img src="https://i.pravatar.cc/40" alt="User" class="avatar" />
+      <img id="headerAvatar" src="https://i.pravatar.cc/40" alt="User Avatar" class="avatar" />
     </div>
   </header>
 
-  <aside class="sidebar">
+  <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img src="https://i.pravatar.cc/100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://i.pravatar.cc/100" alt="User Profile" />
       <h3>Tuấn Anh</h3>
-      <p>Nhà thiết kế UI/UX </p>
+      <p>Nhà thiết kế UI/UX</p>
     </div>
     <nav>
       <ul>
@@ -34,6 +55,22 @@
         <li><a href="khoiphucvoucher">VOUCHER XÓA GẦN ĐÂY</a></li>
         <li><a href="campaigns">QUẢN LÝ CHIẾN DỊCH</a></li>
         <li><a href="#" id="settingsLink">CÀI ĐẶT</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <aside class="sidebar hidden" id="settingsSidebar">
+    <div class="profile" style="text-align: left;">
+      <button
+        id="backButton"
+        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
+      >
+        <span style="font-size: 20px;">←</span> Quay lại
+      </button>
+    </div>
+    <nav>
+      <ul>
+        <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
       </ul>
     </nav>
   </aside>
@@ -104,11 +141,10 @@
       <h2>Thêm Voucher</h2>
       <label>Mã voucher:</label><input type="text" id="add-voucher-id" />
       <label>Loại:</label>
-     <select id="add-voucher-type">
-  <option value="percentage">Phần trăm</option>
-  <option value="fixed">Giảm cố định</option>
-</select>
-
+      <select id="add-voucher-type">
+        <option value="percentage">Phần trăm</option>
+        <option value="fixed">Giảm cố định</option>
+      </select>
       <label>Giá trị giảm:</label><input type="number" id="add-discount-value" />
       <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="add-min-order" />
       <label>Số lần sử dụng:</label><input type="number" id="add-usage-limit" />
@@ -128,5 +164,45 @@
   </div>
 
   <script src="/assets/js/quanlyvoucher.js"></script>
+  <script>
+    // Load avatar from localStorage on page load
+    window.onload = () => {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) {
+        document.getElementById('sidebarAvatar').src = savedAvatar;
+        document.getElementById('headerAvatar').src = savedAvatar;
+      }
+    };
+
+    // Toggle settings sidebar
+    document.getElementById('settingsLink').onclick = () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    };
+
+    // Back button to return to main sidebar
+    document.getElementById('backButton').onclick = () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    };
+
+    // Logout button functionality
+    document.getElementById('logoutButton').onclick = () => {
+      fetch('login')
+        .then(res => {
+          if (res.ok) {
+            // Clear stored avatar on logout
+            localStorage.removeItem('userAvatar');
+            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+            window.location.href = 'login';
+          } else {
+            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+          }
+        })
+        .catch(() => {
+          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+        });
+    };
+  </script>
 </body>
 </html>
