@@ -154,33 +154,92 @@ function renderProducts(products) {
     });
   });
 
+ // ... (các phần code khác giữ nguyên cho đến phần xử lý xóa)
+
   // XÓA
   document.querySelectorAll('.delete-btn').forEach(btn => {
     btn.addEventListener('click', async function () {
       const id = this.getAttribute('data-id');
-      if (confirm('Bạn có chắc muốn xóa truyện này?')) {
+      if (await showConfirmDeleteDialog()) {
         try {
           const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}`, {
-  method: 'DELETE',
-  headers: {
-    'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
-  }
-});
+            method: 'DELETE',
+            headers: {
+              'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
+            }
+          });
 
           if (!res.ok) {
             const errText = await res.text();
-            alert('Xóa thất bại!\n' + errText);
+            showErrorDialog('Xóa thất bại!', errText); // Hiển thị dialog lỗi
             return;
           }
-          alert('Đã xóa truyện!');
-          const products = await fetchProducts();
-          renderProductsWithPagination(products, currentPage);
+          showSuccessDeletebook(); // Gọi dialog thành công
+          // Chờ người dùng đóng dialog trước khi tải lại dữ liệu
         } catch (err) {
-          alert('Có lỗi khi xóa truyện!\n' + err.message);
+          showErrorDialog('Có lỗi khi xóa truyện!', err.message);
         }
       }
     });
   });
+
+  // Hàm hiển thị dialog thành công (tạo động giống dialog lỗi)
+  function showSuccessDeletebook() {
+    const dialog = document.createElement('div');
+    dialog.id = 'dialog-success-delete-book';
+    dialog.style.cssText = `
+      position: fixed; inset: 0; z-index: 9999;
+      background-color: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    `;
+    dialog.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+        <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+        <h3 style="margin-top: 12px; font-size: 18px;">Đã xóa truyện thành công!</h3>
+        <button onclick="closeDeleteDialog()" style="
+          margin-top: 20px; padding: 8px 24px;
+          background: #00cfff; color: white; border: none; border-radius: 6px;
+          cursor: pointer; font-weight: bold;
+        ">OK</button>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+    setTimeout(() => {
+      dialog.style.display = 'flex';
+    }, 0);
+  }
+
+  
+
+  // Hàm hiển thị dialog lỗi (giữ nguyên)
+  function showErrorDialog(title, message) {
+    const dialog = document.createElement('div');
+    dialog.id = 'dialog-error';
+    dialog.style.cssText = `
+      position: fixed; inset: 0; z-index: 9999;
+      background-color: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    `;
+    dialog.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+        <img src="https://img.icons8.com/color/48/000000/error.png" alt="error">
+        <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
+        <p style="color: #d32f2f;">${message}</p>
+        <button onclick="document.getElementById('dialog-error').style.display='none'" style="
+          margin-top: 20px; padding: 8px 24px;
+          background: #ff4444; color: white; border: none; border-radius: 6px;
+          cursor: pointer; font-weight: bold;
+        ">OK</button>
+      </div>
+    `;
+    document.body.appendChild(dialog);
+    setTimeout(() => {
+      dialog.style.display = 'flex';
+    }, 0);
+  }
+
 
   // SỬA
   document.querySelectorAll('.edit-btn').forEach(btn => {
@@ -497,7 +556,7 @@ addBookForm.addEventListener('submit', async function(e) {
 }
 
     
-    alert('Lưu thành công!');
+    showAddBookSuccessDialog();
     dialogOverlay.classList.remove('active');
     products = await fetchProducts();
     renderFilteredAndSorted(currentPage);
@@ -643,8 +702,173 @@ async function fetchCampaignsForSelect() {
   }
 }
 
+
+function showSuccessDeletesbook() {
+  fetch('/components/dialogs/success-delete-book.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+
 // Main init
 document.addEventListener('DOMContentLoaded', async () => {
   products = await fetchProducts();
   renderFilteredAndSorted(1);
 });
+// Hàm đóng dialog thành công và tải lại dữ liệu (định nghĩa toàn cục)
+  function closeDeleteDialog() {
+    const dialog = document.getElementById('dialog-success-delete-book');
+    if (dialog) {
+      dialog.style.display = 'none';
+      document.body.removeChild(dialog); // Xóa dialog khỏi DOM sau khi đóng
+      // Tải lại dữ liệu sau khi đóng
+      fetchProducts().then(products => {
+        renderProductsWithPagination(products, currentPage);
+      });
+    }
+  }
+  function showAddBookSuccessDialog() {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-add-book';
+  dialog.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background-color: rgba(0,0,0,0.5);
+    display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+  `;
+
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <div style="margin-bottom: 16px;">
+        <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      </div>
+      <h3 style="font-size: 18px; margin-bottom: 24px;">Thêm sách thành công , và sửa thành công !</h3>
+      <div style="display: flex; justify-content: space-around;">
+        <button onclick="closeAddBookDialog()" style="
+          padding: 8px 24px;
+          background: #e0e0e0; color: #000; border: none; border-radius: 6px;
+          cursor: pointer; font-weight: bold;
+        ">Quay lại</button>
+        <button onclick="closeAddBookDialog()" style="
+          padding: 8px 24px;
+          background: #00cfff; color: white; border: none; border-radius: 6px;
+          cursor: pointer; font-weight: bold;
+        ">Xác nhận</button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(dialog);
+  setTimeout(() => {
+    dialog.style.display = 'flex';
+  }, 0);
+}
+
+function closeAddBookDialog() {
+  const dialog = document.getElementById('dialog-success-add-book');
+  if (dialog) {
+    dialog.style.display = 'none';
+    document.body.removeChild(dialog);
+  }
+}
+function showUpdateBookSuccessDialog() {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-update-book';
+  dialog.style.cssText = `
+    position: fixed; inset: 0; z-index: 9999;
+    background-color: rgba(0,0,0,0.5);
+    display: flex; justify-content: center; align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+  `;
+
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <div style="margin-bottom: 16px;">
+        <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      </div>
+      <h3 style="font-size: 18px; margin-bottom: 20px;">Cập nhật truyện thành công!</h3>
+      <button onclick="closeUpdateBookDialog()" style="
+        padding: 8px 24px;
+        background: #00cfff; color: white; border: none; border-radius: 6px;
+        cursor: pointer; font-weight: bold;
+      ">OK</button>
+    </div>
+  `;
+  
+  document.body.appendChild(dialog);
+  setTimeout(() => {
+    dialog.style.display = 'flex';
+  }, 0);
+}
+
+function closeUpdateBookDialog() {
+  const dialog = document.getElementById('dialog-success-update-book');
+  if (dialog) {
+    dialog.style.display = 'none';
+    document.body.removeChild(dialog);
+  }
+}
+
+function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa danh mục này?') {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-delete-overlay';
+    overlay.style.cssText = `
+      position: fixed; inset: 0; z-index: 9998;
+      background-color: rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    `;
+
+    overlay.innerHTML = `
+      <div style="
+        background: white;
+        border-radius: 12px;
+        padding: 16px 20px;
+        max-width: 360px;
+        width: 100%;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        text-align: left;
+      ">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
+          <span style="font-size: 15px;">${message}</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-delete" style="
+            padding: 6px 16px;
+            background: #ffecec;
+            color: #f44336;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+          ">Hủy</button>
+          <button id="btn-ok-delete" style="
+            padding: 6px 16px;
+            background: #00cfff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+          ">OK</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-delete').onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(false);
+    };
+
+    overlay.querySelector('#btn-ok-delete').onclick = () => {
+      document.body.removeChild(overlay);
+      resolve(true);
+    };
+  });
+}
