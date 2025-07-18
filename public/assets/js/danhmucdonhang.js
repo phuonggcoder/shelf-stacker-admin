@@ -238,17 +238,26 @@ function exportToCSV() {
   const startDate = dateInputs[0].value ? new Date(dateInputs[0].value) : null;
   const endDate = dateInputs[1].value ? new Date(dateInputs[1].value) : null;
 
+  console.log('Status Filter:', statusFilter); // Debug giá trị từ <select>
+
   // Lọc đơn hàng
   let filteredOrders = orders;
 
-  // Lọc theo trạng thái (chỉ "Chờ xác nhận" hoặc "Đã giao" nếu chọn)
+  // Lọc theo trạng thái (chỉ "Pending" hoặc "Delivered" nếu chọn)
   if (statusFilter && statusFilter !== "-- trạng thái --") {
-    const statusKey = {
-      'chờ xác nhận': 'Pending',
-      'đã giao': 'Delivered'
-    }[statusFilter];
+    const statusMap = {
+      'pending': 'Pending',
+      'delivered': 'Delivered'
+    };
+    const statusKey = statusMap[statusFilter];
     if (statusKey) {
-      filteredOrders = filteredOrders.filter(order => order.order_status === statusKey);
+      filteredOrders = filteredOrders.filter(order => {
+        const orderStatus = order.order_status || '';
+        console.log(`Order ID: ${order.order_id}, Status: ${orderStatus}, Filtering for: ${statusKey}`);
+        return orderStatus === statusKey;
+      });
+    } else {
+      console.warn('Trạng thái không khớp với danh sách:', statusFilter);
     }
   }
 
