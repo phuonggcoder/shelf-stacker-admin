@@ -43,7 +43,7 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
             data-status="${cat.isVisible === false ? 'false' : 'true'}"
           >Sửa</button>
           <button class="action-btn btn-return" data-id="${cat._id}">Xóa</button>
-          <button class="action-btn btn-confirm">${cat.isVisible === false ? 'Hiển thị' : 'Ẩn'}</button>
+          <button class="action-btn btn-confirm" data-isvisible="${cat.isVisible}">${cat.isVisible === false ? 'Hiển thị' : 'Ẩn'}</button>
         </td>
       </tr>
     `;
@@ -82,7 +82,11 @@ async function fetchCategories() {
   const tbody = document.getElementById('category-table-body'); 
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
+    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    });
     const data = await res.json();
     categories = Array.isArray(data) ? data : [];
     renderCategoriesWithPagination(categories, 1);
@@ -96,18 +100,23 @@ document.addEventListener('click', async function(e) {
   // Xóa danh mục
   if (e.target.classList.contains('btn-return')) {
     const id = e.target.getAttribute('data-id');
-    if (confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
+    if (await showConfirmDeleteDialog()) {
       try {
+        const token = getToken();
+        if (!token) {
+          showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
+          return;
+        }
         await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
           method: 'DELETE',
           headers: {
-            'Authorization': 'Bearer ' + getToken()
+            'Authorization': 'Bearer ' + token
           }
         });
-        alert('Xóa danh mục thành công!');
+        showSuccessDeletebook();
         fetchCategories();
       } catch (err) {
-        alert('Lỗi kết nối!');
+        showErrorDialog('Xóa thất bại!', err.message || 'Lỗi không xác định.');
       }
     }
   }
@@ -137,27 +146,38 @@ document.addEventListener('click', async function(e) {
   if (e.target.classList.contains('btn-confirm')) {
     const row = e.target.closest('tr');
     const id = row.querySelector('.btn-update').getAttribute('data-id');
-    const currentVisible = e.target.textContent.trim() === 'Ẩn' ? true : false;
-    const newVisible = !currentVisible;
+    const currentVisible = e.target.getAttribute('data-isvisible') === 'true'; // Lấy trạng thái từ data-isvisible
     
     if (!id) return;
     
     try {
+      const token = getToken();
+      if (!token) {
+        showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
+        return;
+      }
       const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isVisible: newVisible })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify({ isVisible: !currentVisible }) // Đảo ngược trạng thái
       });
       
-      if (res.ok) {
-        alert(newVisible ? 'Đã hiển thị danh mục!' : 'Đã ẩn danh mục!');
-        fetchCategories();
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        alert('Cập nhật trạng thái thất bại: ' + (err.message || 'Lỗi không xác định!'));
+        if (res.status === 401) {
+          showErrorDialog('Lỗi xác thực!', 'Token không hợp lệ. Vui lòng đăng nhập lại.');
+        } else {
+          showErrorDialog('Cập nhật trạng thái thất bại!', err.message || 'Lỗi không xác định!');
+        }
+        return;
       }
+      showUpdateBookSuccessDialog();
+      fetchCategories();
     } catch (err) {
-      alert('Lỗi kết nối!');
+      showErrorDialog('Lỗi kết nối!', err.message || 'Lỗi không xác định.');
     }
   }
 });
@@ -227,7 +247,7 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
   e.preventDefault();
 
   if (editingCategoryId) {
-    alert('Đang ở chế độ sửa. Bấm nút cập nhật!');
+    showErrorDialog('Lỗi!', 'Đang ở chế độ sửa. Bấm nút cập nhật!');
     return;
   }
 
@@ -238,7 +258,7 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
   const isVisible = document.getElementById('cat-status').value === 'true';
 
   if (!name || !slug) {
-    alert('Vui lòng nhập tên danh mục và slug!');
+    showErrorDialog('Lỗi!', 'Vui lòng nhập tên danh mục và slug!');
     return;
   }
 
@@ -249,38 +269,38 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
     formData.append('slug', slug);
     formData.append('description', description);
     formData.append('isVisible', isVisible.toString()); // 'true' hoặc 'false'
-    // In ra toàn bộ dữ liệu trong formData để kiểm tra
-for (let [key, value] of formData.entries()) {
-  console.log(`${key}:`, value);
-}
-
-
     
     // Thêm file ảnh vào FormData nếu có
     if (file) {
       formData.append('image', file);
     }
 
+    const token = getToken();
+    if (!token) {
+      showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
+      return;
+    }
+
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
       method: 'POST',
       headers: {
-        'Authorization': 'Bearer ' + getToken()
+        'Authorization': 'Bearer ' + token
       },
       body: formData
     });
 
     const result = await res.json();
     if (res.ok) {
-      alert('✅ Thêm danh mục thành công!');
+      showAddBookSuccessDialog();
       document.getElementById('add-category-modal').style.display = 'none';
       this.reset();
       document.getElementById('preview-image').style.display = 'none';
       fetchCategories();
     } else {
-      alert('❌ Thêm thất bại: ' + (result.message || 'Lỗi không xác định!'));
+      showErrorDialog('Thêm thất bại!', result.message || 'Lỗi không xác định!');
     }
   } catch (err) {
-    alert('Lỗi kết nối hoặc server không phản hồi');
+    showErrorDialog('Lỗi!', 'Lỗi kết nối hoặc server không phản hồi');
   }
 });
 
@@ -296,7 +316,7 @@ document.getElementById('update-category-btn').addEventListener('click', async f
   const isVisible = document.getElementById('cat-status').value === 'true';
 
   if (!name || !slug) {
-    alert('Vui lòng nhập tên danh mục và slug!');
+    showErrorDialog('Lỗi!', 'Vui lòng nhập tên danh mục và slug!');
     return;
   }
 
@@ -313,17 +333,23 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       formData.append('image', file);
     }
 
+    const token = getToken();
+    if (!token) {
+      showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
+      return;
+    }
+
     const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${editingCategoryId}`, {
       method: 'PUT',
       headers: {
-        'Authorization': 'Bearer ' + getToken()
+        'Authorization': 'Bearer ' + token
       },
       body: formData
     });
 
     if (res.ok) {
       const result = await res.json();
-      alert('Cập nhật danh mục thành công!');
+      showUpdateBookSuccessDialog();
       
       // Cập nhật dữ liệu local
       const idx = categories.findIndex(cat => cat._id === editingCategoryId);
@@ -335,10 +361,14 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       resetCategoryForm();
     } else {
       const err = await res.json();
-      alert('Cập nhật thất bại: ' + (err.message || 'Lỗi không xác định!'));
+      if (res.status === 401) {
+        showErrorDialog('Lỗi xác thực!', 'Token không hợp lệ. Vui lòng đăng nhập lại.');
+      } else {
+        showErrorDialog('Cập nhật thất bại!', err.message || 'Lỗi không xác định!');
+      }
     }
   } catch (err) {
-    alert('Lỗi kết nối!');
+    showErrorDialog('Lỗi!', 'Lỗi kết nối!');
   }
 });
 
@@ -458,6 +488,120 @@ function resetCategoryForm() {
   document.getElementById('update-category-btn').style.display = 'none';
   
   editingCategoryId = null;
+}
+
+// Dialog functions
+function showSuccessDeletebook() {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-delete-book';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      <h3 style="margin-top: 12px; font-size: 18px;">Đã xóa danh mục thành công!</h3>
+      <button onclick="closeDeleteDialog()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  setTimeout(() => dialog.style.display = 'flex', 0);
+}
+
+function showErrorDialog(title, message) {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-error';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/error.png" alt="error">
+      <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
+      <p style="color: #d32f2f;">${message}</p>
+      <button onclick="this.parentElement.parentElement.style.display='none'" style="margin-top: 20px; padding: 8px 24px; background: #ff4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  setTimeout(() => dialog.style.display = 'flex', 0);
+}
+
+function showAddBookSuccessDialog() {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-add-book';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      <h3 style="font-size: 18px; margin-bottom: 24px;">Thêm danh mục thành công!</h3>
+      <div style="display: flex; justify-content: space-around;">
+        <button onclick="closeAddBookDialog()" style="padding: 8px 24px; background: #e0e0e0; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Quay lại</button>
+        <button onclick="closeAddBookDialog()" style="padding: 8px 24px; background: #00cfff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Xác nhận</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  setTimeout(() => dialog.style.display = 'flex', 0);
+}
+
+function showUpdateBookSuccessDialog() {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-update-book';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  dialog.innerHTML = `
+    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      <h3 style="font-size: 18px; margin-bottom: 20px;">Cập nhật danh mục thành công!</h3>
+      <button onclick="closeUpdateBookDialog()" style="padding: 8px 24px; background: #00cfff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+  setTimeout(() => dialog.style.display = 'flex', 0);
+}
+
+function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa danh mục này?') {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-delete-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.innerHTML = `
+      <div style="background: white; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
+          <span style="font-size: 15px;">${message}</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy</button>
+          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#btn-cancel-delete').onclick = () => { document.body.removeChild(overlay); resolve(false); };
+    overlay.querySelector('#btn-ok-delete').onclick = () => { document.body.removeChild(overlay); resolve(true); };
+  });
+}
+
+function closeDeleteDialog() {
+  const dialog = document.getElementById('dialog-success-delete-book');
+  if (dialog) {
+    dialog.style.display = 'none';
+    document.body.removeChild(dialog);
+    fetchCategories();
+  }
+}
+
+function closeAddBookDialog() {
+  const dialog = document.getElementById('dialog-success-add-book');
+  if (dialog) {
+    dialog.style.display = 'none';
+    document.body.removeChild(dialog);
+  }
+}
+
+function closeUpdateBookDialog() {
+  const dialog = document.getElementById('dialog-success-update-book');
+  if (dialog) {
+    dialog.style.display = 'none';
+    document.body.removeChild(dialog);
+  }
 }
 
 // Initialize
