@@ -114,26 +114,6 @@ function renderBookSearchList(books, selectedIds = []) {
   });
 }
 
-// Load sách khi mở modal
-function loadBooksForSearch(selectedIds = []) {
-  fetch('https://server-shelf-stacker.onrender.com/api/books/all', { headers: { 'Authorization': token } })
-    .then(res => res.json())
-    .then(books => {
-      window.allBooks = books;
-      // Đổ option vào select ẩn (nếu chưa có)
-      const select = document.getElementById('campaign-books');
-      select.innerHTML = '';
-      books.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b._id;
-        opt.textContent = b.title || b.name;
-        if (selectedIds.includes(b._id)) opt.selected = true;
-        select.appendChild(opt);
-      });
-      renderBookSearchList(books, selectedIds);
-    });
-}
-
 // Tìm kiếm realtime
 document.getElementById('book-search-input').addEventListener('input', function() {
   const keyword = this.value.trim().toLowerCase();
@@ -264,7 +244,6 @@ document.getElementById('save-campaign-btn').addEventListener('click', function 
     });
 });
 
-
 function editCampaign(id) {
   fetch(`${apiURL}/${id}`, {
     headers: { 'Authorization': token }
@@ -279,14 +258,15 @@ function editCampaign(id) {
       editorInstance.setData(c.description || '');
 
       const select = document.getElementById('campaign-books');
-     const selectedBooks = Array.isArray(c.books) 
-  ? c.books.map(b => typeof b === 'object' ? b._id : b) 
-  : [];
+      const selectedBooks = Array.isArray(c.books) 
+        ? c.books.map(b => typeof b === 'object' ? b._id : b) 
+        : [];
+      Array.from(select.options).forEach(opt => {
+        opt.selected = selectedBooks.includes(opt.value);
+      });
 
-Array.from(select.options).forEach(opt => {
-  opt.selected = selectedBooks.includes(opt.value);
-});
-
+      // Tải lại danh sách sách với trạng thái đã chọn
+      loadBooksForSearch(selectedBooks);
 
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -388,9 +368,6 @@ function deleteCampaign(id) {
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-
-
-
 document.getElementById('btn-search').addEventListener('click', function () {
   const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
 
@@ -412,7 +389,6 @@ document.getElementById('btn-search').addEventListener('click', function () {
       tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
     });
 });
-
 
 document.getElementById('search-campaign').addEventListener('keydown', function (e) {
   if (e.key === 'Enter') {
@@ -470,3 +446,8 @@ function showConfirmDeleteCampaignDialog() {
     .then(html => document.body.insertAdjacentHTML('beforeend', html));
 }
 
+function showSuccessAddCampaignDialog() {
+  fetch('/components/dialogs/success-add-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}

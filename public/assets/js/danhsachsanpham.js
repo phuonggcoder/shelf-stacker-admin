@@ -124,7 +124,6 @@ addBookBtn.addEventListener('click', function () {
   dialogOverlay.classList.add('active');
 
   fetchCategoriesForSelect();
-  fetchCampaignsForSelect();
 });
 
 // Đóng dialog
@@ -190,7 +189,6 @@ function renderProducts(products) {
         <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
         <div class="desc-wrap">${descHtml}</div>
         <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
-        <span><b>Chiến dịch:</b> ${(product.campaigns || []).map(c => c.name || c).join(', ')}</span><br>
         <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
         <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
         <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
@@ -299,19 +297,6 @@ function renderProducts(products) {
         } else {
           Array.from(select.options).forEach(opt => {
             opt.selected = ids.includes(opt.value);
-          });
-        }
-      });
-
-      fetchCampaignsForSelect().then(() => {
-        const select = document.getElementById('bookCampaign');
-        const campaignIds = book.campaigns || [];
-        if (select.choicesInstance) {
-          select.choicesInstance.removeActiveItems();
-          campaignIds.forEach(val => select.choicesInstance.setChoiceByValue(val));
-        } else {
-          Array.from(select.options).forEach(opt => {
-            opt.selected = campaignIds.includes(opt.value);
           });
         }
       });
@@ -587,15 +572,6 @@ addBookForm.addEventListener('submit', async function(e) {
   }
   categories.forEach(cat => formData.append('categories[]', cat));
   
-  const campaignSelect = document.getElementById('bookCampaign');
-  let campaigns = [];
-  if (campaignSelect.choicesInstance) {
-    campaigns = campaignSelect.choicesInstance.getValue(true);
-  } else {
-    campaigns = Array.from(campaignSelect.selectedOptions).map(opt => opt.value);
-  }
-  campaigns.forEach(camp => formData.append('campaigns[]', camp));
-  
   const coverFiles = document.getElementById('bookImageUpload').files;
   const remainingFiles = new DataTransfer();
   // Chỉ thêm các file không nằm trong deletedImageIndices
@@ -766,36 +742,6 @@ async function fetchCategoriesForSelect() {
     }
   } catch (error) {
     console.error('Lỗi lấy danh mục:', error);
-  }
-}
-
-async function fetchCampaignsForSelect() {
-  try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/campaigns');
-    if (!res.ok) throw new Error('Response not OK');
-    const data = await res.json();
-
-    const select = document.getElementById('bookCampaign');
-    select.innerHTML = '';
-    data.forEach(camp => {
-      const option = document.createElement('option');
-      option.value = camp._id;
-      option.textContent = camp.name;
-      select.appendChild(option);
-    });
-
-    if (!select.choicesInstance) {
-      select.choicesInstance = new Choices(select, {
-        removeItemButton: true,
-        placeholderValue: 'Chọn chiến dịch...',
-        searchPlaceholderValue: 'Tìm chiến dịch...',
-        noResultsText: 'Không có chiến dịch',
-        itemSelectText: '',
-        shouldSort: false
-      });
-    }
-  } catch (err) {
-    console.error('Lỗi lấy campaign:', err);
   }
 }
 

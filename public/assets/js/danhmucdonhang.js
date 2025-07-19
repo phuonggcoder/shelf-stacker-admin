@@ -52,7 +52,16 @@ function renderOrders(orders) {
     return;
   }
 
-  tbody.innerHTML = orders.map(order => {
+  // Lọc bỏ các đơn hàng có hình ảnh không lên
+  const invalidOrderIds = ['ORD1752049496563O9ZR9', 'ORD1752050362983MPP15'];
+  const filteredOrders = orders.filter(order => !invalidOrderIds.includes(order.order_id || order._id));
+
+  if (!filteredOrders || filteredOrders.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Không có đơn hàng</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filteredOrders.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
     const rawImage = book.thumbnail?.trim() || book.cover_image?.[0];
     const image = getFullImageURL(rawImage);
@@ -78,8 +87,6 @@ function renderOrders(orders) {
         <td class="actions">
           <button class="btn-detail">Chi tiết</button>
           <button class="btn-update">Cập nhật</button>
-          <button class="btn-confirm">Xác nhận</button>
-          <button class="btn-return">Trả hàng</button>
         </td>
       </tr>
     `;

@@ -147,6 +147,20 @@ function submitEditVoucher() {
     is_active: document.getElementById('edit-is-active').value === 'true'
   };
 
+  // Kiểm tra giá trị không được nhỏ hơn 1
+  if (updated.min_order_value < 1) {
+    alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+  if (updated.usage_limit < 1) {
+    alert('Số lần sử dụng phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+  if (updated.max_per_user < 1) {
+    alert('Số lần tối đa mỗi người phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+
   fetch(`${apiURL}/${editingVoucherId}`, {
     method: 'PUT',
     headers: {
@@ -185,6 +199,20 @@ function submitAddVoucher() {
 
   if (!voucher_id || !voucher_type || isNaN(discount_value) || isNaN(min_order_value) || isNaN(usage_limit) || isNaN(max_per_user) || !start_date || !end_date) {
     alert('Vui lòng nhập đầy đủ thông tin hợp lệ.');
+    return;
+  }
+
+  // Kiểm tra giá trị không được nhỏ hơn 1
+  if (min_order_value < 1) {
+    alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+  if (usage_limit < 1) {
+    alert('Số lần sử dụng phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+  if (max_per_user < 1) {
+    alert('Số lần tối đa mỗi người phải lớn hơn hoặc bằng 1.');
     return;
   }
 
