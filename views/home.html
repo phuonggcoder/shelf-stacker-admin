@@ -58,6 +58,7 @@
       border-radius: 50%;
       border: 3px solid #fff;
       margin-bottom: 8px;
+      cursor: pointer; /* Add cursor pointer to indicate clickability */
     }
 
     .sidebar .profile h3 {
@@ -90,7 +91,7 @@
       transition: all 0.2s;
       font-weight: 500;
       cursor: pointer;
-      font-size法: 14px;
+      font-size: 14px;
     }
 
     .sidebar nav ul li a:hover,
@@ -394,8 +395,6 @@
         </tbody>
       </table>
     </section>
-
-    <button id="changeAvatarButton" class="btn-primary" style="margin-top: 40px; max-width: 260px;">Đổi ảnh đại diện</button>
   </main>
 
   <!-- Dialog Upload Avatar -->
@@ -421,7 +420,7 @@
     const uploadMessage = document.getElementById('uploadMessage');
     const uploadButton = document.getElementById('uploadButton');
     const cancelButton = document.getElementById('cancelButton');
-    const changeAvatarButton = document.getElementById('changeAvatarButton');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
 
     document.getElementById('settingsLink').onclick = () => {
       document.getElementById('mainSidebar').classList.add('hidden');
@@ -450,7 +449,8 @@
         });
     };
 
-    changeAvatarButton.onclick = () => {
+    // Trigger avatar upload dialog when clicking the sidebar avatar
+    sidebarAvatar.onclick = () => {
       uploadDialog.showModal();
       resetUploadDialog();
     };
