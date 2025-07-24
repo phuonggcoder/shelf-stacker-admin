@@ -7,7 +7,6 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    /* Add minimal styles for settings sidebar and logout button */
     .sidebar.hidden {
       display: none;
     }
@@ -92,7 +91,8 @@
           <thead>
             <tr>
               <th>Mã</th>
-              <th>Tên</th>
+              <th>Loại giảm giá</th>
+              <th>Loại voucher</th>
               <th>Giảm (%)</th>
               <th>Bắt đầu</th>
               <th>Kết thúc</th>
@@ -102,7 +102,7 @@
           </thead>
           <tbody id="voucher-table-body">
             <tr>
-              <td colspan="7" style="text-align:center;">Đang tải...</td>
+              <td colspan="8" style="text-align:center;">Đang tải...</td>
             </tr>
           </tbody>
         </table>
@@ -115,7 +115,13 @@
     <div class="dialog-box">
       <h2>Sửa Voucher</h2>
       <label>Mã voucher:</label><input type="text" id="edit-voucher-id" disabled />
-      <label>Loại:</label>
+      <label>Loại giảm giá:</label>
+      <select id="edit-discount-type">
+        <option value="order">Mã giảm giá</option>
+        <option value="shipping">Mã freeship</option>
+        <option value="transport">Mã vận chuyển</option>
+      </select>
+      <label>Loại voucher:</label>
       <select id="edit-voucher-type">
         <option value="percentage">Phần trăm</option>
         <option value="fixed">Giảm cố định</option>
@@ -140,7 +146,13 @@
     <div class="dialog-box">
       <h2>Thêm Voucher</h2>
       <label>Mã voucher:</label><input type="text" id="add-voucher-id" />
-      <label>Loại:</label>
+      <label>Loại giảm giá:</label>
+      <select id="add-discount-type">
+        <option value="order">Mã giảm giá</option>
+        <option value="shipping">Mã freeship</option>
+        <option value="transport">Mã vận chuyển</option>
+      </select>
+      <label>Loại voucher:</label>
       <select id="add-voucher-type">
         <option value="percentage">Phần trăm</option>
         <option value="fixed">Giảm cố định</option>
@@ -191,7 +203,6 @@
       fetch('login')
         .then(res => {
           if (res.ok) {
-            // Clear stored avatar on logout
             localStorage.removeItem('userAvatar');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';

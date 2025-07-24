@@ -28,7 +28,7 @@ async function fetchVouchers() {
     renderVouchers(allVouchers);
   } catch (err) {
     console.error('Lỗi khi tải voucher:', err);
-    voucherTableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:red">Không tải được dữ liệu.</td></tr>';
+    voucherTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:red">Không tải được dữ liệu.</td></tr>';
   }
 }
 
@@ -39,15 +39,18 @@ function formatDate(dateString) {
 
 function renderVouchers(vouchers) {
   if (!vouchers.length) {
-    voucherTableBody.innerHTML = '<tr><td colspan="10" style="text-align:center;">Không có voucher nào.</td></tr>';
+    voucherTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không có voucher nào.</td></tr>';
     return;
   }
 
   voucherTableBody.innerHTML = '';
   vouchers.forEach(voucher => {
     const row = document.createElement('tr');
+    const discountTypeLabel = voucher.discount_type === 'order' ? 'Mã giảm giá' :
+                             voucher.discount_type === 'shipping' ? 'Mã freeship' : 'Mã vận chuyển';
     row.innerHTML = `
       <td>${voucher.voucher_id}</td>
+      <td>${discountTypeLabel}</td>
       <td>${voucher.voucher_type}</td>
       <td>${voucher.discount_value}</td>
       <td>${formatDate(voucher.start_date)}</td>
@@ -122,6 +125,7 @@ function editVoucher(id) {
     .then(data => {
       editingVoucherId = id;
       document.getElementById('edit-voucher-id').value = data.voucher_id || '';
+      document.getElementById('edit-discount-type').value = data.discount_type || 'order';
       document.getElementById('edit-voucher-type').value = data.voucher_type || 'fixed';
       document.getElementById('edit-discount-value').value = data.discount_value || 0;
       document.getElementById('edit-min-order').value = data.min_order_value || 0;
@@ -139,6 +143,7 @@ function editVoucher(id) {
 function submitEditVoucher() {
   const token = localStorage.getItem('authToken');
   const updated = {
+    discount_type: document.getElementById('edit-discount-type').value,
     voucher_type: document.getElementById('edit-voucher-type').value,
     discount_value: parseInt(document.getElementById('edit-discount-value').value),
     min_order_value: parseInt(document.getElementById('edit-min-order').value),
@@ -147,7 +152,6 @@ function submitEditVoucher() {
     is_active: document.getElementById('edit-is-active').value === 'true'
   };
 
-  // Kiểm tra giá trị không được nhỏ hơn 1
   if (updated.min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;
@@ -188,6 +192,7 @@ function submitAddVoucher() {
   const token = localStorage.getItem('authToken');
 
   const voucher_id = document.getElementById('add-voucher-id').value.trim();
+  const discount_type = document.getElementById('add-discount-type').value;
   const voucher_type = document.getElementById('add-voucher-type').value;
   const discount_value = parseFloat(document.getElementById('add-discount-value').value);
   const min_order_value = parseFloat(document.getElementById('add-min-order').value);
@@ -197,12 +202,11 @@ function submitAddVoucher() {
   const end_date = document.getElementById('add-end-date').value;
   const is_active = document.getElementById('add-is-active').value === 'true';
 
-  if (!voucher_id || !voucher_type || isNaN(discount_value) || isNaN(min_order_value) || isNaN(usage_limit) || isNaN(max_per_user) || !start_date || !end_date) {
+  if (!voucher_id || !discount_type || !voucher_type || isNaN(discount_value) || isNaN(min_order_value) || isNaN(usage_limit) || isNaN(max_per_user) || !start_date || !end_date) {
     alert('Vui lòng nhập đầy đủ thông tin hợp lệ.');
     return;
   }
 
-  // Kiểm tra giá trị không được nhỏ hơn 1
   if (min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;
@@ -218,6 +222,7 @@ function submitAddVoucher() {
 
   const newVoucher = {
     voucher_id,
+    discount_type,
     voucher_type,
     discount_value,
     min_order_value,
@@ -263,7 +268,6 @@ function closeEditDialog() {
   document.getElementById('voucherEditDialog').style.display = 'none';
 }
 
-// --- Dialog helpers ---
 function showAddVoucherSuccessDialog() {
   fetch('/components/dialogs/add-Voucher.html')
     .then(res => res.text())
@@ -313,7 +317,6 @@ function closeDeleteVoucherSuccessDialog() {
   if (dialog) dialog.remove();
 }
 
-// --- Lọc tìm kiếm ---
 searchInput.addEventListener('input', filterVouchers);
 statusFilter.addEventListener('change', filterVouchers);
 addVoucherBtn.addEventListener('click', openAddDialog);
@@ -334,5 +337,4 @@ function filterVouchers() {
   renderVouchers(filtered);
 }
 
-// --- Load khi trang mở ---
 fetchVouchers();
