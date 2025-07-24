@@ -64,6 +64,7 @@
       border-radius: 50%;
       border: 3px solid #fff;
       margin-bottom: 8px;
+      cursor: pointer;
     }
 
     .sidebar .profile h3 {
@@ -348,6 +349,59 @@
     .btn-danger:hover {
       background-color: #ff7875;
     }
+
+    .btn-primary {
+      background-color: #0ea5e9;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background-color: #38bdf8;
+    }
+
+    .btn-primary:disabled {
+      background-color: #9ecffb;
+      cursor: not-allowed;
+    }
+
+    dialog {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      width: 300px;
+      max-width: 90%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      z-index: 1002;
+    }
+
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    .notification {
+      background-color: #f0f9ff;
+      border: 1px solid var(--success);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+      display: none;
+      font-size: 14px;
+      color: var(--success);
+    }
+
+    .notification.error-message {
+      background-color: #fff0f0;
+      border-color: var(--danger);
+      color: var(--danger);
+    }
   </style>
 </head>
 <body>
@@ -384,10 +438,7 @@
 
   <aside class="sidebar hidden" id="settingsSidebar">
     <div class="profile" style="text-align: left;">
-      <button
-        id="backButton"
-        style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;"
-      >
+      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
         <span style="font-size: 20px;">←</span> Quay lại
       </button>
     </div>
@@ -403,18 +454,15 @@
       <h2 class="title">Danh sách truyện tranh</h2>
       <div class="search-filter" style="display: flex; gap: 6px; align-items: center; margin-bottom: 16px;">
         <div style="position:relative; flex:1; display:flex; align-items:center;">
-          <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox"
-            style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" />
+          <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" />
           <div id="category-filter-choices-wrap" style="position:absolute; left:0; top:0; width:100%; display:none; z-index:10;">
             <select id="filter-category" multiple></select>
           </div>
-          <button id="toggle-category-btn" type="button"
-            style="position:absolute; right:4px; top:7px; background:transparent; border:none; cursor:pointer; font-size:18px; z-index:11;">
+          <button id="toggle-category-btn" type="button" style="position:absolute; right:4px; top:7px; background:transparent; border:none; cursor:pointer; font-size:18px; z-index:11;">
             <i class="fa fa-chevron-down"></i>
           </button>
         </div>
-        <button id="btn-search" type="button"
-          style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+        <button id="btn-search" type="button" style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer; transition: background 0.2s;">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/>
             <path stroke="#fff" stroke-width="2" stroke-linecap="round" d="M20 20l-3-3"/>
@@ -457,15 +505,21 @@
         <input type="text" id="bookPublisher" placeholder="Nhà xuất bản" required />
         <input type="text" id="bookLanguage" placeholder="Ngôn ngữ" required />
         <select id="bookCategory" multiple></select>
-       
         <button type="submit">Lưu</button>
       </form>
     </div>
   </div>
 
+  <dialog id="uploadDialog">
+    <h4>Chọn ảnh mới</h4>
+    <input type="file" id="avatarUpload" accept="image/*" />
+    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;">Tải lên</button>
+    <div id="uploadMessage" class="notification"></div>
+    <button id="cancelButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
+  </dialog>
+
   <script src="/assets/js/danhsachsanpham.js"></script>
   <script>
-    // Load avatar from localStorage on page load
     window.onload = () => {
       const savedAvatar = localStorage.getItem('userAvatar');
       if (savedAvatar) {
@@ -473,6 +527,12 @@
         document.getElementById('headerAvatar').src = savedAvatar;
       }
     };
+
+    const uploadDialog = document.getElementById('uploadDialog');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const uploadButton = document.getElementById('uploadButton');
+    const cancelButton = document.getElementById('cancelButton');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
 
     document.getElementById('settingsLink').onclick = () => {
       document.getElementById('mainSidebar').classList.add('hidden');
@@ -488,7 +548,6 @@
       fetch('login')
         .then(res => {
           if (res.ok) {
-            // Clear stored avatar on logout
             localStorage.removeItem('userAvatar');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';
@@ -499,6 +558,101 @@
         .catch(() => {
           alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
         });
+    };
+
+    sidebarAvatar.onclick = () => {
+      uploadDialog.showModal();
+      resetUploadDialog();
+    };
+
+    cancelButton.onclick = () => {
+      uploadDialog.close();
+    };
+
+    uploadDialog.addEventListener('close', () => {
+      resetUploadDialog();
+    });
+
+    function resetUploadDialog() {
+      document.getElementById('avatarUpload').value = '';
+      uploadMessage.style.display = 'none';
+      uploadMessage.textContent = '';
+      uploadMessage.className = 'notification';
+      uploadButton.disabled = false;
+      uploadButton.textContent = 'Tải lên';
+    }
+
+    uploadButton.onclick = async () => {
+      const fileInput = document.getElementById('avatarUpload');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        alert('Vui lòng chọn một ảnh.');
+        return;
+      }
+
+      if (!file.type.startsWith('image/')) {
+        alert('Vui lòng chọn một file ảnh hợp lệ.');
+        return;
+      }
+
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+
+      if (!token) {
+        alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+        return;
+      }
+
+      if (!userId) {
+        alert('Thiếu userId. Vui lòng đăng nhập lại.');
+        return;
+      }
+
+      uploadButton.disabled = true;
+      uploadButton.textContent = 'Đang tải...';
+
+      try {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        formData.append('userId', userId);
+
+        const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        if (!response.ok) {
+          let errorMsg = 'Lỗi khi tải ảnh lên';
+          try {
+            const errData = await response.json();
+            if (errData.message) errorMsg = errData.message;
+          } catch {}
+          throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        const imageUrl = data.avatar || URL.createObjectURL(file);
+
+        document.getElementById('sidebarAvatar').src = imageUrl;
+        document.getElementById('headerAvatar').src = imageUrl;
+        localStorage.setItem('userAvatar', imageUrl);
+
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+        uploadMessage.className = 'notification success-message';
+
+        setTimeout(() => {
+          uploadDialog.close();
+        }, 2000);
+      } catch (error) {
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Lỗi: ' + error.message;
+        uploadMessage.className = 'notification error-message';
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Tải lên';
+      }
     };
   </script>
 </body>

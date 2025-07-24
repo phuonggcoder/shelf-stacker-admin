@@ -1,6 +1,6 @@
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
 const apiPostURL = 'https://server-shelf-stacker.onrender.com/api/books';
-const uploadURL = 'https://server-shelf-stacker.onrender.com/api/upload/smart'; // Sửa endpoint
+const uploadURL = 'https://server-shelf-stacker.onrender.com/api/upload/smart';
 const categoriesURL = 'https://server-shelf-stacker.onrender.com/api/categories';
 
 const productGrid = document.getElementById('productGrid');
@@ -28,9 +28,10 @@ function initCKEditorIfNeeded() {
         }
       })
       .then(editor => {
+        console.log('CKEditor initialized successfully:', editor);
         bookDescEditor = editor;
         editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
-          return new CKEditorUploadAdapter(loader);
+          return new CKEditorUploadAdapter(loader, editor);
         };
         return editor;
       })
@@ -44,12 +45,20 @@ function initCKEditorIfNeeded() {
 
 // Adapter upload tùy chỉnh cho CKEditor
 class CKEditorUploadAdapter {
-  constructor(loader) {
+  constructor(loader, editor) {
     this.loader = loader;
+    this.editor = editor;
+    if (!this.editor) {
+      console.error('CKEditor instance not found in adapter constructor');
+    }
   }
 
   async upload() {
     try {
+      if (!this.editor) {
+        throw new Error('CKEditor instance is not available. Please check editor configuration.');
+      }
+
       const file = await this.loader.file;
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -57,9 +66,9 @@ class CKEditorUploadAdapter {
       }
 
       const formData = new FormData();
-      formData.append('imageFile', file); // Tên field phải khớp với backend
-      formData.append('folder', 'admin_ckeditor5_Uploads'); // Thêm folder mặc định
-      formData.append('type', 'book'); // Thêm type để backend xử lý
+      formData.append('imageFile', file);
+      formData.append('folder', 'admin_ckeditor5_Uploads');
+      formData.append('type', 'book');
 
       const response = await fetch(uploadURL, {
         method: 'POST',
@@ -78,7 +87,7 @@ class CKEditorUploadAdapter {
             errorText = errorData.message || `Lỗi server: ${response.status}`;
           } else {
             errorText = await response.text();
-            errorText = errorText.includes('Cannot POST') 
+            errorText = errorText.includes('Cannot POST')
               ? 'Endpoint /api/upload/smart không tồn tại hoặc server không phản hồi.'
               : `Lỗi server: ${response.statusText}`;
           }
@@ -89,12 +98,13 @@ class CKEditorUploadAdapter {
       }
 
       const data = await response.json();
+      console.log('Upload response:', data);
       if (!data.success || !data.url) {
         throw new Error(data.message || 'Phản hồi từ server không chứa URL ảnh.');
       }
 
       return {
-        default: data.url // CKEditor mong đợi định dạng này
+        default: data.url
       };
     } catch (error) {
       console.error('Lỗi upload CKEditor:', error);
@@ -107,9 +117,6 @@ class CKEditorUploadAdapter {
     console.log('Đã hủy upload');
   }
 }
-
-// Khởi tạo CKEditor khi trang load
-initCKEditorIfNeeded();
 
 // Theo dõi ảnh đã xóa tạm thời
 let deletedImageIndices = [];
@@ -126,7 +133,7 @@ function showTemporaryDeleteDialog(index) {
     `;
     overlay.innerHTML = `
       <div style="
-        background: white;
+        background: #fff;
         border-radius: 12px;
         padding: 16px 20px;
         max-width: 360px;
@@ -485,14 +492,12 @@ function renderProductsWithPagination(productsArr, page = 1) {
     prevBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     prevBtn.className = 'pagination-btn';
     prevBtn.disabled = page === 1;
-    prevBtn.style.cssText = "background:#fff;border:1px solid #007bff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 6px;";
     prevBtn.onclick = () => renderFilteredAndSorted(page - 1);
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     nextBtn.className = 'pagination-btn';
     nextBtn.disabled = page === totalPages;
-    nextBtn.style.cssText = "background:#fff;border:1px solid #007bff;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:0 6px;";
     nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
 
     const pageInfo = document.createElement('span');
@@ -909,13 +914,13 @@ function showErrorDialog(title, message) {
     font-family: 'Segoe UI', sans-serif;
   `;
   dialog.innerHTML = `
-    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/error.png" alt="error">
       <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
       <p style="color: #d32f2f;">${message}</p>
       <button onclick="document.getElementById('dialog-error').remove()" style="
         margin-top: 20px; padding: 8px 24px;
-        background: #ff4444; color: white; border: none; border-radius: 6px;
+        background: #ff4444; color: #fff; border: none; border-radius: 6px;
         cursor: pointer; font-weight: bold;
       ">OK</button>
     </div>
@@ -933,12 +938,12 @@ function showSuccessDeletebook() {
     font-family: 'Segoe UI', sans-serif;
   `;
   dialog.innerHTML = `
-    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
       <h3 style="margin-top: 12px; font-size: 18px;">Đã xóa truyện thành công!</h3>
       <button onclick="closeDeleteDialog()" style="
         margin-top: 20px; padding: 8px 24px;
-        background: #00cfff; color: white; border: none; border-radius: 6px;
+        background: #00cfff; color: #fff; border: none; border-radius: 6px;
         cursor: pointer; font-weight: bold;
       ">OK</button>
     </div>
@@ -968,13 +973,13 @@ function showAddBookSuccessDialog(action = 'add', message = '') {
   `;
   const title = action === 'add' ? 'Thêm truyện thành công!' : 'Cập nhật truyện thành công!';
   dialog.innerHTML = `
-    <div style="background: white; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
-      <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
+      <h2 style="margin-top: 12px; font-size: 18px;">${title}</h2>
       <p style="color: #2e7d32;">${message}</p>
       <button onclick="closeAddBookDialog()" style="
         margin-top: 20px; padding: 8px 24px;
-        background: #00cfff; color: white; border: none; border-radius: 6px;
+        background: #00cfff; color: #fff; border: none; border-radius: 6px;
         cursor: pointer; font-weight: bold;
       ">OK</button>
     </div>
@@ -999,7 +1004,7 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
     `;
     overlay.innerHTML = `
       <div style="
-        background: white;
+        background: #fff;
         border-radius: 12px;
         padding: 16px 20px;
         max-width: 360px;
@@ -1026,7 +1031,7 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
           <button id="btn-ok-delete" style="
             padding: 6px 16px;
             background: #00cfff;
-            color: white;
+            color: #fff;
             border: none;
             border-radius: 8px;
             font-weight: 600;
@@ -1048,8 +1053,3 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
     };
   });
 }
-
-document.addEventListener('DOMContentLoaded', async () => {
-  products = await fetchProducts();
-  renderFilteredAndSorted(1);
-});

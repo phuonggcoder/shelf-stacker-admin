@@ -2,10 +2,10 @@ const BASE_URL = 'https://server-shelf-stacker.onrender.com';
 
 const STATUS_MAP = {
   "Pending": "Chờ xác nhận",
-  "Shipping": "Đang giao",
+  "Processing": "Đang xử lý",
+  "Shipped": "Đang giao",
   "Delivered": "Đã giao",
-  "Cancelled": "Đã huỷ",
-  "Returned": "Trả hàng"
+  "Cancelled": "Đã huỷ"
 };
 
 const REV_MAP = Object.fromEntries(Object.entries(STATUS_MAP).map(([k, v]) => [v, k]));
@@ -245,30 +245,25 @@ function exportToCSV() {
   const startDate = dateInputs[0].value ? new Date(dateInputs[0].value) : null;
   const endDate = dateInputs[1].value ? new Date(dateInputs[1].value) : null;
 
-  console.log('Status Filter:', statusFilter); // Debug giá trị từ <select>
-
   // Lọc đơn hàng
   let filteredOrders = orders;
 
-  // Lọc theo trạng thái (chỉ "Pending" hoặc "Delivered" nếu chọn)
+  // Lọc theo trạng thái
   if (statusFilter && statusFilter !== "-- trạng thái --") {
     const statusMap = {
       'pending': 'Pending',
-      'delivered': 'Delivered'
+      'processing': 'Processing',
+      'shipped': 'Shipped',
+      'delivered': 'Delivered',
+      'cancelled': 'Cancelled'
     };
     const statusKey = statusMap[statusFilter];
     if (statusKey) {
-      filteredOrders = filteredOrders.filter(order => {
-        const orderStatus = order.order_status || '';
-        console.log(`Order ID: ${order.order_id}, Status: ${orderStatus}, Filtering for: ${statusKey}`);
-        return orderStatus === statusKey;
-      });
-    } else {
-      console.warn('Trạng thái không khớp với danh sách:', statusFilter);
+      filteredOrders = filteredOrders.filter(order => order.order_status === statusKey);
     }
   }
 
-  // Lọc theo khoảng thời gian (từ ngày bắt đầu đến ngày kết thúc)
+  // Lọc theo khoảng thời gian
   if (startDate && endDate) {
     filteredOrders = filteredOrders.filter(order => {
       const orderDate = new Date(order.order_date || order.createdAt);
@@ -295,7 +290,7 @@ function exportToCSV() {
   const headers = ['Mã Đơn', 'Người Mua', 'Ngày Đặt', 'Trạng Thái', 'Tổng Tiền', 'Sản Phẩm'];
 
   // Chuyển đổi dữ liệu đơn hàng thành mảng CSV
-  const csvRows = [headers.join(',')]; // Thêm tiêu đề
+  const csvRows = [headers.join(',')];
 
   filteredOrders.forEach(order => {
     const code = (order.order_id || order._id || 'Không rõ').replace(/"/g, '""');
