@@ -1,5 +1,7 @@
 const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
 const apiPostURL = 'https://server-shelf-stacker.onrender.com/api/books';
+const uploadURL = 'https://server-shelf-stacker.onrender.com/api/upload/smart'; // Sửa endpoint
+const categoriesURL = 'https://server-shelf-stacker.onrender.com/api/categories';
 
 const productGrid = document.getElementById('productGrid');
 const searchBox = document.getElementById('searchBox');
@@ -9,32 +11,107 @@ const closeDialogBtn = document.getElementById('closeDialogBtn');
 const addBookForm = document.getElementById('addBookForm');
 const dialogTitle = document.getElementById('dialogTitle');
 
-// CKEditor 5 setup
+// Thiết lập CKEditor 5
 let bookDescEditor = null;
 let ckeditorPromise = null;
+
 function initCKEditorIfNeeded() {
   if (!ckeditorPromise) {
     ckeditorPromise = ClassicEditor
       .create(document.querySelector('#bookDesc'), {
-        ckfinder: {
-          uploadUrl: '/api/upload' // Cấu hình upload nếu cần
+        toolbar: [
+          'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+          'outdent', 'indent', '|', 'imageUpload', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo'
+        ],
+        image: {
+          toolbar: ['imageTextAlternative', 'imageStyle:full', 'imageStyle:side']
         }
       })
       .then(editor => {
         bookDescEditor = editor;
+        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
+          return new CKEditorUploadAdapter(loader);
+        };
         return editor;
       })
       .catch(error => {
-        console.error('CKEditor init error:', error);
+        console.error('Lỗi khởi tạo CKEditor:', error);
+        showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo. Vui lòng thử lại.');
       });
   }
   return ckeditorPromise;
 }
 
+// Adapter upload tùy chỉnh cho CKEditor
+class CKEditorUploadAdapter {
+  constructor(loader) {
+    this.loader = loader;
+  }
+
+  async upload() {
+    try {
+      const file = await this.loader.file;
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+      }
+
+      const formData = new FormData();
+      formData.append('imageFile', file); // Tên field phải khớp với backend
+      formData.append('folder', 'admin_ckeditor5_Uploads'); // Thêm folder mặc định
+      formData.append('type', 'book'); // Thêm type để backend xử lý
+
+      const response = await fetch(uploadURL, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + token
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errorText;
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            errorText = errorData.message || `Lỗi server: ${response.status}`;
+          } else {
+            errorText = await response.text();
+            errorText = errorText.includes('Cannot POST') 
+              ? 'Endpoint /api/upload/smart không tồn tại hoặc server không phản hồi.'
+              : `Lỗi server: ${response.statusText}`;
+          }
+        } catch (e) {
+          errorText = 'Không thể phân tích lỗi từ server.';
+        }
+        throw new Error(errorText);
+      }
+
+      const data = await response.json();
+      if (!data.success || !data.url) {
+        throw new Error(data.message || 'Phản hồi từ server không chứa URL ảnh.');
+      }
+
+      return {
+        default: data.url // CKEditor mong đợi định dạng này
+      };
+    } catch (error) {
+      console.error('Lỗi upload CKEditor:', error);
+      showErrorDialog('Lỗi Upload Ảnh', 'Không thể upload ảnh: ' + error.message);
+      throw error;
+    }
+  }
+
+  abort() {
+    console.log('Đã hủy upload');
+  }
+}
+
 // Khởi tạo CKEditor khi trang load
 initCKEditorIfNeeded();
 
-// Theo dõi ảnh đã xóa tạm thời (chưa lưu)
+// Theo dõi ảnh đã xóa tạm thời
 let deletedImageIndices = [];
 
 function showTemporaryDeleteDialog(index) {
@@ -104,16 +181,13 @@ addBookBtn.addEventListener('click', function () {
   dialogTitle.textContent = 'Thêm truyện mới';
   addBookForm.reset();
   
-  // Reset file inputs và trạng thái
   document.getElementById('bookImageUpload').value = '';
   document.getElementById('bookThumbnailUpload').value = '';
-  deletedImageIndices = []; // Reset danh sách ảnh đã xóa
+  deletedImageIndices = [];
   
-  // Clear previews
   document.getElementById('uploadedImagesPreview').innerHTML = '';
   document.getElementById('thumbnailPreview').innerHTML = '';
 
-  // Xóa CKEditor nội dung
   setTimeout(() => {
     initCKEditorIfNeeded().then(() => {
       if (bookDescEditor) bookDescEditor.setData('');
@@ -132,7 +206,7 @@ closeDialogBtn.addEventListener('click', () => {
   addBookForm.reset();
   addBookForm.removeAttribute('data-edit-id');
   if (bookDescEditor) bookDescEditor.setData('');
-  deletedImageIndices = []; // Reset khi đóng dialog
+  deletedImageIndices = [];
 });
 
 // Đóng dialog khi bấm ra ngoài
@@ -142,7 +216,7 @@ dialogOverlay.addEventListener('click', (e) => {
     addBookForm.reset();
     addBookForm.removeAttribute('data-edit-id');
     if (bookDescEditor) bookDescEditor.setData('');
-    deletedImageIndices = []; // Reset khi đóng dialog
+    deletedImageIndices = [];
   }
 });
 
@@ -226,15 +300,28 @@ function renderProducts(products) {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog()) {
         try {
+          const token = localStorage.getItem('authToken');
+          if (!token) {
+            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+            return;
+          }
+
           const res = await fetch(`${apiPostURL}/${id}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': 'Bearer ' + (localStorage.getItem('authToken') || '')
+              'Authorization': 'Bearer ' + token
             }
           });
 
           if (!res.ok) {
-            const errText = await res.text();
+            const contentType = res.headers.get('content-type');
+            let errText;
+            if (contentType && contentType.includes('application/json')) {
+              const errJson = await res.json();
+              errText = errJson.message || JSON.stringify(errJson);
+            } else {
+              errText = await res.text();
+            }
             showErrorDialog('Xóa thất bại!', errText);
             return;
           }
@@ -286,7 +373,7 @@ function renderProducts(products) {
 
       addBookForm.setAttribute('data-edit-id', id);
       dialogOverlay.classList.add('active');
-      deletedImageIndices = []; // Reset danh sách ảnh đã xóa khi chỉnh sửa
+      deletedImageIndices = [];
 
       fetchCategoriesForSelect().then(() => {
         const select = document.getElementById('bookCategory');
@@ -306,13 +393,33 @@ function renderProducts(products) {
 
 async function fetchProducts() {
   try {
-    const response = await fetch(apiURL);
-    if (!response.ok) throw new Error('Lỗi kết nối API');
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+    }
+
+    const response = await fetch(apiURL, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    if (!response.ok) {
+      const contentType = response.headers.get('content-type');
+      let errorText = 'Lỗi kết nối API: ' + response.statusText;
+      if (contentType && contentType.includes('application/json')) {
+        const errJson = await response.json();
+        errorText = errJson.message || JSON.stringify(errJson);
+      } else {
+        errorText = await response.text();
+      }
+      throw new Error(errorText);
+    }
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error(error);
-    productGrid.innerHTML = '<p>Không thể tải danh sách truyện tranh.</p>';
+    console.error('Lỗi tải sản phẩm:', error);
+    productGrid.innerHTML = '<p>Không thể tải danh sách truyện tranh. Vui lòng kiểm tra kết nối hoặc đăng nhập lại.</p>';
+    showErrorDialog('Lỗi Tải Dữ Liệu', error.message);
     return [];
   }
 }
@@ -422,8 +529,8 @@ document.getElementById('bookImageUpload').addEventListener('change', function()
   const files = this.files;
   const preview = document.getElementById('uploadedImagesPreview');
   preview.innerHTML = '';
-  deletedImageIndices = []; // Reset khi thêm ảnh mới
-  
+  deletedImageIndices = [];
+
   if (preview && files.length > 0) {
     Array.from(files).forEach((file, i) => {
       const reader = new FileReader();
@@ -446,7 +553,7 @@ document.getElementById('bookThumbnailUpload').addEventListener('change', functi
   const file = this.files[0];
   const preview = document.getElementById('thumbnailPreview');
   preview.innerHTML = '';
-  
+
   if (preview && file) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -474,15 +581,14 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
       if (confirm) {
         const input = document.getElementById('bookImageUpload');
         const dataTransfer = new DataTransfer();
-        
+
         Array.from(input.files).forEach((file, i) => {
           if (i !== index) dataTransfer.items.add(file);
         });
         input.files = dataTransfer.files;
 
-        targetDiv.remove(); // Xóa div chứa ảnh
-        deletedImageIndices.push(index); // Ghi nhận index đã xóa tạm thời
-        // Cập nhật lại index cho các button còn lại
+        targetDiv.remove();
+        deletedImageIndices.push(index);
         preview.querySelectorAll('.delete-image-btn, .edit-image-btn').forEach((btn, i) => {
           btn.setAttribute('data-index', i);
         });
@@ -538,20 +644,19 @@ document.getElementById('thumbnailPreview').addEventListener('click', function(e
         };
         reader.readAsDataURL(newFile);
       }
-      input.removeEventListener('change', replaceThumbnail);
+      this.removeEventListener('change', replaceThumbnail);
     }, { once: true });
   }
 });
 
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
-  
-  // Đảm bảo tất cả thay đổi (như xóa ảnh) đã được áp dụng trước khi submit
-  await new Promise(resolve => setTimeout(resolve, 0)); // Đợi một chu kỳ sự kiện để đồng bộ hóa
+
+  await new Promise(resolve => setTimeout(resolve, 0));
 
   const id = addBookForm.getAttribute('data-edit-id');
   const formData = new FormData();
-  
+
   formData.append('title', document.getElementById('bookName').value.trim());
   formData.append('author', document.getElementById('bookAuthor').value.trim());
   formData.append('price', document.getElementById('bookPrice').value);
@@ -559,10 +664,10 @@ addBookForm.addEventListener('submit', async function(e) {
   formData.append('publication_date', document.getElementById('bookPubDate').value);
   formData.append('publisher', document.getElementById('bookPublisher').value.trim());
   formData.append('language', document.getElementById('bookLanguage').value.trim());
-  
+
   const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
   formData.append('description', description);
-  
+
   const select = document.getElementById('bookCategory');
   let categories = [];
   if (select.choicesInstance) {
@@ -571,10 +676,9 @@ addBookForm.addEventListener('submit', async function(e) {
     categories = Array.from(select.selectedOptions).map(opt => opt.value);
   }
   categories.forEach(cat => formData.append('categories[]', cat));
-  
+
   const coverFiles = document.getElementById('bookImageUpload').files;
   const remainingFiles = new DataTransfer();
-  // Chỉ thêm các file không nằm trong deletedImageIndices
   Array.from(coverFiles).forEach((file, i) => {
     if (!deletedImageIndices.includes(i)) {
       remainingFiles.items.add(file);
@@ -584,23 +688,25 @@ addBookForm.addEventListener('submit', async function(e) {
   for (let i = 0; i < remainingFiles.files.length; i++) {
     formData.append('cover_images', remainingFiles.files[i]);
   }
-  
+
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
   }
-  
-  function getToken() {
-    return localStorage.getItem('authToken') || '';
-  }
-  
+
   try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+      return;
+    }
+
     let res;
     if (id) {
       res = await fetch(`${apiPostURL}/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': 'Bearer ' + getToken()
+          'Authorization': 'Bearer ' + token
         },
         body: formData
       });
@@ -608,12 +714,12 @@ addBookForm.addEventListener('submit', async function(e) {
       res = await fetch(apiPostURL, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + getToken()
+          'Authorization': 'Bearer ' + token
         },
         body: formData
       });
     }
-    
+
     if (!res.ok) {
       let errMessage = 'Lỗi không xác định!';
       try {
@@ -623,6 +729,9 @@ addBookForm.addEventListener('submit', async function(e) {
           errMessage = errJson.message || JSON.stringify(errJson);
         } else {
           errMessage = await res.text();
+          if (errMessage.includes('Cannot POST')) {
+            errMessage = 'Không thể kết nối đến endpoint. Vui lòng kiểm tra server.';
+          }
         }
       } catch (parseError) {
         errMessage = 'Không thể phân tích lỗi từ server!';
@@ -630,16 +739,68 @@ addBookForm.addEventListener('submit', async function(e) {
       showErrorDialog('Lưu thất bại!', errMessage);
       return;
     }
-    
+
     showAddBookSuccessDialog(id ? 'update' : 'add', 'Dữ liệu đã được lưu thành công!');
     dialogOverlay.classList.remove('active');
-    deletedImageIndices = []; // Reset sau khi lưu
+    deletedImageIndices = [];
     products = await fetchProducts();
     renderFilteredAndSorted(currentPage);
   } catch (err) {
     showErrorDialog('Có lỗi khi lưu truyện!', err.message);
   }
 });
+
+async function fetchCategoriesForSelect() {
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+    }
+
+    const res = await fetch(categoriesURL, {
+      headers: {
+        'Authorization': 'Bearer ' + token
+      }
+    });
+    if (!res.ok) {
+      const contentType = res.headers.get('content-type');
+      let errorText = 'Lỗi lấy danh mục: ' + res.statusText;
+      if (contentType && contentType.includes('application/json')) {
+        const errJson = await res.json();
+        errorText = errJson.message || JSON.stringify(errJson);
+      } else {
+        errorText = await res.text();
+      }
+      throw new Error(errorText);
+    }
+    const data = await res.json();
+
+    const select = document.getElementById('bookCategory');
+    select.innerHTML = '';
+
+    data.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat._id;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+
+    if (!select.choicesInstance) {
+      select.choicesInstance = new Choices(select, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: 'Chọn danh mục...',
+        searchPlaceholderValue: 'Tìm danh mục...',
+        noResultsText: 'Không tìm thấy',
+        itemSelectText: '',
+        shouldSort: false
+      });
+    }
+  } catch (error) {
+    console.error('Lỗi lấy danh mục:', error);
+    showErrorDialog('Lỗi Danh Mục', 'Không thể tải danh mục: ' + error.message);
+  }
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   const filterCategorySelect = document.getElementById('filter-category');
@@ -650,7 +811,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function fetchCategoriesForFilter() {
     try {
-      const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+      }
+
+      const res = await fetch(categoriesURL, {
+        headers: {
+          'Authorization': 'Bearer ' + token
+        }
+      });
+      if (!res.ok) {
+        const contentType = res.headers.get('content-type');
+        let errorText = 'Lỗi lấy danh mục: ' + res.statusText;
+        if (contentType && contentType.includes('application/json')) {
+          const errJson = await res.json();
+          errorText = errJson.message || JSON.stringify(errJson);
+        } else {
+          errorText = await res.text();
+        }
+        throw new Error(errorText);
+      }
       const data = await res.json();
       filterCategorySelect.innerHTML = '';
       data.forEach(cat => {
@@ -659,7 +840,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         option.textContent = cat.name;
         filterCategorySelect.appendChild(option);
       });
-      
+
       if (!filterCategoryChoices) {
         filterCategoryChoices = new Choices(filterCategorySelect, {
           removeItemButton: true,
@@ -674,9 +855,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } catch (err) {
       console.error('Lỗi load categories:', err);
+      showErrorDialog('Lỗi Danh Mục', 'Không thể tải danh mục lọc: ' + err.message);
     }
   }
-  
+
   await fetchCategoriesForFilter();
 
   toggleCategoryBtn.addEventListener('click', function(e) {
@@ -712,38 +894,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       return matchText && matchCategory;
     });
   };
+
+  products = await fetchProducts();
+  renderFilteredAndSorted(1);
 });
-
-async function fetchCategoriesForSelect() {
-  try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories');
-    const data = await res.json();
-
-    const select = document.getElementById('bookCategory');
-    select.innerHTML = '';
-
-    data.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat._id;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
-
-    if (!select.choicesInstance) {
-      select.choicesInstance = new Choices(select, {
-        removeItemButton: true,
-        placeholder: true,
-        placeholderValue: 'Chọn danh mục...',
-        searchPlaceholderValue: 'Tìm danh mục...',
-        noResultsText: 'Không tìm thấy',
-        itemSelectText: '',
-        shouldSort: false
-      });
-    }
-  } catch (error) {
-    console.error('Lỗi lấy danh mục:', error);
-  }
-}
 
 function showErrorDialog(title, message) {
   const dialog = document.createElement('div');
