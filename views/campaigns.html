@@ -61,7 +61,7 @@
       border-radius: 50%;
       border: 3px solid #fff;
       margin-bottom: 8px;
-      cursor: pointer;
+      cursor: pointer; /* Add cursor pointer to indicate clickability */
     }
 
     .sidebar .profile h3 {
@@ -171,7 +171,7 @@
       background-color: #dc3545;
     }
 
-    .btn-action:hover {
+    .btn-edit:hover {
       background-color: #e0a800;
     }
 
@@ -296,11 +296,12 @@
 
     .image-preview {
       margin-top: 10px;
-      max-width: 100px;
-      max-height: 100px;
-      object-fit: cover;
+      max-width: 100%;
+      max-height: 200px;
+      object-fit: contain;
       border: 1px solid #ddd;
       border-radius: 6px;
+      display: none;
     }
 
     dialog {
@@ -462,11 +463,11 @@
         </div>
 
         <div style="display:flex; gap:12px; margin-top:8px;">
-          <input type="file" id="campaign-image" class="form-input" accept="image/*" multiple style="flex:1;" />
+          <input type="file" id="campaign-image" class="form-input" accept="image/*" style="flex:1;" />
         </div>
 
-        <div id="image-preview-container" style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px;">
-          <div id="image-preview-list" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+        <div id="image-preview-container" style="margin-top: 10px;">
+          <img id="image-preview" class="image-preview" alt="Preview image" />
         </div>
 
         <div style="display:flex; gap:12px; margin-top:8px;">
@@ -502,6 +503,14 @@
     function closeDialog(id) {
       const dialog = document.getElementById(id);
       if (dialog) dialog.remove();
+    }
+
+    function showSuccessAddCampaignDialog() {
+      fetch('/components/dialogs/success-add-campaign.html')
+        .then(res => res.text())
+        .then(html => {
+          document.body.insertAdjacentHTML('beforeend', html);
+        });
     }
 
     document.getElementById('settingsLink').onclick = () => {
@@ -615,9 +624,11 @@
 
         const imageUrl = data.avatar || URL.createObjectURL(file);
 
+        // Update avatar images
         document.getElementById('sidebarAvatar').src = imageUrl;
         document.getElementById('headerAvatar').src = imageUrl;
 
+        // Store avatar URL in localStorage
         localStorage.setItem('userAvatar', imageUrl);
 
         uploadMessage.style.display = 'block';
@@ -637,5 +648,4 @@
       }
     };
   </script>
-</body>
 </html>
