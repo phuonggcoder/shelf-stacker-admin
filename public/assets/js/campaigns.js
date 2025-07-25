@@ -13,7 +13,9 @@ const token = `Bearer ${rawToken}`;
 let editingId = null;
 let editorInstance = null;
 window.allBooks = [];
-let existingImages = []; // Store existing images during edit
+let existingImages = [];
+let newImageFiles = [];
+let deletedImageUrls = [];
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -25,10 +27,8 @@ function renderCampaigns(data) {
     tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không có chiến dịch nào.</td></tr>`;
     return;
   }
-
   tableBody.innerHTML = '';
   data.forEach(c => {
-    const tr = document.createElement('tr');
     const imageUrl = Array.isArray(c.image) && c.image.length > 0 
       ? c.image[0] 
       : 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
@@ -39,6 +39,7 @@ function renderCampaigns(data) {
       'special_offer': 'Ưu đãi đặc biệt',
       'community_event': 'Sự kiện cộng đồng'
     }[c.type] || c.type;
+    const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><img src="${imageUrl}" style="width: 50px; height: 50px; object-fit: cover;" alt="Campaign image"></td>
       <td><strong>${c.name}</strong></td>
@@ -56,9 +57,7 @@ function renderCampaigns(data) {
 }
 
 function loadCampaigns() {
-  fetch(apiURL, {
-    headers: { 'Authorization': token }
-  })
+  fetch(apiURL, { headers: { 'Authorization': token } })
     .then(res => res.json())
     .then(renderCampaigns)
     .catch(err => {
@@ -68,9 +67,7 @@ function loadCampaigns() {
 }
 
 function loadBooksForSearch(selectedIds = []) {
-  fetch(bookAllAPI, {
-    headers: { 'Authorization': token }
-  })
+  fetch(bookAllAPI, { headers: { 'Authorization': token } })
     .then(res => res.json())
     .then(books => {
       window.allBooks = books;
@@ -135,9 +132,7 @@ document.getElementById('book-search-input').addEventListener('input', function(
 });
 
 function loadBooks() {
-  fetch(bookAllAPI, {
-    headers: { 'Authorization': token }
-  })
+  fetch(bookAllAPI, { headers: { 'Authorization': token } })
     .then(res => res.json())
     .then(books => {
       console.log('✅ Danh sách sách:', books);
@@ -166,9 +161,97 @@ function getSelectedBooks() {
   return Array.from(options).map(opt => opt.value);
 }
 
+function renderImagePreviews() {
+  const container = document.getElementById('image-preview-container');
+  if (!container) {
+    console.error('❌ Không tìm thấy container #image-preview-container');
+    return;
+  }
+  container.innerHTML = '';
+
+  existingImages.forEach((url, index) => {
+    if (!deletedImageUrls.includes(url)) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'image-preview-wrapper';
+      wrapper.innerHTML = `
+        <img src="${url}" class="image-preview" style="display: block;" />
+        <div class="image-actions">
+          <button class="edit-image-btn" data-url="${url}" title="Xóa hình ảnh">🗑️</button>
+          <button class="replace-image-btn" data-url="${url}" title="Sửa hình ảnh">✏️</button>
+        </div>
+      `;
+      if (index === 0 && newImageFiles.length === 0) {
+        wrapper.querySelector('.image-preview').classList.add('thumbnail');
+      }
+      container.appendChild(wrapper);
+    }
+  });
+
+  newImageFiles.forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'image-preview-wrapper';
+      wrapper.innerHTML = `
+        <img src="${e.target.result}" class="image-preview" style="display: block;" />
+        <div class="image-actions">
+          <button class="edit-image-btn" data-index="${index}" title="Xóa hình ảnh">🗑️</button>
+          <button class="replace-image-btn" data-index="${index}" title="Sửa hình ảnh">✏️</button>
+        </div>
+      `;
+      if (index === 0 && existingImages.filter(url => !deletedImageUrls.includes(url)).length === 0) {
+        wrapper.querySelector('.image-preview').classList.add('thumbnail');
+      }
+      container.appendChild(wrapper);
+      attachEditButtonListeners();
+    };
+    reader.readAsDataURL(file);
+  });
+
+  attachEditButtonListeners();
+}
+
+function attachEditButtonListeners() {
+  document.querySelectorAll('.edit-image-btn').forEach(btn => {
+    btn.onclick = function() {
+      const url = this.getAttribute('data-url');
+      const index = this.getAttribute('data-index');
+      if (url) deletedImageUrls.push(url);
+      else if (index !== null) newImageFiles.splice(parseInt(index), 1);
+      renderImagePreviews();
+    };
+  });
+
+  document.querySelectorAll('.replace-image-btn').forEach(btn => {
+    btn.onclick = function() {
+      const url = this.getAttribute('data-url');
+      const index = this.getAttribute('data-index');
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          if (url) {
+            const existingIndex = existingImages.indexOf(url);
+            if (existingIndex > -1 && !deletedImageUrls.includes(url)) {
+              deletedImageUrls.push(url);
+              newImageFiles.push(file);
+            }
+          } else if (index !== null) newImageFiles[parseInt(index)] = file;
+          renderImagePreviews();
+        } else alert('Vui lòng chọn một hình ảnh để thay thế!');
+      };
+      input.click();
+    };
+  });
+}
+
 document.getElementById('btn-add-campaign').addEventListener('click', () => {
   editingId = null;
   existingImages = [];
+  newImageFiles = [];
+  deletedImageUrls = [];
   document.getElementById('campaign-form').reset();
   if (editorInstance) editorInstance.setData('');
   document.getElementById('save-campaign-btn').style.display = 'block';
@@ -186,39 +269,17 @@ document.getElementById('close-campaign-modal').addEventListener('click', () => 
   document.getElementById('image-preview-container').innerHTML = '';
   document.getElementById('campaign-image').value = '';
   existingImages = [];
+  newImageFiles = [];
+  deletedImageUrls = [];
   editingId = null;
 });
 
 document.getElementById('campaign-image').addEventListener('change', function(e) {
   const files = e.target.files;
-  const container = document.getElementById('image-preview-container');
-  container.innerHTML = '';
-  
-  // Display existing images (if any) during edit
-  existingImages.forEach((url, index) => {
-    const img = document.createElement('img');
-    img.src = url;
-    img.className = 'image-preview';
-    img.style.display = 'block';
-    if (index === 0) img.classList.add('thumbnail');
-    container.appendChild(img);
-  });
-
-  // Display newly selected images
   if (files.length > 0) {
-    Array.from(files).forEach((file, index) => {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = document.createElement('img');
-        img.src = e.target.result;
-        img.className = 'image-preview';
-        img.style.display = 'block';
-        // The first new image is the thumbnail only if no existing images
-        if (index === 0 && existingImages.length === 0) img.classList.add('thumbnail');
-        container.appendChild(img);
-      };
-      reader.readAsDataURL(file);
-    });
+    newImageFiles = newImageFiles.concat(Array.from(files));
+    renderImagePreviews();
+    document.getElementById('campaign-image').value = '';
   }
 });
 
@@ -230,7 +291,6 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
   const books = getSelectedBooks();
-  const imageFiles = document.getElementById('campaign-image').files;
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
@@ -244,34 +304,25 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
   formData.append('endDate', endDate);
   formData.append('type', type);
   books.forEach(book => formData.append('books[]', book));
-  Array.from(imageFiles).forEach(file => formData.append('imageFile', file));
+  newImageFiles.forEach(file => formData.append('imageFile', file));
 
   fetch(apiURL, {
     method: 'POST',
     headers: { 'Authorization': token },
     body: formData
   })
-    .then(res => {
-      if (!res.ok) {
-        return res.json().then(errData => {
-          throw new Error(errData.error || errData.message || 'Lỗi khi tạo chiến dịch');
-        });
-      }
-      return res.json();
-    })
-    .then(campaign => {
-      const updatePromises = books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaigns: [campaign._id] })
-      }));
-      return Promise.all(updatePromises).then(() => campaign);
-    })
+    .then(res => res.ok ? res.json() : res.json().then(err => { throw new Error(err.error || err.message || 'Lỗi khi tạo chiến dịch'); }))
+    .then(campaign => Promise.all(books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaigns: [campaign._id] })
+    }))).then(() => campaign))
     .then(() => {
       showSuccessAddCampaignDialog();
       document.getElementById('campaign-modal').style.display = 'none';
       document.getElementById('image-preview-container').innerHTML = '';
       document.getElementById('campaign-image').value = '';
+      newImageFiles = [];
       loadCampaigns();
     })
     .catch(err => {
@@ -281,13 +332,8 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
 });
 
 function editCampaign(id) {
-  fetch(`${apiURL}/${id}`, {
-    headers: { 'Authorization': token }
-  })
-    .then(res => {
-      if (!res.ok) throw new Error('Không tải được dữ liệu chiến dịch');
-      return res.json();
-    })
+  fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } })
+    .then(res => res.ok ? res.json() : Promise.reject(new Error('Không tải được dữ liệu chiến dịch')))
     .then(c => {
       editingId = id;
       document.getElementById('campaign-name').value = c.name;
@@ -298,19 +344,10 @@ function editCampaign(id) {
       const select = document.getElementById('campaign-books');
       const selectedBooks = Array.isArray(c.books) ? c.books.map(b => typeof b === 'object' ? b._id : b) : [];
       Array.from(select.options).forEach(opt => opt.selected = selectedBooks.includes(opt.value));
-      const container = document.getElementById('image-preview-container');
-      container.innerHTML = '';
       existingImages = Array.isArray(c.image) ? c.image : [];
-      if (existingImages.length > 0) {
-        existingImages.forEach((url, index) => {
-          const img = document.createElement('img');
-          img.src = url;
-          img.className = 'image-preview';
-          img.style.display = 'block';
-          if (index === 0) img.classList.add('thumbnail');
-          container.appendChild(img);
-        });
-      }
+      newImageFiles = [];
+      deletedImageUrls = [];
+      renderImagePreviews();
       loadBooksForSearch(selectedBooks);
       document.getElementById('save-campaign-btn').style.display = 'none';
       document.getElementById('update-campaign-btn').style.display = 'block';
@@ -331,7 +368,6 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   const endDate = document.getElementById('campaign-end').value;
   const type = document.getElementById('campaign-type').value;
   const books = getSelectedBooks();
-  const imageFiles = document.getElementById('campaign-image').files;
 
   if (!name || !startDate || !endDate) {
     alert('⚠️ Vui lòng nhập đầy đủ thông tin');
@@ -346,10 +382,16 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   formData.append('endDate', endDate);
   formData.append('type', type);
   books.forEach(book => formData.append('books[]', book));
-  Array.from(imageFiles).forEach(file => formData.append('imageFile', file));
-  // Include existing images if no new images are selected
-  if (imageFiles.length === 0 && existingImages.length > 0) {
-    existingImages.forEach(url => formData.append('imageUrl', url));
+
+  // Only include images if there are changes (new images or deletions)
+  if (newImageFiles.length > 0 || deletedImageUrls.length > 0) {
+    newImageFiles.forEach(file => formData.append('imageFile', file));
+    if (deletedImageUrls.length < existingImages.length) {
+      existingImages
+        .filter(url => !deletedImageUrls.includes(url))
+        .forEach(url => formData.append('imageUrl', url));
+    }
+    deletedImageUrls.forEach(url => formData.append('deletedImageUrls[]', url));
   }
 
   fetch(`${apiURL}/${editingId}`, {
@@ -357,28 +399,20 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     headers: { 'Authorization': token },
     body: formData
   })
-    .then(res => {
-      if (!res.ok) {
-        return res.json().then(errData => {
-          throw new Error(errData.error || errData.message || 'Lỗi khi cập nhật chiến dịch');
-        });
-      }
-      return res.json();
-    })
-    .then(() => {
-      const updatePromises = books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
-        method: 'PUT',
-        headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaigns: [editingId] })
-      }));
-      return Promise.all(updatePromises);
-    })
+    .then(res => res.ok ? res.json() : res.json().then(err => { throw new Error(err.error || err.message || 'Lỗi khi cập nhật chiến dịch'); }))
+    .then(() => Promise.all(books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
+      method: 'PUT',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ campaigns: [editingId] })
+    }))))
     .then(() => {
       showSuccessUpdateCampaignDialog();
       document.getElementById('campaign-modal').style.display = 'none';
       document.getElementById('image-preview-container').innerHTML = '';
       document.getElementById('campaign-image').value = '';
       existingImages = [];
+      newImageFiles = [];
+      deletedImageUrls = [];
       loadCampaigns();
     })
     .catch(err => {
@@ -388,36 +422,46 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
 });
 
 function deleteCampaign(id) {
-  showConfirmDeleteCampaignDialog();
-  const observer = new MutationObserver((mutations, obs) => {
-    const dialog = document.getElementById('dialog-confirm-delete-campaign');
-    const cancelBtn = document.getElementById('cancel-delete-campaign-btn');
-    const confirmBtn = document.getElementById('confirm-delete-campaign-btn');
-    if (dialog && cancelBtn && confirmBtn) {
-      obs.disconnect();
-      cancelBtn.addEventListener('click', () => dialog.remove());
-      confirmBtn.addEventListener('click', () => {
-        dialog.remove();
-        fetch(`${apiURL}/${id}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': token }
-        })
-          .then(res => {
-            if (!res.ok) throw new Error('Xóa thất bại');
-            return res.json();
-          })
-          .then(() => {
-            showSuccessDeleteCampaignDialog();
-            loadCampaigns();
-          })
-          .catch(err => {
-            console.error(err);
-            alert('❌ Lỗi khi xóa chiến dịch: ' + err.message);
+  fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } })
+    .then(res => res.ok ? res.json() : Promise.reject(new Error('Không thể tải dữ liệu chiến dịch để xóa')))
+    .then(campaign => {
+      showConfirmDeleteCampaignDialog();
+      const observer = new MutationObserver((mutations, obs) => {
+        const dialog = document.getElementById('dialog-confirm-delete-campaign');
+        const cancelBtn = document.getElementById('cancel-delete-campaign-btn');
+        const confirmBtn = document.getElementById('confirm-delete-campaign-btn');
+        if (dialog && cancelBtn && confirmBtn) {
+          obs.disconnect();
+          cancelBtn.addEventListener('click', () => dialog.remove());
+          confirmBtn.addEventListener('click', () => {
+            dialog.remove();
+            const formData = new FormData();
+            if (Array.isArray(campaign.image)) {
+              campaign.image.forEach(url => formData.append('deletedImageUrls[]', url));
+            }
+            fetch(`${apiURL}/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': token },
+              body: formData
+            })
+              .then(res => res.ok ? res.json() : Promise.reject(new Error('Xóa chiến dịch thất bại')))
+              .then(() => {
+                showSuccessDeleteCampaignDialog();
+                loadCampaigns();
+              })
+              .catch(err => {
+                console.error('❌ Lỗi khi xóa chiến dịch:', err);
+                alert('❌ Lỗi khi xóa chiến dịch: ' + err.message);
+              });
           });
+        }
       });
-    }
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
+      observer.observe(document.body, { childList: true, subtree: true });
+    })
+    .catch(err => {
+      console.error('❌ Lỗi khi tải dữ liệu để xóa:', err);
+      alert('❌ Không thể xóa chiến dịch: ' + err.message);
+    });
 }
 
 document.getElementById('btn-search').addEventListener('click', function() {
@@ -484,6 +528,12 @@ function showNotFoundCampaignDialog() {
 
 function showConfirmDeleteCampaignDialog() {
   fetch('/components/dialogs/confirm-delete-campaign.html')
+    .then(res => res.text())
+    .then(html => document.body.insertAdjacentHTML('beforeend', html));
+}
+
+function showSuccessAddCampaignDialog() {
+  fetch('/components/dialogs/success-add-campaign.html')
     .then(res => res.text())
     .then(html => document.body.insertAdjacentHTML('beforeend', html));
 }

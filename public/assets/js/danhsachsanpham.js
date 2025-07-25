@@ -16,6 +16,11 @@ let bookDescEditor = null;
 let ckeditorPromise = null;
 
 function initCKEditorIfNeeded() {
+  if (!window.ClassicEditor) {
+    console.error('ClassicEditor không được định nghĩa. Vui lòng kiểm tra việc tải file CKEditor.');
+    showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo. Vui lòng kiểm tra kết nối hoặc tải lại trang.');
+    return Promise.reject(new Error('CKEditor không được tải thành công.'));
+  }
   if (!ckeditorPromise) {
     ckeditorPromise = ClassicEditor
       .create(document.querySelector('#bookDesc'), {
@@ -38,6 +43,7 @@ function initCKEditorIfNeeded() {
       .catch(error => {
         console.error('Lỗi khởi tạo CKEditor:', error);
         showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo. Vui lòng thử lại.');
+        return Promise.reject(error);
       });
   }
   return ckeditorPromise;
@@ -55,10 +61,6 @@ class CKEditorUploadAdapter {
 
   async upload() {
     try {
-      if (!this.editor) {
-        throw new Error('CKEditor instance is not available. Please check editor configuration.');
-      }
-
       const file = await this.loader.file;
       const token = localStorage.getItem('authToken');
       if (!token) {
@@ -67,49 +69,32 @@ class CKEditorUploadAdapter {
 
       const formData = new FormData();
       formData.append('imageFile', file);
-      formData.append('folder', 'admin_ckeditor5_Uploads');
+      formData.append('folder', 'admin_ckeditor5_uploads');
       formData.append('type', 'book');
 
       const response = await fetch(uploadURL, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + token
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
 
       if (!response.ok) {
-        let errorText;
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const errorData = await response.json();
-            errorText = errorData.message || `Lỗi server: ${response.status}`;
-          } else {
-            errorText = await response.text();
-            errorText = errorText.includes('Cannot POST')
-              ? 'Endpoint /api/upload/smart không tồn tại hoặc server không phản hồi.'
-              : `Lỗi server: ${response.statusText}`;
-          }
-        } catch (e) {
-          errorText = 'Không thể phân tích lỗi từ server.';
-        }
-        throw new Error(errorText);
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || `Lỗi server: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Upload response:', data);
       if (!data.success || !data.url) {
         throw new Error(data.message || 'Phản hồi từ server không chứa URL ảnh.');
       }
 
-      return {
-        default: data.url
-      };
+      return { default: data.url };
     } catch (error) {
       console.error('Lỗi upload CKEditor:', error);
-      showErrorDialog('Lỗi Upload Ảnh', 'Không thể upload ảnh: ' + error.message);
-      throw error;
+      showErrorDialog('Lỗi Upload Ảnh', `Không thể upload ảnh: ${error.message}`);
+      return Promise.reject(error.message);
     }
   }
 
@@ -120,54 +105,23 @@ class CKEditorUploadAdapter {
 
 // Theo dõi ảnh đã xóa tạm thời
 let deletedImageIndices = [];
-let existingCoverImages = []; // Lưu trữ danh sách URL ảnh bìa hiện có khi chỉnh sửa
+let existingCoverImages = [];
 
 function showTemporaryDeleteDialog(index) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.id = 'temp-delete-overlay';
-    overlay.style.cssText = `
-      position: fixed; inset: 0; z-index: 9999;
-      background-color: rgba(0,0,0,0.5);
-      display: flex; justify-content: center; align-items: center;
-      font-family: 'Segoe UI', sans-serif;
-    `;
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
     overlay.innerHTML = `
-      <div style="
-        background: #fff;
-        border-radius: 12px;
-        padding: 16px 20px;
-        max-width: 360px;
-        width: 100%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        text-align: left;
-      ">
+      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
           <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
           <span style="font-size: 15px;">Bạn có chắc muốn xóa ảnh này tạm thời? (Sẽ không lưu cho đến khi bạn nhấn Lưu)</span>
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-delete-temp" style="
-            padding: 6px 16px;
-            background: #ffecec;
-            color: #f44336;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-          ">Hủy</button>
-          <button id="btn-ok-delete-temp" style="
-            padding: 6px 16px;
-            background: #00cfff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-          ">OK</button>
+          <button id="btn-cancel-delete-temp" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
+          <button id="btn-ok-delete-temp" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
         </div>
       </div>
     `;
@@ -185,28 +139,26 @@ function showTemporaryDeleteDialog(index) {
 }
 
 // Hiện dialog khi bấm Thêm truyện
-addBookBtn.addEventListener('click', function () {
+addBookBtn.addEventListener('click', async () => {
   dialogTitle.textContent = 'Thêm truyện mới';
   addBookForm.reset();
   
   document.getElementById('bookImageUpload').value = '';
   document.getElementById('bookThumbnailUpload').value = '';
   deletedImageIndices = [];
-  existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
+  existingCoverImages = [];
   
   document.getElementById('uploadedImagesPreview').innerHTML = '';
   document.getElementById('thumbnailPreview').innerHTML = '';
 
-  setTimeout(() => {
-    initCKEditorIfNeeded().then(() => {
-      if (bookDescEditor) bookDescEditor.setData('');
-    });
-  }, 0);
+  await initCKEditorIfNeeded().then(() => {
+    if (bookDescEditor) bookDescEditor.setData('');
+  }).catch(() => {});
 
   addBookForm.removeAttribute('data-edit-id');
   dialogOverlay.classList.add('active');
 
-  fetchCategoriesForSelect();
+  await fetchCategoriesForSelect();
 });
 
 // Đóng dialog
@@ -216,7 +168,7 @@ closeDialogBtn.addEventListener('click', () => {
   addBookForm.removeAttribute('data-edit-id');
   if (bookDescEditor) bookDescEditor.setData('');
   deletedImageIndices = [];
-  existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
+  existingCoverImages = [];
 });
 
 // Đóng dialog khi bấm ra ngoài
@@ -227,7 +179,7 @@ dialogOverlay.addEventListener('click', (e) => {
     addBookForm.removeAttribute('data-edit-id');
     if (bookDescEditor) bookDescEditor.setData('');
     deletedImageIndices = [];
-    existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
+    existingCoverImages = [];
   }
 });
 
@@ -320,19 +272,13 @@ function renderProducts(products) {
           const res = await fetch(`${apiPostURL}/${id}`, {
             method: 'DELETE',
             headers: {
-              'Authorization': 'Bearer ' + token
+              'Authorization': `Bearer ${token}`
             }
           });
 
           if (!res.ok) {
             const contentType = res.headers.get('content-type');
-            let errText;
-            if (contentType && contentType.includes('application/json')) {
-              const errJson = await res.json();
-              errText = errJson.message || JSON.stringify(errJson);
-            } else {
-              errText = await res.text();
-            }
+            let errText = await (contentType && contentType.includes('application/json') ? res.json() : res.text()).then(data => data.message || data).catch(() => res.statusText);
             showErrorDialog('Xóa thất bại!', errText);
             return;
           }
@@ -369,7 +315,7 @@ function renderProducts(products) {
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
       const coverPreview = document.getElementById('uploadedImagesPreview');
-      existingCoverImages = book.cover_image || []; // Lưu danh sách ảnh bìa hiện có
+      existingCoverImages = book.cover_image || [];
       coverPreview.innerHTML = existingCoverImages.map((url, index) => `
         <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
           <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
@@ -380,7 +326,7 @@ function renderProducts(products) {
 
       initCKEditorIfNeeded().then(() => {
         if (bookDescEditor) bookDescEditor.setData(book.description || '');
-      });
+      }).catch(() => {});
 
       addBookForm.setAttribute('data-edit-id', id);
       dialogOverlay.classList.add('active');
@@ -411,19 +357,19 @@ async function fetchProducts() {
 
     const response = await fetch(apiURL, {
       headers: {
-        'Authorization': 'Bearer ' + token
+        'Authorization': `Bearer ${token}`
       }
     });
     if (!response.ok) {
-      const contentType = response.headers.get('content-type');
-      let errorText = 'Lỗi kết nối API: ' + response.statusText;
-      if (contentType && contentType.includes('application/json')) {
-        const errJson = await response.json();
-        errorText = errJson.message || JSON.stringify(errJson);
-      } else {
-        errorText = await response.text();
-      }
-      throw new Error(errorText);
+      const errorText = await response.text().then(text => {
+        try {
+          const json = JSON.parse(text);
+          return json.message || text;
+        } catch {
+          return text;
+        }
+      });
+      throw new Error(errorText || 'Lỗi kết nối API');
     }
     const data = await response.json();
     return data;
@@ -499,7 +445,7 @@ function renderProductsWithPagination(productsArr, page = 1) {
     prevBtn.onclick = () => renderFilteredAndSorted(page - 1);
 
     const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     nextBtn.className = 'pagination-btn';
     nextBtn.disabled = page === totalPages;
     nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
@@ -537,22 +483,8 @@ document.getElementById('btn-select-thumbnail').addEventListener('click', () => 
 document.getElementById('bookImageUpload').addEventListener('change', function() {
   const files = this.files;
   const preview = document.getElementById('uploadedImagesPreview');
-  // Không xóa preview hiện có, chỉ thêm các ảnh mới
   if (preview && files.length > 0) {
-    Array.from(files).forEach((file, i) => {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const div = document.createElement('div');
-        div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
-        div.innerHTML = `
-          <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-          <button class="delete-image-btn" data-index="${i + existingCoverImages.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-          <button class="edit-image-btn" data-index="${i + existingCoverImages.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-        `;
-        preview.appendChild(div);
-      };
-      reader.readAsDataURL(file);
-    });
+    renderImagePreviews(preview, files, existingCoverImages.filter(url => !deletedImageIndices.includes(url)));
   }
 });
 
@@ -589,23 +521,20 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
     showTemporaryDeleteDialog(index).then(async (confirm) => {
       if (confirm) {
         if (isExisting) {
-          // Nếu là ảnh hiện có từ server, thêm URL vào danh sách xóa
           const url = targetDiv.getAttribute('data-url');
           deletedImageIndices.push(url);
+          targetDiv.remove();
         } else {
-          // Nếu là ảnh mới, cập nhật input file
           const input = document.getElementById('bookImageUpload');
           const dataTransfer = new DataTransfer();
-          Array.from(input.files).forEach((file, i) => {
-            if (i !== (index - existingCoverImages.length)) dataTransfer.items.add(file);
+          const files = Array.from(input.files);
+          files.forEach((file, i) => {
+            if (i !== index - existingCoverImages.length) dataTransfer.items.add(file);
           });
           input.files = dataTransfer.files;
+          targetDiv.remove();
         }
-        targetDiv.remove();
-        // Cập nhật lại chỉ số cho các ảnh còn lại
-        preview.querySelectorAll('.delete-image-btn, .edit-image-btn').forEach((btn, i) => {
-          btn.setAttribute('data-index', i);
-        });
+        updateImageIndices(preview);
       }
     });
   } else if (e.target.classList.contains('edit-image-btn') || e.target.closest('.edit-image-btn')) {
@@ -616,54 +545,20 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
       if (newFiles.length > 0) {
         const dataTransfer = new DataTransfer();
         const currentFiles = Array.from(input.files);
-        
+
         if (isExisting) {
-          // Nếu là ảnh hiện có, thêm URL vào danh sách xóa và thêm ảnh mới
           const url = targetDiv.getAttribute('data-url');
           deletedImageIndices.push(url);
           currentFiles.forEach(file => dataTransfer.items.add(file));
-          Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
         } else {
-          // Nếu là ảnh mới, thay thế ảnh tại vị trí index
           currentFiles.forEach((file, i) => {
-            if (i !== (index - existingCoverImages.length)) dataTransfer.items.add(file);
+            if (i !== index - existingCoverImages.length) dataTransfer.items.add(file);
           });
-          Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
         }
+        Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
         input.files = dataTransfer.files;
 
-        // Cập nhật preview
-        preview.innerHTML = '';
-        Array.from(input.files).forEach((file, i) => {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const div = document.createElement('div');
-            div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
-            div.innerHTML = `
-              <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-              <button class="delete-image-btn" data-index="${i + existingCoverImages.length - deletedImageIndices.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-              <button class="edit-image-btn" data-index="${i + existingCoverImages.length - deletedImageIndices.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-            `;
-            preview.appendChild(div);
-          };
-          reader.readAsDataURL(file);
-        });
-
-        // Hiển thị lại các ảnh hiện có từ server (trừ những ảnh đã bị xóa)
-        existingCoverImages.forEach((url, i) => {
-          if (!deletedImageIndices.includes(url)) {
-            const div = document.createElement('div');
-            div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
-            div.setAttribute('data-existing', 'true');
-            div.setAttribute('data-url', url);
-            div.innerHTML = `
-              <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png'">
-              <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-              <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-            `;
-            preview.appendChild(div);
-          }
-        });
+        renderImagePreviews(preview, input.files, existingCoverImages.filter(url => !deletedImageIndices.includes(url)));
       }
       input.removeEventListener('change', replaceImage);
     }, { once: true });
@@ -730,7 +625,6 @@ addBookForm.addEventListener('submit', async function(e) {
     formData.append('cover_images', coverFiles[i]);
   }
 
-  // Gửi danh sách URL ảnh cần xóa nếu đang chỉnh sửa
   if (id && deletedImageIndices.length > 0) {
     deletedImageIndices.forEach(url => formData.append('delete_images[]', url));
   }
@@ -752,7 +646,7 @@ addBookForm.addEventListener('submit', async function(e) {
       res = await fetch(`${apiPostURL}/${id}`, {
         method: 'PUT',
         headers: {
-          'Authorization': 'Bearer ' + token
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
@@ -760,36 +654,28 @@ addBookForm.addEventListener('submit', async function(e) {
       res = await fetch(apiPostURL, {
         method: 'POST',
         headers: {
-          'Authorization': 'Bearer ' + token
+          'Authorization': `Bearer ${token}`
         },
         body: formData
       });
     }
 
     if (!res.ok) {
-      let errMessage = 'Lỗi không xác định!';
-      try {
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errJson = await res.json();
-          errMessage = errJson.message || JSON.stringify(errJson);
-        } else {
-          errMessage = await res.text();
-          if (errMessage.includes('Cannot POST')) {
-            errMessage = 'Không thể kết nối đến endpoint. Vui lòng kiểm tra server.';
-          }
+      const errorText = await res.text().then(text => {
+        try {
+          const json = JSON.parse(text);
+          return json.message || text;
+        } catch {
+          return text;
         }
-      } catch (parseError) {
-        errMessage = 'Không thể phân tích lỗi từ server!';
-      }
-      showErrorDialog('Lưu thất bại!', errMessage);
-      return;
+      });
+      throw new Error(errorText || 'Lỗi không xác định');
     }
 
     showAddBookSuccessDialog(id ? 'update' : 'add', 'Dữ liệu đã được lưu thành công!');
     dialogOverlay.classList.remove('active');
     deletedImageIndices = [];
-    existingCoverImages = []; // Reset sau khi lưu
+    existingCoverImages = [];
     products = await fetchProducts();
     renderFilteredAndSorted(currentPage);
   } catch (err) {
@@ -806,19 +692,19 @@ async function fetchCategoriesForSelect() {
 
     const res = await fetch(categoriesURL, {
       headers: {
-        'Authorization': 'Bearer ' + token
+        'Authorization': `Bearer ${token}`
       }
     });
     if (!res.ok) {
-      const contentType = res.headers.get('content-type');
-      let errorText = 'Lỗi lấy danh mục: ' + res.statusText;
-      if (contentType && contentType.includes('application/json')) {
-        const errJson = await res.json();
-        errorText = errJson.message || JSON.stringify(errJson);
-      } else {
-        errorText = await res.text();
-      }
-      throw new Error(errorText);
+      const errorText = await res.text().then(text => {
+        try {
+          const json = JSON.parse(text);
+          return json.message || text;
+        } catch {
+          return text;
+        }
+      });
+      throw new Error(errorText || 'Lỗi lấy danh mục');
     }
     const data = await res.json();
 
@@ -865,19 +751,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const res = await fetch(categoriesURL, {
         headers: {
-          'Authorization': 'Bearer ' + token
+          'Authorization': `Bearer ${token}`
         }
       });
       if (!res.ok) {
-        const contentType = res.headers.get('content-type');
-        let errorText = 'Lỗi lấy danh mục: ' + res.statusText;
-        if (contentType && contentType.includes('application/json')) {
-          const errJson = await res.json();
-          errorText = errJson.message || JSON.stringify(errJson);
-        } else {
-          errorText = await res.text();
-        }
-        throw new Error(errorText);
+        const errorText = await res.text().then(text => {
+          try {
+            const json = JSON.parse(text);
+            return json.message || text;
+          } catch {
+            return text;
+          }
+        });
+        throw new Error(errorText || 'Lỗi lấy danh mục');
       }
       const data = await res.json();
       filterCategorySelect.innerHTML = '';
@@ -949,22 +835,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function showErrorDialog(title, message) {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-error';
-  dialog.style.cssText = `
-    position: fixed; inset: 0; z-index: 9999;
-    background-color: rgba(0,0,0,0.5);
-    display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', sans-serif;
-  `;
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
   dialog.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/error.png" alt="error">
       <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
       <p style="color: #d32f2f;">${message}</p>
-      <button onclick="document.getElementById('dialog-error').remove()" style="
-        margin-top: 20px; padding: 8px 24px;
-        background: #ff4444; color: #fff; border: none; border-radius: 6px;
-        cursor: pointer; font-weight: bold;
-      ">OK</button>
+      <button onclick="document.getElementById('dialog-error').remove()" style="margin-top: 20px; padding: 8px 24px; background: #ff4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
     </div>
   `;
   document.body.appendChild(dialog);
@@ -973,21 +850,12 @@ function showErrorDialog(title, message) {
 function showSuccessDeletebook() {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-success-delete-book';
-  dialog.style.cssText = `
-    position: fixed; inset: 0; z-index: 9999;
-    background-color: rgba(0,0,0,0.5);
-    display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', sans-serif;
-  `;
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
   dialog.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
       <h3 style="margin-top: 12px; font-size: 18px;">Đã xóa truyện thành công!</h3>
-      <button onclick="closeDeleteDialog()" style="
-        margin-top: 20px; padding: 8px 24px;
-        background: #00cfff; color: #fff; border: none; border-radius: 6px;
-        cursor: pointer; font-weight: bold;
-      ">OK</button>
+      <button onclick="closeDeleteDialog()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
     </div>
   `;
   document.body.appendChild(dialog);
@@ -1007,23 +875,14 @@ function closeDeleteDialog() {
 function showAddBookSuccessDialog(action = 'add', message = '') {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-success-add-book';
-  dialog.style.cssText = `
-    position: fixed; inset: 0; z-index: 9999;
-    background-color: rgba(0,0,0,0.5);
-    display: flex; justify-content: center; align-items: center;
-    font-family: 'Segoe UI', sans-serif;
-  `;
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
   const title = action === 'add' ? 'Thêm truyện thành công!' : 'Cập nhật truyện thành công!';
   dialog.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
       <h2 style="margin-top: 12px; font-size: 18px;">${title}</h2>
       <p style="color: #2e7d32;">${message}</p>
-      <button onclick="closeAddBookDialog()" style="
-        margin-top: 20px; padding: 8px 24px;
-        background: #00cfff; color: #fff; border: none; border-radius: 6px;
-        cursor: pointer; font-weight: bold;
-      ">OK</button>
+      <button onclick="closeAddBookDialog()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
     </div>
   `;
   document.body.appendChild(dialog);
@@ -1038,48 +897,17 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.id = 'confirm-delete-overlay';
-    overlay.style.cssText = `
-      position: fixed; inset: 0; z-index: 9998;
-      background-color: rgba(0,0,0,0.5);
-      display: flex; justify-content: center; align-items: center;
-      font-family: 'Segoe UI', sans-serif;
-    `;
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
     overlay.innerHTML = `
-      <div style="
-        background: #fff;
-        border-radius: 12px;
-        padding: 16px 20px;
-        max-width: 360px;
-        width: 100%;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        text-align: left;
-      ">
+      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
           <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
           <span style="font-size: 15px;">${message}</span>
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-delete" style="
-            padding: 6px 16px;
-            background: #ffecec;
-            color: #f44336;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-          ">Hủy</button>
-          <button id="btn-ok-delete" style="
-            padding: 6px 16px;
-            background: #00cfff;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-          ">OK</button>
+          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
+          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
         </div>
       </div>
     `;
@@ -1093,5 +921,45 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
       overlay.remove();
       resolve(true);
     };
+  });
+}
+
+function updateImageIndices(preview) {
+  const buttons = preview.querySelectorAll('.delete-image-btn, .edit-image-btn');
+  buttons.forEach((btn, i) => {
+    btn.setAttribute('data-index', i);
+  });
+}
+
+function renderImagePreviews(preview, files, existingImages) {
+  preview.innerHTML = '';
+  const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+
+  existingImages.forEach((url, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+    div.setAttribute('data-existing', 'true');
+    div.setAttribute('data-url', url);
+    div.innerHTML = `
+      <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
+      <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+      <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+    `;
+    preview.appendChild(div);
+  });
+
+  Array.from(files).forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const div = document.createElement('div');
+      div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+      div.innerHTML = `
+        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+        <button class="delete-image-btn" data-index="${i + existingImages.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <button class="edit-image-btn" data-index="${i + existingImages.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+      `;
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
   });
 }
