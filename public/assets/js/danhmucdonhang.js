@@ -8,8 +8,6 @@ const STATUS_MAP = {
   "Cancelled": "Đã huỷ"
 };
 
-const REV_MAP = Object.fromEntries(Object.entries(STATUS_MAP).map(([k, v]) => [v, k]));
-
 function getFullImageURL(path) {
   if (!path) return 'https://via.placeholder.com/60x80?text=No+Image';
   if (path.startsWith('http')) return path;
@@ -36,9 +34,10 @@ async function loadOrders(orderId = '') {
 
     const data = await response.json();
     window._loadedOrders = orderId ? [data] : data.orders || [];
+    console.log('Loaded orders:', window._loadedOrders);
     renderOrders(window._loadedOrders);
   } catch (error) {
-    console.error(error);
+    console.error('[Load orders error]:', error);
     showNotification('error', 'Bạn không có quyền truy cập hoặc phiên đăng nhập đã hết hạn');
     localStorage.removeItem('authToken');
     window.location.href = 'login.html';
@@ -52,7 +51,6 @@ function renderOrders(orders) {
     return;
   }
 
-  // Lọc bỏ các đơn hàng có hình ảnh không lên
   const invalidOrderIds = ['ORD1752049496563O9ZR9', 'ORD1752050362983MPP15'];
   const filteredOrders = orders.filter(order => !invalidOrderIds.includes(order.order_id || order._id));
 
@@ -63,7 +61,7 @@ function renderOrders(orders) {
 
   tbody.innerHTML = filteredOrders.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
-    const rawImage = book.thumbnail?.trim() || book.cover_image?.[0];
+    const rawImage = book.thumbnail?.trim() || book.main_image?.[0];
     const image = getFullImageURL(rawImage);
 
     const code = order.order_id || order._id || 'Không rõ';
@@ -96,24 +94,26 @@ function renderOrders(orders) {
 }
 
 function addOrderEventListeners() {
-  document.querySelectorAll('.btn-detail').forEach((btn, index) => {
+  document.querySelectorAll('.btn-detail').forEach(btn => {
     btn.addEventListener('click', () => {
-      const order = window._loadedOrders?.[index];
+      const orderId = btn.closest('tr').dataset.id;
+      const order = window._loadedOrders.find(o => o._id === orderId);
       if (order) showOrderDetails(order);
     });
   });
 
-  document.querySelectorAll('.btn-update').forEach((btn, index) => {
+  document.querySelectorAll('.btn-update').forEach(btn => {
     btn.addEventListener('click', () => {
-      const order = window._loadedOrders?.[index];
+      const orderId = btn.closest('tr').dataset.id;
+      const order = window._loadedOrders.find(o => o._id === orderId);
       if (!order) return;
 
       const modal = document.getElementById('updateStatusModal');
       modal.dataset.orderId = order._id;
       document.getElementById('modalOrderCode').innerText = order.order_id;
 
-      const viStatus = STATUS_MAP[order.order_status] || 'Chờ xác nhận';
-      document.getElementById('statusSelect').value = viStatus;
+      const status = order.order_status || 'Pending';
+      document.getElementById('statusSelect').value = status;
       modal.style.display = 'flex';
     });
   });
@@ -127,10 +127,15 @@ setTimeout(() => {
   document.getElementById('btnSaveStatus').addEventListener('click', async () => {
     const modal = document.getElementById('updateStatusModal');
     const orderId = modal.dataset.orderId;
-    const viStatus = document.getElementById('statusSelect').value;
-    const newStatus = REV_MAP[viStatus];
-    const token = localStorage.getItem('authToken');
+    const newStatus = document.getElementById('statusSelect').value;
 
+    const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    if (!newStatus || !validStatuses.includes(newStatus)) {
+      showNotification('error', 'Trạng thái không hợp lệ.');
+      return;
+    }
+
+    const token = localStorage.getItem('authToken');
     if (!token) {
       showNotification('error', 'Chưa đăng nhập.');
       return (window.location.href = 'login.html');
@@ -147,10 +152,10 @@ setTimeout(() => {
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || 'Lỗi cập nhật');
+      if (!response.ok) throw new Error(result.message || 'Lỗi cập nhật trạng thái');
       showNotification('success', '✅ Cập nhật trạng thái thành công');
       closeUpdateModal();
-      loadOrders(); // Tải lại đơn hàng để cập nhật trạng thái
+      await loadOrders();
     } catch (err) {
       console.error('[Cập nhật lỗi]:', err);
       showNotification('error', '❌ ' + err.message);
@@ -167,7 +172,7 @@ function showOrderDetails(order) {
     const title = book.title || 'Không rõ';
     const quantity = item.quantity || 0;
     const price = item.price || 0;
-    const rawImage = book.thumbnail || book.cover_image?.[0];
+    const rawImage = book.thumbnail || book.main_image?.[0];
     const image = getFullImageURL(rawImage);
 
     return `
@@ -204,10 +209,9 @@ function closeOrderDetailsModal() {
   document.getElementById('orderDetailsModal').style.display = 'none';
 }
 
-// Hàm tìm kiếm nâng cao
 function searchOrders(keyword) {
   if (!keyword) {
-    loadOrders(); // Nếu không có từ khóa, tải toàn bộ đơn hàng
+    loadOrders();
     return;
   }
 
@@ -220,7 +224,6 @@ function searchOrders(keyword) {
   renderOrders(filteredOrders);
 }
 
-// Sự kiện tìm kiếm
 document.getElementById('order-search').addEventListener('input', debounce((e) => {
   const keyword = e.target.value.trim();
   searchOrders(keyword);
@@ -231,7 +234,6 @@ document.getElementById('btn-order-search').addEventListener('click', () => {
   searchOrders(keyword);
 });
 
-// Hàm xuất dữ liệu sang CSV với lọc theo trạng thái và ngày
 function exportToCSV() {
   const orders = window._loadedOrders || [];
   if (!orders.length) {
@@ -239,16 +241,13 @@ function exportToCSV() {
     return;
   }
 
-  // Lấy giá trị từ các input lọc
   const statusFilter = document.querySelector('.search-filter select').value.toLowerCase();
   const dateInputs = document.querySelectorAll('.search-filter input[type="date"]');
   const startDate = dateInputs[0].value ? new Date(dateInputs[0].value) : null;
   const endDate = dateInputs[1].value ? new Date(dateInputs[1].value) : null;
 
-  // Lọc đơn hàng
   let filteredOrders = orders;
 
-  // Lọc theo trạng thái
   if (statusFilter && statusFilter !== "-- trạng thái --") {
     const statusMap = {
       'pending': 'Pending',
@@ -263,7 +262,6 @@ function exportToCSV() {
     }
   }
 
-  // Lọc theo khoảng thời gian
   if (startDate && endDate) {
     filteredOrders = filteredOrders.filter(order => {
       const orderDate = new Date(order.order_date || order.createdAt);
@@ -286,10 +284,7 @@ function exportToCSV() {
     return;
   }
 
-  // Tiêu đề cột cho file CSV
   const headers = ['Mã Đơn', 'Người Mua', 'Ngày Đặt', 'Trạng Thái', 'Tổng Tiền', 'Sản Phẩm'];
-
-  // Chuyển đổi dữ liệu đơn hàng thành mảng CSV
   const csvRows = [headers.join(',')];
 
   filteredOrders.forEach(order => {
@@ -302,7 +297,6 @@ function exportToCSV() {
     const status = (STATUS_MAP[order.order_status] || 'Chưa rõ').replace(/"/g, '""');
     const total = order.total_amount?.toLocaleString() || '0';
     
-    // Lấy thông tin sản phẩm
     const items = order.order_items?.map(item => {
       const book = item.book_id || {};
       const title = (book.title || 'Không rõ').replace(/"/g, '""');
@@ -313,10 +307,7 @@ function exportToCSV() {
     csvRows.push(row);
   });
 
-  // Tạo nội dung CSV
   const csvContent = csvRows.join('\n');
-
-  // Tạo file CSV và tải xuống
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
@@ -330,10 +321,8 @@ function exportToCSV() {
   showNotification('success', 'Xuất dữ liệu thành công!');
 }
 
-// Gắn sự kiện cho nút Xuất Dữ Liệu
 document.querySelector('.btn-export').addEventListener('click', exportToCSV);
 
-// Hàm debounce để tránh tìm kiếm quá nhanh
 function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {
@@ -346,7 +335,6 @@ function debounce(func, wait) {
   };
 }
 
-// Hàm hiển thị thông báo
 function showNotification(type, message) {
   const notification = document.createElement('div');
   notification.id = `notification-${Date.now()}`;
@@ -396,7 +384,6 @@ function showNotification(type, message) {
 
   document.body.appendChild(notification);
 
-  // Animation keyframes
   const styleSheet = document.styleSheets[0];
   styleSheet.insertRule(`
     @keyframes slideIn {
@@ -411,7 +398,6 @@ function showNotification(type, message) {
     }
   `, styleSheet.cssRules.length);
 
-  // Tự động ẩn sau 3 giây
   setTimeout(() => {
     notification.style.opacity = '0';
     setTimeout(() => {

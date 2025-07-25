@@ -495,14 +495,12 @@
 
   <script src="/assets/js/danhmucdonhang.js"></script>
   <script>
-    // Load avatar from localStorage on page load
     window.onload = () => {
       const savedAvatar = localStorage.getItem('userAvatar');
       if (savedAvatar) {
         document.getElementById('sidebarAvatar').src = savedAvatar;
         document.getElementById('headerAvatar').src = savedAvatar;
       }
-      // Ensure dialog is hidden on page load
       const uploadDialog = document.getElementById('uploadDialog');
       uploadDialog.removeAttribute('open');
     };
@@ -527,7 +525,6 @@
       fetch('login')
         .then(res => {
           if (res.ok) {
-            // Clear stored avatar on logout
             localStorage.removeItem('userAvatar');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';
@@ -540,7 +537,6 @@
         });
     };
 
-    // Trigger avatar upload dialog when clicking the sidebar avatar
     sidebarAvatar.onclick = () => {
       uploadDialog.showModal();
       resetUploadDialog();
@@ -617,14 +613,10 @@
         }
 
         const data = await response.json();
-
         const imageUrl = data.avatar || URL.createObjectURL(file);
 
-        // Update avatar images
         document.getElementById('sidebarAvatar').src = imageUrl;
         document.getElementById('headerAvatar').src = imageUrl;
-
-        // Store avatar URL in localStorage
         localStorage.setItem('userAvatar', imageUrl);
 
         uploadMessage.style.display = 'block';
@@ -635,7 +627,6 @@
           uploadDialog.close();
           resetUploadDialog();
         }, 2000);
-
       } catch (error) {
         uploadMessage.style.display = 'block';
         uploadMessage.textContent = 'Lỗi: ' + error.message;
@@ -645,7 +636,6 @@
       }
     };
 
-    // Modal functions (assuming they are defined in danhmucdonhang.js)
     function closeUpdateModal() {
       document.getElementById('updateStatusModal').style.display = 'none';
     }

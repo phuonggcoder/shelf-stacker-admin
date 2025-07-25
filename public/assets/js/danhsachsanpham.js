@@ -120,6 +120,7 @@ class CKEditorUploadAdapter {
 
 // Theo dõi ảnh đã xóa tạm thời
 let deletedImageIndices = [];
+let existingCoverImages = []; // Lưu trữ danh sách URL ảnh bìa hiện có khi chỉnh sửa
 
 function showTemporaryDeleteDialog(index) {
   return new Promise(resolve => {
@@ -191,6 +192,7 @@ addBookBtn.addEventListener('click', function () {
   document.getElementById('bookImageUpload').value = '';
   document.getElementById('bookThumbnailUpload').value = '';
   deletedImageIndices = [];
+  existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
   
   document.getElementById('uploadedImagesPreview').innerHTML = '';
   document.getElementById('thumbnailPreview').innerHTML = '';
@@ -214,6 +216,7 @@ closeDialogBtn.addEventListener('click', () => {
   addBookForm.removeAttribute('data-edit-id');
   if (bookDescEditor) bookDescEditor.setData('');
   deletedImageIndices = [];
+  existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
 });
 
 // Đóng dialog khi bấm ra ngoài
@@ -224,6 +227,7 @@ dialogOverlay.addEventListener('click', (e) => {
     addBookForm.removeAttribute('data-edit-id');
     if (bookDescEditor) bookDescEditor.setData('');
     deletedImageIndices = [];
+    existingCoverImages = []; // Reset danh sách ảnh bìa hiện có
   }
 });
 
@@ -365,12 +369,12 @@ function renderProducts(products) {
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
       const coverPreview = document.getElementById('uploadedImagesPreview');
-      const coverImages = book.cover_image || [];
-      coverPreview.innerHTML = coverImages.map(url => `
-        <div style="position: relative; display: inline-block; margin: 2px;">
+      existingCoverImages = book.cover_image || []; // Lưu danh sách ảnh bìa hiện có
+      coverPreview.innerHTML = existingCoverImages.map((url, index) => `
+        <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
           <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
-          <button class="delete-image-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-          <button class="edit-image-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+          <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+          <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
         </div>
       `).join('');
 
@@ -495,7 +499,7 @@ function renderProductsWithPagination(productsArr, page = 1) {
     prevBtn.onclick = () => renderFilteredAndSorted(page - 1);
 
     const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     nextBtn.className = 'pagination-btn';
     nextBtn.disabled = page === totalPages;
     nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
@@ -533,9 +537,7 @@ document.getElementById('btn-select-thumbnail').addEventListener('click', () => 
 document.getElementById('bookImageUpload').addEventListener('change', function() {
   const files = this.files;
   const preview = document.getElementById('uploadedImagesPreview');
-  preview.innerHTML = '';
-  deletedImageIndices = [];
-
+  // Không xóa preview hiện có, chỉ thêm các ảnh mới
   if (preview && files.length > 0) {
     Array.from(files).forEach((file, i) => {
       const reader = new FileReader();
@@ -544,8 +546,8 @@ document.getElementById('bookImageUpload').addEventListener('change', function()
         div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
         div.innerHTML = `
           <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-          <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-          <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+          <button class="delete-image-btn" data-index="${i + existingCoverImages.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+          <button class="edit-image-btn" data-index="${i + existingCoverImages.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
         `;
         preview.appendChild(div);
       };
@@ -580,47 +582,88 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
   const targetDiv = e.target.closest('div');
   if (!targetDiv) return;
 
+  const index = parseInt(targetDiv.querySelector('.delete-image-btn')?.getAttribute('data-index') || targetDiv.querySelector('.edit-image-btn')?.getAttribute('data-index'));
+  const isExisting = targetDiv.hasAttribute('data-existing');
+
   if (e.target.classList.contains('delete-image-btn') || e.target.closest('.delete-image-btn')) {
-    const index = parseInt((e.target.closest('.delete-image-btn') || e.target).getAttribute('data-index'));
     showTemporaryDeleteDialog(index).then(async (confirm) => {
       if (confirm) {
-        const input = document.getElementById('bookImageUpload');
-        const dataTransfer = new DataTransfer();
-
-        Array.from(input.files).forEach((file, i) => {
-          if (i !== index) dataTransfer.items.add(file);
-        });
-        input.files = dataTransfer.files;
-
+        if (isExisting) {
+          // Nếu là ảnh hiện có từ server, thêm URL vào danh sách xóa
+          const url = targetDiv.getAttribute('data-url');
+          deletedImageIndices.push(url);
+        } else {
+          // Nếu là ảnh mới, cập nhật input file
+          const input = document.getElementById('bookImageUpload');
+          const dataTransfer = new DataTransfer();
+          Array.from(input.files).forEach((file, i) => {
+            if (i !== (index - existingCoverImages.length)) dataTransfer.items.add(file);
+          });
+          input.files = dataTransfer.files;
+        }
         targetDiv.remove();
-        deletedImageIndices.push(index);
+        // Cập nhật lại chỉ số cho các ảnh còn lại
         preview.querySelectorAll('.delete-image-btn, .edit-image-btn').forEach((btn, i) => {
           btn.setAttribute('data-index', i);
         });
       }
     });
   } else if (e.target.classList.contains('edit-image-btn') || e.target.closest('.edit-image-btn')) {
-    const index = parseInt((e.target.closest('.edit-image-btn') || e.target).getAttribute('data-index'));
-    document.getElementById('bookImageUpload').click();
-    document.getElementById('bookImageUpload').addEventListener('change', function replaceImage(e) {
-      const newFile = e.target.files[0];
-      if (newFile) {
-        const input = document.getElementById('bookImageUpload');
+    const input = document.getElementById('bookImageUpload');
+    input.click();
+    input.addEventListener('change', function replaceImage(e) {
+      const newFiles = e.target.files;
+      if (newFiles.length > 0) {
         const dataTransfer = new DataTransfer();
-        Array.from(input.files).forEach((file, i) => {
-          dataTransfer.items.add(i === index ? newFile : file);
-        });
+        const currentFiles = Array.from(input.files);
+        
+        if (isExisting) {
+          // Nếu là ảnh hiện có, thêm URL vào danh sách xóa và thêm ảnh mới
+          const url = targetDiv.getAttribute('data-url');
+          deletedImageIndices.push(url);
+          currentFiles.forEach(file => dataTransfer.items.add(file));
+          Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
+        } else {
+          // Nếu là ảnh mới, thay thế ảnh tại vị trí index
+          currentFiles.forEach((file, i) => {
+            if (i !== (index - existingCoverImages.length)) dataTransfer.items.add(file);
+          });
+          Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
+        }
         input.files = dataTransfer.files;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          targetDiv.innerHTML = `
-            <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-            <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-            <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-          `;
-        };
-        reader.readAsDataURL(newFile);
+        // Cập nhật preview
+        preview.innerHTML = '';
+        Array.from(input.files).forEach((file, i) => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+            div.innerHTML = `
+              <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+              <button class="delete-image-btn" data-index="${i + existingCoverImages.length - deletedImageIndices.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+              <button class="edit-image-btn" data-index="${i + existingCoverImages.length - deletedImageIndices.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+            `;
+            preview.appendChild(div);
+          };
+          reader.readAsDataURL(file);
+        });
+
+        // Hiển thị lại các ảnh hiện có từ server (trừ những ảnh đã bị xóa)
+        existingCoverImages.forEach((url, i) => {
+          if (!deletedImageIndices.includes(url)) {
+            const div = document.createElement('div');
+            div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+            div.setAttribute('data-existing', 'true');
+            div.setAttribute('data-url', url);
+            div.innerHTML = `
+              <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png'">
+              <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+              <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+            `;
+            preview.appendChild(div);
+          }
+        });
       }
       input.removeEventListener('change', replaceImage);
     }, { once: true });
@@ -683,15 +726,13 @@ addBookForm.addEventListener('submit', async function(e) {
   categories.forEach(cat => formData.append('categories[]', cat));
 
   const coverFiles = document.getElementById('bookImageUpload').files;
-  const remainingFiles = new DataTransfer();
-  Array.from(coverFiles).forEach((file, i) => {
-    if (!deletedImageIndices.includes(i)) {
-      remainingFiles.items.add(file);
-    }
-  });
-  document.getElementById('bookImageUpload').files = remainingFiles.files;
-  for (let i = 0; i < remainingFiles.files.length; i++) {
-    formData.append('cover_images', remainingFiles.files[i]);
+  for (let i = 0; i < coverFiles.length; i++) {
+    formData.append('cover_images', coverFiles[i]);
+  }
+
+  // Gửi danh sách URL ảnh cần xóa nếu đang chỉnh sửa
+  if (id && deletedImageIndices.length > 0) {
+    deletedImageIndices.forEach(url => formData.append('delete_images[]', url));
   }
 
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
@@ -748,6 +789,7 @@ addBookForm.addEventListener('submit', async function(e) {
     showAddBookSuccessDialog(id ? 'update' : 'add', 'Dữ liệu đã được lưu thành công!');
     dialogOverlay.classList.remove('active');
     deletedImageIndices = [];
+    existingCoverImages = []; // Reset sau khi lưu
     products = await fetchProducts();
     renderFilteredAndSorted(currentPage);
   } catch (err) {
