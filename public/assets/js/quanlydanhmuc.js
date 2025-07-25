@@ -21,7 +21,7 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
 
   tbody.innerHTML = '';
   if (pageCategories.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Không có dữ liệu</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu</td></tr>';
     return;
   }
 
@@ -32,7 +32,6 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
         <td>${cat.name || ''}</td>
         <td>${cat.description || ''}</td>
         <td>${cat.isVisible === false ? 'Ẩn' : 'Hiển thị'}</td>
-        <td>${cat.totalBooks || 0}</td>
         <td class="actions">
           <button class="action-btn btn-update"
             data-id="${cat._id}"
@@ -80,7 +79,7 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
 // Fetch categories
 async function fetchCategories() {
   const tbody = document.getElementById('category-table-body'); 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>';
   try {
     const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
       headers: {
@@ -91,7 +90,7 @@ async function fetchCategories() {
     categories = Array.isArray(data) ? data : [];
     renderCategoriesWithPagination(categories, 1);
   } catch (err) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
   }
 }
 
@@ -242,7 +241,7 @@ document.getElementById('close-modal').onclick = function() {
   document.getElementById('add-category-form').reset();
 };
 
-// Thêm danh mục mới - SỬA ĐỔI API UPLOAD
+// Thêm danh mục mới
 document.getElementById('add-category-form').addEventListener('submit', async function (e) {
   e.preventDefault();
 
@@ -304,7 +303,7 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
   }
 });
 
-// Cập nhật danh mục - SỬA ĐỔI API UPLOAD
+// Cập nhật danh mục
 document.getElementById('update-category-btn').addEventListener('click', async function (e) {
   e.preventDefault();
   if (!editingCategoryId) return;
@@ -390,7 +389,7 @@ function initCatDescEditorIfNeeded() {
   return catDescEditorPromise;
 }
 
-// Upload image functionality - BỎ CÁC PHẦN UPLOAD CŨ
+// Upload image functionality
 const inputFile = document.getElementById('cat-upload');
 
 document.getElementById('btn-select-image').addEventListener('click', function() {
@@ -606,5 +605,3 @@ function closeUpdateBookDialog() {
 
 // Initialize
 fetchCategories();
-console.log('Token:', getToken());
-console.log('editingCategoryId:', editingCategoryId);
