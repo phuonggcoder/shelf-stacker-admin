@@ -14,6 +14,18 @@ function getFullImageURL(path) {
   return BASE_URL + path;
 }
 
+// Hàm kiểm tra chuyển đổi trạng thái hợp lệ
+function isValidStatusTransition(currentStatus, newStatus) {
+  const validTransitions = {
+    Pending: ['Processing', 'Cancelled'],
+    Processing: ['Shipped', 'Cancelled'],
+    Shipped: ['Delivered', 'Cancelled'],
+    Delivered: ['Cancelled'],
+    Cancelled: []
+  };
+  return validTransitions[currentStatus]?.includes(newStatus) || false;
+}
+
 async function loadOrders(orderId = '') {
   const token = localStorage.getItem('authToken');
   if (!token) {
@@ -144,6 +156,10 @@ function handleUpdateClick() {
   const statusSelect = document.getElementById('statusSelect');
   if (statusSelect) {
     statusSelect.value = status;
+    // Vô hiệu hóa các trạng thái không hợp lệ
+    Array.from(statusSelect.options).forEach(option => {
+      option.disabled = !isValidStatusTransition(status, option.value) && option.value !== status;
+    });
   }
   modal.style.display = 'flex';
 }
@@ -165,10 +181,18 @@ setTimeout(() => {
         return;
       }
       const newStatus = statusSelect.value;
+      const order = window._loadedOrders.find(o => o._id === orderId);
+      const currentStatus = order?.order_status;
 
       const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
       if (!newStatus || !validStatuses.includes(newStatus)) {
         showNotification('error', 'Trạng thái không hợp lệ.');
+        return;
+      }
+
+      // Kiểm tra tính hợp lệ của chuyển đổi trạng thái
+      if (!isValidStatusTransition(currentStatus, newStatus)) {
+        showNotification('error', `Không thể chuyển từ ${STATUS_MAP[currentStatus]} sang ${STATUS_MAP[newStatus]}.`);
         return;
       }
 
@@ -191,7 +215,15 @@ setTimeout(() => {
 
         const result = await response.json();
         if (!response.ok) throw new Error(result.message || 'Lỗi cập nhật trạng thái');
+
+        // Hiển thị thông báo thành công
         showNotification('success', '✅ Cập nhật trạng thái thành công');
+
+        // Nếu chuyển sang Cancelled từ Delivered, hiển thị thông báo hoàn tiền
+        if (newStatus === 'Cancelled' && currentStatus === 'Delivered') {
+          showNotification('success', '📩 Đơn hàng đã bị hủy, hệ thống sẽ xử lý hoàn tiền.');
+        }
+
         closeUpdateModal();
         await loadOrders();
       } catch (err) {
@@ -475,26 +507,6 @@ function showNotification(type, message) {
   notification.appendChild(closeBtn);
 
   document.body.appendChild(notification);
-
-  const styleSheet = document.styleSheets[0];
-  styleSheet.insertRule(
-    `
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-  `,
-    styleSheet.cssRules.length
-  );
-  styleSheet.insertRule(
-    `
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-  `,
-    styleSheet.cssRules.length
-  );
 
   setTimeout(() => {
     notification.style.opacity = '0';
