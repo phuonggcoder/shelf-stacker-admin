@@ -1,4 +1,4 @@
-const base_url = 'https://server-shelf-stacker.onrender.com';
+const base_url = 'https://server-shelf-stacker-w1ds.onrender.com';
 // Nếu test local, bạn chỉ cần đổi lại:
 // const base_url = 'http://localhost:3000';
 
@@ -42,7 +42,7 @@ function renderTrashCategories(categories) {
         <h3>${cat.name || ''}</h3>
         <p><b>Slug:</b> ${cat.slug || ''}</p>
         <p><b>Mô tả:</b> <span>${cat.description || ''}</span></p>
-        ${cat.image ? `<p><b>Ảnh:</b> <img src="${cat.image}" alt="Ảnh danh mục" style="max-width:60px;max-height:60px;border-radius:4px;border:1px solid #ccc;vertical-align:middle;" onerror="this.style.display='none'"></p>` : ''}
+        ${cat.image ? `<p><b>Ảnh:</b> <img src="${cat.image.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com')}" alt="Ảnh danh mục" style="max-width:60px;max-height:60px;border-radius:4px;border:1px solid #ccc;vertical-align:middle;" onerror="this.style.display='none'"></p>` : ''}
         <p><b>Hiển thị:</b> ${cat.isVisible ? 'Có' : 'Không'}</p>
         <p><b>Ngày tạo:</b> ${cat.createdAt ? new Date(cat.createdAt).toLocaleString() : ''}</p>
         <p><b>Ngày cập nhật:</b> ${cat.updatedAt ? new Date(cat.updatedAt).toLocaleString() : ''}</p>

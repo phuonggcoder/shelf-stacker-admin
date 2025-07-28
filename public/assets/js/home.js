@@ -96,7 +96,7 @@ uploadButton.onclick = async () => {
     formData.append('avatar', file);
     formData.append('userId', userId);
 
-    const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
+    const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -163,7 +163,7 @@ async function fetchStats() {
 
   if (token) {
     try {
-      const response = await fetch('https://server-shelf-stacker.onrender.com/api/orders/stats/summary', {
+      const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/orders/stats/summary', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

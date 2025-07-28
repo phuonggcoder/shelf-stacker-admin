@@ -1,5 +1,3 @@
-
-// public/script.js
 document.addEventListener('DOMContentLoaded', function() {
     // Quantity controls
     const quantityBtns = document.querySelectorAll('.quantity-btn');
@@ -39,7 +37,11 @@ document.addEventListener('DOMContentLoaded', function() {
         thumb.addEventListener('click', function() {
             thumbnails.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            mainImage.src = this.src.replace('w=80&h=80', 'w=500&h=600');
+            // Replace old server URL with new one if present
+            let newSrc = this.src.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com');
+            // Update image dimensions
+            newSrc = newSrc.replace('w=80&h=80', 'w=500&h=600');
+            mainImage.src = newSrc;
         });
     });
 

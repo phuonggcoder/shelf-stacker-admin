@@ -61,7 +61,7 @@ function cancelLockUser() {
 
 // Xác nhận khóa/mở khóa người dùng
 async function confirmLockUser() {
-  const res = await fetch(`https://server-shelf-stacker.onrender.com/auth/users/${currentUserId}/lock`, {
+  const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/auth/users/${currentUserId}/lock`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -87,7 +87,7 @@ async function fetchUsers() {
   const tbody = document.getElementById('user-table-body');
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Đang tải...</td></tr>';
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/auth/users', {
+    const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/users', {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }

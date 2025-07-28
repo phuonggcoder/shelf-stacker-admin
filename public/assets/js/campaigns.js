@@ -1,5 +1,5 @@
-const apiURL = 'https://server-shelf-stacker.onrender.com/api/campaigns';
-const bookAPI = 'https://server-shelf-stacker.onrender.com/api/books';
+const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/campaigns';
+const bookAPI = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
 const bookAllAPI = `${bookAPI}/all`;
 const tableBody = document.getElementById('campaign-table-body');
 
@@ -31,7 +31,7 @@ function renderCampaigns(data) {
   data.forEach(c => {
     const imageUrl = Array.isArray(c.image) && c.image.length > 0 
       ? c.image[0] 
-      : 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+      : 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
     const typeDisplay = {
       'promotion': 'Khuyến mãi',
       'event': 'Sự kiện',
@@ -96,7 +96,7 @@ function renderBookSearchList(books, selectedIds = []) {
       display: flex; flex-direction: column; align-items: center; background: ${isSelected ? '#e0f7fa' : '#fff'};
     `;
     div.innerHTML = `
-      <img src="${book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png'}" 
+      <img src="${book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'}" 
            style="width: 60px; height: 80px; object-fit: cover; margin-bottom: 6px;">
       <div style="font-weight: bold; font-size: 14px; text-align: center;">${book.title || book.name || 'Không tên'}</div>
       <div style="color: #e53935; font-size: 13px;">${book.price ? Number(book.price).toLocaleString('vi-VN') + '₫' : ''}</div>

@@ -1,5 +1,5 @@
-const apiURL = 'https://server-shelf-stacker.onrender.com/api/vouchers';
-const deletedAPI = 'https://server-shelf-stacker.onrender.com/api/vouchers/deleted';
+const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/vouchers';
+const deletedAPI = 'https://server-shelf-stacker-w1ds.onrender.com/api/vouchers/deleted';
 const restoreAPI = id => `${apiURL}/restore/${id}`;
 const trashVoucherGrid = document.getElementById('trashVoucherGrid');
 
@@ -110,7 +110,7 @@ function sendRestoreRequest(id) {
     .then(res => res.json())
     .then(data => {
       fetchDeletedVouchers();
-      showSuccessDialog(); // ✅ dùng dialog UI đẹp thay alert
+      showSuccessDialog();
     })
     .catch(err => {
       console.error(err);
@@ -121,6 +121,6 @@ function sendRestoreRequest(id) {
 // Khởi động
 document.addEventListener('DOMContentLoaded', () => {
   loadRestoreDialogHTML();
-  loadSuccessDialogHTML(); // ✅ load thêm dialog thành công
+  loadSuccessDialogHTML();
   fetchDeletedVouchers();
 });

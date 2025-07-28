@@ -81,7 +81,7 @@ async function fetchCategories() {
   const tbody = document.getElementById('category-table-body'); 
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>';
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
+    const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/categories', {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -106,7 +106,7 @@ document.addEventListener('click', async function(e) {
           showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
           return;
         }
-        await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
+        await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/categories/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': 'Bearer ' + token
@@ -155,7 +155,7 @@ document.addEventListener('click', async function(e) {
         showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
         return;
       }
-      const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${id}`, {
+      const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/categories/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -280,7 +280,7 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
       return;
     }
 
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/categories', {
+    const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/categories', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token
@@ -338,7 +338,7 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       return;
     }
 
-    const res = await fetch(`https://server-shelf-stacker.onrender.com/api/categories/${editingCategoryId}`, {
+    const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/categories/${editingCategoryId}`, {
       method: 'PUT',
       headers: {
         'Authorization': 'Bearer ' + token

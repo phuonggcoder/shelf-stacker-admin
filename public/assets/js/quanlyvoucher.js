@@ -1,4 +1,4 @@
-const apiURL = 'https://server-shelf-stacker.onrender.com/api/vouchers';
+const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/vouchers';
 const voucherTableBody = document.getElementById('voucher-table-body');
 const addVoucherBtn = document.getElementById('btnAddVoucher');
 const searchInput = document.getElementById('searchVoucher');

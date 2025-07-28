@@ -1,7 +1,7 @@
-const apiURL = 'https://server-shelf-stacker.onrender.com/api/books/all';
-const apiPostURL = 'https://server-shelf-stacker.onrender.com/api/books';
-const uploadURL = 'https://server-shelf-stacker.onrender.com/api/upload/smart';
-const categoriesURL = 'https://server-shelf-stacker.onrender.com/api/categories';
+const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books/all';
+const apiPostURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
+const uploadURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/upload/smart';
+const categoriesURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/categories';
 
 const productGrid = document.getElementById('productGrid');
 const searchBox = document.getElementById('searchBox');
@@ -69,7 +69,7 @@ class CKEditorUploadAdapter {
 
       const formData = new FormData();
       formData.append('imageFile', file);
-      formData.append('folder', 'admin_ckeditor5_uploads');
+      formData.append('folder', 'admin_ckeditor5_Uploads');
       formData.append('type', 'book');
 
       const response = await fetch(uploadURL, {
@@ -213,7 +213,7 @@ function renderProducts(products) {
     }
 
     let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
-    let fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+    let fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
     let imagesHtml = thumbUrl
       ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
       : `<img src="${fallbackThumb}" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
@@ -309,13 +309,13 @@ function renderProducts(products) {
 
       const thumbnailPreview = document.getElementById('thumbnailPreview');
       const thumb = book.thumbnail && book.thumbnail !== 'undefined' ? book.thumbnail : '';
-      const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+      const fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
       thumbnailPreview.innerHTML = thumb
         ? `<div style="position: relative; display: inline-block;"><img src="${thumb}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'"><button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button><button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button></div>`
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
       const coverPreview = document.getElementById('uploadedImagesPreview');
-      existingCoverImages = book.cover_image || [];
+      existingCoverImages = book.main_image || [];
       coverPreview.innerHTML = existingCoverImages.map((url, index) => `
         <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
           <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
@@ -933,7 +933,7 @@ function updateImageIndices(preview) {
 
 function renderImagePreviews(preview, files, existingImages) {
   preview.innerHTML = '';
-  const fallbackThumb = 'https://server-shelf-stacker.onrender.com/assets/images/default-thumbnail.png';
+  const fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
 
   existingImages.forEach((url, i) => {
     const div = document.createElement('div');

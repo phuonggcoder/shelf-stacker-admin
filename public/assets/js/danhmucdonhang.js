@@ -1,4 +1,4 @@
-const BASE_URL = 'https://server-shelf-stacker.onrender.com';
+const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
 
 const STATUS_MAP = {
   Pending: 'Chờ xác nhận',
@@ -10,7 +10,7 @@ const STATUS_MAP = {
 
 function getFullImageURL(path) {
   if (!path) return 'https://via.placeholder.com/60x80?text=No+Image';
-  if (path.startsWith('http')) return path;
+  if (path.startsWith('http')) return path.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com');
   return BASE_URL + path;
 }
 
@@ -511,8 +511,8 @@ window.onload = () => {
   if (savedAvatar) {
     const sidebarAvatar = document.getElementById('sidebarAvatar');
     const headerAvatar = document.getElementById('headerAvatar');
-    if (sidebarAvatar) sidebarAvatar.src = savedAvatar;
-    if (headerAvatar) headerAvatar.src = savedAvatar;
+    if (sidebarAvatar) sidebarAvatar.src = savedAvatar.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com');
+    if (headerAvatar) headerAvatar.src = savedAvatar.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com');
   }
 
   const uploadDialog = document.getElementById('uploadDialog');
@@ -615,7 +615,7 @@ window.onload = () => {
         }
 
         const data = await response.json();
-        const imageUrl = data.avatar || URL.createObjectURL(file);
+        const imageUrl = data.avatar.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com') || URL.createObjectURL(file);
 
         const sidebarAvatar = document.getElementById('sidebarAvatar');
         const headerAvatar = document.getElementById('headerAvatar');

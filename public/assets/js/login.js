@@ -11,7 +11,7 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
   }
 
   try {
-    const response = await fetch('https://server-shelf-stacker.onrender.com/auth/login', {
+    const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -26,10 +26,10 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
         localStorage.setItem('authToken', data.token);
       }
       if (data.user && data.user.id) {
-        localStorage.setItem('userId', data.user.id);  // Sửa từ _id thành id
+        localStorage.setItem('userId', data.user.id);
       }
 
-      window.location.href = 'home';  // hoặc đường dẫn trang chính
+      window.location.href = 'home';
     } else {
       errorMsg.textContent = data.message || 'Tên người dùng hoặc mật khẩu không đúng.';
     }

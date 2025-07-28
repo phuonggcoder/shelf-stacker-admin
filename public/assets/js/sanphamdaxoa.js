@@ -23,7 +23,7 @@ async function fetchTrashBooks() {
   const trashGrid = document.getElementById('trashGrid');
   trashGrid.innerHTML = '<p style="text-align: center; color: #666; font-size: 16px;">Đang tải...</p>';
   try {
-    const res = await fetch('https://server-shelf-stacker.onrender.com/api/books/trash/all', {
+    const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/books/trash/all', {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -120,7 +120,7 @@ function renderTrashBooks(books) {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog()) {
         try {
-          const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${id}/force`, {
+          const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/books/${id}/force`, {
             method: 'DELETE',
             headers: {
               'Authorization': 'Bearer ' + getToken()
@@ -159,7 +159,7 @@ async function loadConfirmRestoreDialog() {
       dialog.querySelector('.btn-ok').addEventListener('click', async () => {
         if (!pendingRestoreId) return;
         try {
-          const res = await fetch(`https://server-shelf-stacker.onrender.com/api/books/${pendingRestoreId}/restore`, {
+          const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/books/${pendingRestoreId}/restore`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
