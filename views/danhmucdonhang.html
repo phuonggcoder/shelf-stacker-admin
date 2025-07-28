@@ -1,10 +1,8 @@
-```html
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="/assets/css/DANHMUC1.css" />
   <title>Quản Lý Đơn Hàng</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -165,6 +163,35 @@
       color: #007bff;
       margin-bottom: 20px;
       font-size: 24px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .tab-button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 5px;
+      background-color: #f0f9ff;
+      color: #333;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .tab-button:hover {
+      background-color: #0ea5e9;
+      color: white;
+    }
+
+    .tab-button.active {
+      background-color: #0ea5e9;
+      color: white;
+      font-weight: 600;
     }
 
     .search-filter {
@@ -368,6 +395,44 @@
       border-color: var(--danger);
       color: var(--danger);
     }
+
+    .thumb {
+      width: 60px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-detail, .btn-update {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .btn-detail {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-detail:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-update {
+      background-color: #28a745;
+      color: white;
+    }
+
+    .btn-update:hover {
+      background-color: #218838;
+    }
   </style>
 </head>
 <body>
@@ -421,10 +486,18 @@
   <main class="main-content">
     <div class="management-section">
       <h2 class="title">Quản Lý Đơn Hàng</h2>
+      <div class="tabs">
+        <button class="tab-button active" data-status="all">Tất cả</button>
+        <button class="tab-button" data-status="Pending">Chờ xác nhận</button>
+        <button class="tab-button" data-status="Processing">Đang xử lý</button>
+        <button class="tab-button" data-status="Shipped">Đang giao</button>
+        <button class="tab-button" data-status="Delivered">Đã giao</button>
+        <button class="tab-button" data-status="Cancelled">Đã huỷ</button>
+      </div>
       <div class="search-filter">
         <input type="text" id="order-search" placeholder="Tìm theo mã đơn / tên / SĐT" />
         <button id="btn-order-search" type="button" class="btn-primary">Tìm kiếm</button>
-        <select>
+        <select id="statusFilter">
           <option value="">-- Trạng thái --</option>
           <option value="pending">Chờ xác nhận</option>
           <option value="processing">Đang xử lý</option>
@@ -432,8 +505,8 @@
           <option value="delivered">Đã giao</option>
           <option value="cancelled">Đã huỷ</option>
         </select>
-        <input type="date" />
-        <input type="date" />
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
         <button class="btn-export">Xuất Dữ Liệu</button>
       </div>
       <table>
