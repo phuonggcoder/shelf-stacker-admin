@@ -230,10 +230,14 @@ function renderProducts(products) {
         <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
         <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
         <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
+        <span><b>Nổi bật:</b> ${product.featured ? 'Có' : 'Không'}</span>
       </div>
       <div class="actions">
         <button class="edit-btn" data-id="${product._id}"><i class="fas fa-pen"></i></button>
         <button class="delete-btn" data-id="${product._id}"><i class="fas fa-trash"></i></button>
+        <button class="toggle-featured-btn" data-id="${product._id}" title="${product.featured ? 'Bỏ nổi bật' : 'Đặt làm nổi bật'}">
+          <i class="fas ${product.featured ? 'fa-star' : 'fa-star-half-alt'}"></i>
+        </button>
       </div>
     `;
 
@@ -346,6 +350,54 @@ function renderProducts(products) {
       });
     });
   });
+
+  document.querySelectorAll('.toggle-featured-btn').forEach(btn => {
+    btn.addEventListener('click', async function () {
+      const id = this.getAttribute('data-id');
+      const book = products.find(p => p._id === id);
+      if (!book) return;
+
+      const newFeaturedStatus = !book.featured;
+      const message = newFeaturedStatus
+        ? 'Bạn có chắc muốn đặt truyện này làm nổi bật?'
+        : 'Bạn có chắc muốn bỏ trạng thái nổi bật của truyện này?';
+
+      if (await showConfirmToggleFeaturedDialog(message)) {
+        try {
+          const token = localStorage.getItem('authToken');
+          if (!token) {
+            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+            return;
+          }
+
+          const res = await fetch(`${apiPostURL}/${id}`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ...book, featured: newFeaturedStatus })
+          });
+
+          if (!res.ok) {
+            const contentType = res.headers.get('content-type');
+            let errText = await (contentType && contentType.includes('application/json') ? res.json() : res.text()).then(data => data.message || data).catch(() => res.statusText);
+            showErrorDialog('Cập nhật thất bại!', errText, res.url, res.status);
+            return;
+          }
+
+          showSuccessToggleFeatured(newFeaturedStatus);
+          // Làm mới trang nhưng giữ currentPage
+          products = await fetchProducts();
+          window.location.reload(); // Reload trang
+          // Sau khi reload, render lại với currentPage hiện tại
+          renderFilteredAndSorted(currentPage);
+        } catch (err) {
+          showErrorDialog('Có lỗi khi cập nhật trạng thái nổi bật!', err.message);
+        }
+      }
+    });
+  });
 }
 
 async function fetchProducts() {
@@ -381,10 +433,11 @@ async function fetchProducts() {
   }
 }
 
-function filterProducts(products, keyword) {
+function filterProducts(products, keyword, isFeaturedTab = false) {
   const lower = keyword.toLowerCase();
   const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
   return products.filter(p => {
+    if (isFeaturedTab && !p.featured) return false;
     const matchText =
       (p.title || '').toLowerCase().includes(lower) ||
       (p.author || '').toLowerCase().includes(lower) ||
@@ -413,6 +466,7 @@ function sortByTitle(arr, order) {
 let products = [];
 let currentPage = 1;
 const pageSize = 6;
+let activeTab = 'all';
 
 const pagination = document.createElement('div');
 pagination.id = 'pagination';
@@ -463,7 +517,7 @@ function renderProductsWithPagination(productsArr, page = 1) {
 function renderFilteredAndSorted(page = 1) {
   const keyword = searchBox.value.trim();
   const sortOrder = document.getElementById('sort-title').value;
-  let filtered = filterProducts(products, keyword);
+  let filtered = filterProducts(products, keyword, activeTab === 'featured');
   filtered = sortByTitle(filtered, sortOrder);
   renderProductsWithPagination(filtered, page);
 }
@@ -810,10 +864,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     renderFilteredAndSorted(1);
   });
 
-  window.filterProducts = function(products, keyword) {
+  // Tab switching logic
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      activeTab = this.getAttribute('data-tab');
+      renderFilteredAndSorted(1);
+    });
+  });
+
+  window.filterProducts = function(products, keyword, isFeaturedTab = false) {
     const lower = keyword.toLowerCase();
     const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
     return products.filter(p => {
+      if (isFeaturedTab && !p.featured) return false;
       const matchText =
         (p.title || '').toLowerCase().includes(lower) ||
         (p.author || '').toLowerCase().includes(lower) ||
@@ -832,7 +897,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderFilteredAndSorted(1);
 });
 
-function showErrorDialog(title, message) {
+function showErrorDialog(title, message, url = '', status = '') {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-error';
   dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
@@ -841,6 +906,8 @@ function showErrorDialog(title, message) {
       <img src="https://img.icons8.com/color/48/000000/error.png" alt="error">
       <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
       <p style="color: #d32f2f;">${message}</p>
+      ${url ? `<p>URL: ${url}</p>` : ''}
+      ${status ? `<p>Mã lỗi: ${status}</p>` : ''}
       <button onclick="document.getElementById('dialog-error').remove()" style="margin-top: 20px; padding: 8px 24px; background: #ff4444; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
     </div>
   `;
@@ -922,6 +989,57 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
       resolve(true);
     };
   });
+}
+
+function showConfirmToggleFeaturedDialog(message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-toggle-featured-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.innerHTML = `
+      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/star.png" alt="star-icon" />
+          <span style="font-size: 15px;">${message}</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-toggle" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
+          <button id="btn-ok-toggle" style="padding: 6px 16px; background: #00cfff; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-toggle').onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    overlay.querySelector('#btn-ok-toggle').onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
+  });
+}
+
+function showSuccessToggleFeatured(isFeatured) {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-toggle-featured';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  const title = isFeatured ? 'Đã đặt truyện làm nổi bật!' : 'Đã bỏ trạng thái nổi bật!';
+  dialog.innerHTML = `
+    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
+      <button onclick="closeToggleFeaturedDialog()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+}
+
+function closeToggleFeaturedDialog() {
+  const dialog = document.getElementById('dialog-success-toggle-featured');
+  if (dialog) dialog.remove();
 }
 
 function updateImageIndices(preview) {

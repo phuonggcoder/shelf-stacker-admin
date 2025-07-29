@@ -169,6 +169,32 @@
       margin: 0 0 20px;
     }
 
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      border: 1px solid #0ea5e9;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f0f9ff;
+      color: #0ea5e9;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: #0ea5e9;
+      color: #fff;
+    }
+
+    .tab:hover:not(.active) {
+      background: #bae6fd;
+    }
+
     .search-filter {
       display: flex;
       gap: 6px;
@@ -452,6 +478,10 @@
   <main class="main-content">
     <section class="management-section">
       <h2 class="title">Danh sách truyện tranh</h2>
+      <div class="tabs">
+        <div class="tab active" data-tab="all">Tất cả sách</div>
+        <div class="tab" data-tab="featured">Sách nổi bật</div>
+      </div>
       <div class="search-filter" style="display: flex; gap: 6px; align-items: center; margin-bottom: 16px;">
         <div style="position:relative; flex:1; display:flex; align-items:center;">
           <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" />
