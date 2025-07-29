@@ -71,7 +71,91 @@
       color: #ff4d4f;
     }
     .sidebar .profile img {
-      cursor: pointer; /* Add cursor pointer to indicate clickability */
+      cursor: pointer;
+      object-fit: cover; /* Ensure avatar maintains aspect ratio */
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+    }
+    .avatar {
+      object-fit: cover; /* Ensure header avatar maintains aspect ratio */
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+    }
+    .dialog-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .dialog-box {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      width: 300px;
+      max-width: 90%;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+    }
+    .dialog-box h2 {
+      margin-top: 0;
+      font-size: 18px;
+    }
+    .dialog-box label {
+      display: block;
+      margin: 10px 0 5px;
+      font-size: 14px;
+    }
+    .dialog-box input,
+    .dialog-box select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .dialog-box input[type="datetime-local"] {
+      padding: 6px;
+    }
+    .dialog-box .dialog-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .dialog-box .dialog-actions button {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .dialog-box .dialog-actions button:first-child {
+      background-color: #0ea5e9;
+      color: white;
+    }
+    .dialog-box .dialog-actions button:first-child:hover {
+      background-color: #38bdf8;
+    }
+    .dialog-box .dialog-actions button:last-child {
+      background-color: #ff4d4f;
+      color: white;
+    }
+    .dialog-box .dialog-actions button:last-child:hover {
+      background-color: #ff7875;
+    }
+    #voucherAddDialog .dialog-box {
+      width: 320px; /* Maintained width */
+      max-height: 80vh; /* Max height for scrollbar */
+      overflow-y: auto; /* Enable vertical scrollbar */
     }
   </style>
 </head>
@@ -80,13 +164,13 @@
     <div class="logo">SleekAdmin</div>
     <div class="user">
       <input type="text" placeholder="Tìm kiếm voucher..." id="searchVoucherInput" />
-      <img id="headerAvatar" src="https://i.pravatar.cc/40" alt="User Avatar" class="avatar" />
+      <img id="headerAvatar" src="https://i.pravatar.cc/40" alt="User Avatar" class="avatar" onerror="this.src='https://i.pravatar.cc/40';" />
     </div>
   </header>
 
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img id="sidebarAvatar" src="https://i.pravatar.cc/100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://i.pravatar.cc/100" alt="User Profile" onerror="this.src='https://i.pravatar.cc/100';" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>

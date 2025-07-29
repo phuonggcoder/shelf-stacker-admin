@@ -273,7 +273,7 @@
       box-shadow: 0 4px 24px rgba(0,0,0,0.2);
       font-family: Arial, sans-serif;
       z-index: 1002;
-      display: none; /* Ensure dialog is hidden until shown */
+      display: none;
     }
 
     dialog[open] {
@@ -367,6 +367,10 @@
         <option value="active">Hiển thị</option>
         <option value="inactive">Ẩn</option>
       </select>
+      <select id="sort-order" style="padding:10px 12px; font-size:16px; border:1px solid #ccc; border-radius:5px;">
+        <option value="name-asc">Tên: A-Z</option>
+        <option value="name-desc">Tên: Z-A</option>
+      </select>
       <button class="btn-export">+ Thêm danh mục</button>
     </div>
 
@@ -442,7 +446,7 @@
       }
       // Ensure dialog is hidden on page load
       const uploadDialog = document.getElementById('uploadDialog');
-      uploadDialog.removeAttribute('open'); // Force dialog to be closed
+      uploadDialog.removeAttribute('open');
     };
 
     const uploadDialog = document.getElementById('uploadDialog');
@@ -465,7 +469,6 @@
       fetch('login')
         .then(res => {
           if (res.ok) {
-            // Clear stored avatar on logout
             localStorage.removeItem('userAvatar');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';
@@ -478,7 +481,6 @@
         });
     };
 
-    // Trigger avatar upload dialog when clicking the sidebar avatar
     sidebarAvatar.onclick = () => {
       uploadDialog.showModal();
       resetUploadDialog();
@@ -558,11 +560,9 @@
 
         const imageUrl = data.avatar || URL.createObjectURL(file);
 
-        // Update avatar images
         document.getElementById('sidebarAvatar').src = imageUrl;
         document.getElementById('headerAvatar').src = imageUrl;
 
-        // Store avatar URL in localStorage
         localStorage.setItem('userAvatar', imageUrl);
 
         uploadMessage.style.display = 'block';

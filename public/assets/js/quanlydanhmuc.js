@@ -88,7 +88,9 @@ async function fetchCategories() {
     });
     const data = await res.json();
     categories = Array.isArray(data) ? data : [];
-    renderCategoriesWithPagination(categories, 1);
+    const sortOrder = document.getElementById('sort-order').value;
+    const filtered = filterCategories(categories, '', '', sortOrder);
+    renderCategoriesWithPagination(filtered, 1);
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
   }
@@ -145,7 +147,7 @@ document.addEventListener('click', async function(e) {
   if (e.target.classList.contains('btn-confirm')) {
     const row = e.target.closest('tr');
     const id = row.querySelector('.btn-update').getAttribute('data-id');
-    const currentVisible = e.target.getAttribute('data-isvisible') === 'true'; // Lấy trạng thái từ data-isvisible
+    const currentVisible = e.target.getAttribute('data-isvisible') === 'true';
     
     if (!id) return;
     
@@ -161,7 +163,7 @@ document.addEventListener('click', async function(e) {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify({ isVisible: !currentVisible }) // Đảo ngược trạng thái
+        body: JSON.stringify({ isVisible: !currentVisible })
       });
       
       if (!res.ok) {
@@ -181,10 +183,10 @@ document.addEventListener('click', async function(e) {
   }
 });
 
-// Hàm lọc danh mục
-function filterCategories(categories, keyword, status) {
+// Hàm lọc và sắp xếp danh mục
+function filterCategories(categories, keyword, status, sortOrder) {
   const lower = keyword.toLowerCase();
-  return categories.filter(c =>
+  let filtered = categories.filter(c =>
     ((c.name || '').toLowerCase().includes(lower) ||
     (c.slug || '').toLowerCase().includes(lower) ||
     (c.description || '').toLowerCase().includes(lower))
@@ -194,27 +196,47 @@ function filterCategories(categories, keyword, status) {
       (status === 'inactive' && c.isVisible === false)
     )
   );
+
+  // Sắp xếp theo tên
+  if (sortOrder === 'name-asc') {
+    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } else if (sortOrder === 'name-desc') {
+    filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+  }
+
+  return filtered;
 }
 
 // Search functionality
 document.getElementById('btn-search').addEventListener('click', function() {
   const keyword = document.getElementById('search-slug').value.trim();
   const status = document.getElementById('filter-status').value;
-  const filtered = filterCategories(categories, keyword, status);
+  const sortOrder = document.getElementById('sort-order').value;
+  const filtered = filterCategories(categories, keyword, status, sortOrder);
   renderCategoriesWithPagination(filtered, 1);
 });
 
 document.getElementById('search-slug').addEventListener('input', function() {
   const keyword = this.value;
   const status = document.getElementById('filter-status').value;
-  const filtered = filterCategories(categories, keyword, status);
+  const sortOrder = document.getElementById('sort-order').value;
+  const filtered = filterCategories(categories, keyword, status, sortOrder);
   renderCategoriesWithPagination(filtered, 1);
 });
 
 document.getElementById('filter-status').addEventListener('change', function() {
   const keyword = document.getElementById('search-slug').value.trim();
   const status = this.value;
-  const filtered = filterCategories(categories, keyword, status);
+  const sortOrder = document.getElementById('sort-order').value;
+  const filtered = filterCategories(categories, keyword, status, sortOrder);
+  renderCategoriesWithPagination(filtered, 1);
+});
+
+document.getElementById('sort-order').addEventListener('change', function() {
+  const keyword = document.getElementById('search-slug').value.trim();
+  const status = document.getElementById('filter-status').value;
+  const sortOrder = this.value;
+  const filtered = filterCategories(categories, keyword, status, sortOrder);
   renderCategoriesWithPagination(filtered, 1);
 });
 
@@ -267,9 +289,8 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
     formData.append('name', name);
     formData.append('slug', slug);
     formData.append('description', description);
-    formData.append('isVisible', isVisible.toString()); // 'true' hoặc 'false'
+    formData.append('isVisible', isVisible.toString());
     
-    // Thêm file ảnh vào FormData nếu có
     if (file) {
       formData.append('image', file);
     }
@@ -327,7 +348,6 @@ document.getElementById('update-category-btn').addEventListener('click', async f
     formData.append('description', description);
     formData.append('isVisible', isVisible);
     
-    // Thêm file ảnh vào FormData nếu có
     if (file) {
       formData.append('image', file);
     }
@@ -350,13 +370,14 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       const result = await res.json();
       showUpdateBookSuccessDialog();
       
-      // Cập nhật dữ liệu local
       const idx = categories.findIndex(cat => cat._id === editingCategoryId);
       if (idx !== -1) {
         categories[idx] = { ...categories[idx], ...result };
       }
       
-      renderCategoriesWithPagination(categories, catCurrentPage);
+      const sortOrder = document.getElementById('sort-order').value;
+      const filtered = filterCategories(categories, '', '', sortOrder);
+      renderCategoriesWithPagination(filtered, catCurrentPage);
       resetCategoryForm();
     } else {
       const err = await res.json();
@@ -399,7 +420,6 @@ document.getElementById('btn-select-image').addEventListener('click', function()
 inputFile.onchange = function(event) {
   const file = event.target.files[0];
   if (file) {
-    // Tạo preview cho ảnh đã chọn
     const reader = new FileReader();
     reader.onload = function(e) {
       const preview = document.getElementById('preview-image');
