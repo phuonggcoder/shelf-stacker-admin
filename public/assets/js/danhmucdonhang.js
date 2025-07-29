@@ -293,10 +293,12 @@ function closeOrderDetailsModal() {
 function filterOrdersByStatus(status) {
   let filteredOrders = window._loadedOrders || [];
 
+  // Apply status filter
   if (status !== 'all') {
     filteredOrders = filteredOrders.filter(order => order.order_status === status);
   }
 
+  // Apply keyword search filter
   const keyword = document.getElementById('order-search')?.value.trim() || '';
   if (keyword) {
     filteredOrders = filteredOrders.filter(order => {
@@ -306,6 +308,7 @@ function filterOrdersByStatus(status) {
     });
   }
 
+  // Apply status dropdown filter
   const statusFilter = document.getElementById('statusFilter')?.value.toLowerCase() || '';
   if (statusFilter && statusFilter !== '') {
     const statusMap = {
@@ -321,6 +324,7 @@ function filterOrdersByStatus(status) {
     }
   }
 
+  // Apply date range filter
   const startDate = document.getElementById('startDate')?.value
     ? new Date(document.getElementById('startDate').value)
     : null;
@@ -344,6 +348,21 @@ function filterOrdersByStatus(status) {
       return !isNaN(orderDate) && orderDate <= endDate;
     });
   }
+
+  // Sort orders: "Pending" orders first, then others, both sorted by date ascending (oldest first)
+  filteredOrders.sort((a, b) => {
+    const aIsPending = a.order_status === 'Pending';
+    const bIsPending = b.order_status === 'Pending';
+    
+    // Prioritize Pending orders
+    if (aIsPending && !bIsPending) return -1;
+    if (!aIsPending && bIsPending) return 1;
+
+    // Within the same status group (Pending or non-Pending), sort by date ascending
+    const dateA = new Date(a.order_date || a.createdAt || 0);
+    const dateB = new Date(b.order_date || b.createdAt || 0);
+    return dateA - dateB;
+  });
 
   renderOrders(filteredOrders);
 }
