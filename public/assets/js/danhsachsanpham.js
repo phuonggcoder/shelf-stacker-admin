@@ -463,6 +463,15 @@ function sortByTitle(arr, order) {
   });
 }
 
+function sortByPrice(arr, order) {
+  if (!order) return arr;
+  return [...arr].sort((a, b) => {
+    const priceA = parseFloat(a.price) || 0;
+    const priceB = parseFloat(b.price) || 0;
+    return order === 'asc' ? priceA - priceB : priceB - priceA;
+  });
+}
+
 let products = [];
 let currentPage = 1;
 const pageSize = 6;
@@ -516,15 +525,26 @@ function renderProductsWithPagination(productsArr, page = 1) {
 
 function renderFilteredAndSorted(page = 1) {
   const keyword = searchBox.value.trim();
-  const sortOrder = document.getElementById('sort-title').value;
+  const sortTitleOrder = document.getElementById('sort-title').value;
+  const sortPriceOrder = document.getElementById('sort-price').value;
+
   let filtered = filterProducts(products, keyword, activeTab === 'featured');
-  filtered = sortByTitle(filtered, sortOrder);
+
+  // Áp dụng sắp xếp theo giá trước nếu được chọn
+  if (sortPriceOrder) {
+    filtered = sortByPrice(filtered, sortPriceOrder);
+  } else if (sortTitleOrder) {
+    // Nếu không sắp xếp theo giá, áp dụng sắp xếp theo tên
+    filtered = sortByTitle(filtered, sortTitleOrder);
+  }
+
   renderProductsWithPagination(filtered, page);
 }
 
 document.getElementById('btn-search').addEventListener('click', () => renderFilteredAndSorted(1));
 searchBox.addEventListener('input', () => renderFilteredAndSorted(1));
 document.getElementById('sort-title').addEventListener('change', () => renderFilteredAndSorted(1));
+document.getElementById('sort-price').addEventListener('change', () => renderFilteredAndSorted(1));
 
 document.getElementById('btn-select-image').addEventListener('click', () => {
   document.getElementById('bookImageUpload').click();
@@ -994,12 +1014,12 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
 function showConfirmToggleFeaturedDialog(message) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
-    overlay.id = 'confirm-toggle-featured-overlay';
+    overlay.id = 'confirm-toggle-overlay';
     overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
     overlay.innerHTML = `
       <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-          <img src="https://img.icons8.com/fluency/24/star.png" alt="star-icon" />
+          <img src="https://img.icons8.com/fluency/24/star--v1.png" alt="star-icon" />
           <span style="font-size: 15px;">${message}</span>
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
@@ -1022,49 +1042,29 @@ function showConfirmToggleFeaturedDialog(message) {
   });
 }
 
-function showSuccessToggleFeatured(isFeatured) {
+function showSuccessToggleFeatured(newFeaturedStatus) {
   const dialog = document.createElement('div');
   dialog.id = 'dialog-success-toggle-featured';
   dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
-  const title = isFeatured ? 'Đã đặt truyện làm nổi bật!' : 'Đã bỏ trạng thái nổi bật!';
+  const message = newFeaturedStatus ? 'Đã đặt truyện làm nổi bật!' : 'Đã bỏ trạng thái nổi bật!';
   dialog.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
       <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
-      <h3 style="margin-top: 12px; font-size: 18px;">${title}</h3>
-      <button onclick="closeToggleFeaturedDialog()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+      <h3 style="margin-top: 12px; font-size: 18px;">${message}</h3>
+      <button onclick="document.getElementById('dialog-success-toggle-featured').remove()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
     </div>
   `;
   document.body.appendChild(dialog);
 }
 
-function closeToggleFeaturedDialog() {
-  const dialog = document.getElementById('dialog-success-toggle-featured');
-  if (dialog) dialog.remove();
-}
-
-function updateImageIndices(preview) {
-  const buttons = preview.querySelectorAll('.delete-image-btn, .edit-image-btn');
-  buttons.forEach((btn, i) => {
-    btn.setAttribute('data-index', i);
-  });
-}
-
 function renderImagePreviews(preview, files, existingImages) {
-  preview.innerHTML = '';
-  const fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
-
-  existingImages.forEach((url, i) => {
-    const div = document.createElement('div');
-    div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
-    div.setAttribute('data-existing', 'true');
-    div.setAttribute('data-url', url);
-    div.innerHTML = `
-      <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
-      <button class="delete-image-btn" data-index="${i}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-      <button class="edit-image-btn" data-index="${i}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-    `;
-    preview.appendChild(div);
-  });
+  preview.innerHTML = existingImages.map((url, index) => `
+    <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
+      <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'">
+      <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+      <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+    </div>
+  `).join('');
 
   Array.from(files).forEach((file, i) => {
     const reader = new FileReader();
@@ -1079,5 +1079,12 @@ function renderImagePreviews(preview, files, existingImages) {
       preview.appendChild(div);
     };
     reader.readAsDataURL(file);
+  });
+}
+
+function updateImageIndices(preview) {
+  const buttons = preview.querySelectorAll('.delete-image-btn, .edit-image-btn');
+  buttons.forEach((btn, index) => {
+    btn.setAttribute('data-index', index);
   });
 }
