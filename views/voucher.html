@@ -7,9 +7,151 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    .sidebar.hidden {
-      display: none;
+    :root {
+      --theme: #6c63ff;
+      --danger: #ff4d4f;
+      --success: #28a745;
+      --warning: #ffc107;
+      --white: #fff;
+      --gray: #f8f9fa;
+      --border: #e0e0e0;
+      --text: #333;
     }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+      color: #222;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+    }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 260px;
+      right: 0;
+      height: 60px;
+      background: #fff;
+      border-bottom: 2px solid #bae6fd;
+      box-shadow: 0 4px 24px #bae6fd33;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: bold;
+      font-size: 20px;
+      color: #0ea5e9;
+    }
+
+    .user {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user input {
+      padding: 7px 14px;
+      border: 1.5px solid #bae6fd;
+      border-radius: 20px;
+      background: #f0f9ff;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #0ea5e9;
+    }
+
+    .main-content {
+      margin-left: 260px;
+      padding: 100px 20px 40px;
+      width: calc(100% - 260px);
+    }
+
     .btn-danger {
       background-color: #ff4d4f;
       color: white;
@@ -21,9 +163,11 @@
       font-size: 14px;
       transition: background-color 0.3s ease;
     }
+
     .btn-danger:hover {
       background-color: #ff7875;
     }
+
     .btn-primary {
       background-color: #0ea5e9;
       color: white;
@@ -35,13 +179,16 @@
       font-size: 14px;
       transition: background-color 0.3s ease;
     }
+
     .btn-primary:hover:not(:disabled) {
       background-color: #38bdf8;
     }
+
     .btn-primary:disabled {
       background-color: #9ecffb;
       cursor: not-allowed;
     }
+
     dialog {
       border: none;
       border-radius: 12px;
@@ -52,9 +199,11 @@
       font-family: Arial, sans-serif;
       z-index: 1002;
     }
+
     dialog::backdrop {
       background: rgba(0, 0, 0, 0.3);
     }
+
     .notification {
       background-color: #f0f9ff;
       border: 1px solid #28a745;
@@ -65,24 +214,13 @@
       font-size: 14px;
       color: #28a745;
     }
+
     .notification.error-message {
       background-color: #fff0f0;
       border-color: #ff4d4f;
       color: #ff4d4f;
     }
-    .sidebar .profile img {
-      cursor: pointer;
-      object-fit: cover; /* Ensure avatar maintains aspect ratio */
-      width: 100px;
-      height: 100px;
-      border-radius: 50%;
-    }
-    .avatar {
-      object-fit: cover; /* Ensure header avatar maintains aspect ratio */
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-    }
+
     .dialog-overlay {
       position: fixed;
       top: 0;
@@ -95,6 +233,7 @@
       align-items: center;
       z-index: 1000;
     }
+
     .dialog-box {
       background: white;
       border-radius: 12px;
@@ -104,15 +243,18 @@
       box-shadow: 0 4px 24px rgba(0,0,0,0.2);
       font-family: Arial, sans-serif;
     }
+
     .dialog-box h2 {
       margin-top: 0;
       font-size: 18px;
     }
+
     .dialog-box label {
       display: block;
       margin: 10px 0 5px;
       font-size: 14px;
     }
+
     .dialog-box input,
     .dialog-box select {
       width: 100%;
@@ -122,14 +264,17 @@
       border-radius: 4px;
       font-size: 14px;
     }
+
     .dialog-box input[type="datetime-local"] {
       padding: 6px;
     }
+
     .dialog-box .dialog-actions {
       display: flex;
       gap: 10px;
       margin-top: 20px;
     }
+
     .dialog-box .dialog-actions button {
       flex: 1;
       padding: 10px;
@@ -138,24 +283,29 @@
       cursor: pointer;
       font-size: 14px;
     }
+
     .dialog-box .dialog-actions button:first-child {
       background-color: #0ea5e9;
       color: white;
     }
+
     .dialog-box .dialog-actions button:first-child:hover {
       background-color: #38bdf8;
     }
+
     .dialog-box .dialog-actions button:last-child {
       background-color: #ff4d4f;
       color: white;
     }
+
     .dialog-box .dialog-actions button:last-child:hover {
       background-color: #ff7875;
     }
+
     #voucherAddDialog .dialog-box {
-      width: 320px; /* Maintained width */
-      max-height: 80vh; /* Max height for scrollbar */
-      overflow-y: auto; /* Enable vertical scrollbar */
+      width: 320px;
+      max-height: 80vh;
+      overflow-y: auto;
     }
   </style>
 </head>
