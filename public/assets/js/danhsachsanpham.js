@@ -1,3 +1,6 @@
+// Khai báo biến filterCategoryChoices ở phạm vi toàn cục
+let filterCategoryChoices = null;
+
 const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books/all';
 const apiPostURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
 const uploadURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/upload/smart';
@@ -223,11 +226,11 @@ function renderProducts(products) {
       <div class="info">
         <h3>${product.title || product.name}</h3>
         <p><b>Tác giả:</b> ${product.author || ''}</p>
-        <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : ''}</p>
+        <p><b>Giá:</b> ${product.price ? Number(product.price).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' }) : ''}</p>
         <div class="desc-wrap">${descHtml}</div>
         <span><b>Danh mục:</b> ${(product.categories || []).map(c => c.name || c).join(', ')}</span><br>
         <span><b>Số lượng:</b> ${product.stock || ''}</span><br>
-        <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString() : ''}</span><br>
+        <span><b>Ngày xuất bản:</b> ${product.publication_date ? new Date(product.publication_date).toLocaleDateString('vi-VN') : ''}</span><br>
         <span><b>Nhà xuất bản:</b> ${product.publisher || ''}</span><br>
         <span><b>Ngôn ngữ:</b> ${product.language || ''}</span>
         <span><b>Nổi bật:</b> ${product.featured ? 'Có' : 'Không'}</span>
@@ -387,10 +390,7 @@ function renderProducts(products) {
           }
 
           showSuccessToggleFeatured(newFeaturedStatus);
-          // Làm mới trang nhưng giữ currentPage
           products = await fetchProducts();
-          window.location.reload(); // Reload trang
-          // Sau khi reload, render lại với currentPage hiện tại
           renderFilteredAndSorted(currentPage);
         } catch (err) {
           showErrorDialog('Có lỗi khi cập nhật trạng thái nổi bật!', err.message);
@@ -435,9 +435,19 @@ async function fetchProducts() {
 
 function filterProducts(products, keyword, isFeaturedTab = false) {
   const lower = keyword.toLowerCase();
-  const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
+  // Safely access filterCategoryChoices, default to empty array if not initialized
+  const selectedCats = (filterCategoryChoices && typeof filterCategoryChoices.getValue === 'function') 
+    ? filterCategoryChoices.getValue(true) 
+    : [];
+  const minPrice = parseFloat(document.getElementById('minPrice')?.value) || 0;
+  const maxPrice = parseFloat(document.getElementById('maxPrice')?.value) || Infinity;
+
+  console.log('Filtering products with categories:', selectedCats); // Debug log
+
   return products.filter(p => {
     if (isFeaturedTab && !p.featured) return false;
+    const price = parseFloat(p.price) || 0;
+    const matchPrice = price >= minPrice && price <= maxPrice;
     const matchText =
       (p.title || '').toLowerCase().includes(lower) ||
       (p.author || '').toLowerCase().includes(lower) ||
@@ -448,7 +458,7 @@ function filterProducts(products, keyword, isFeaturedTab = false) {
       const prodCatIds = (p.categories || []).map(c => c._id || c);
       matchCategory = selectedCats.some(catId => prodCatIds.includes(catId));
     }
-    return matchText && matchCategory;
+    return matchText && matchCategory && matchPrice;
   });
 }
 
@@ -460,15 +470,6 @@ function sortByTitle(arr, order) {
     if (tA < tB) return order === 'asc' ? -1 : 1;
     if (tA > tB) return order === 'asc' ? 1 : -1;
     return 0;
-  });
-}
-
-function sortByPrice(arr, order) {
-  if (!order) return arr;
-  return [...arr].sort((a, b) => {
-    const priceA = parseFloat(a.price) || 0;
-    const priceB = parseFloat(b.price) || 0;
-    return order === 'asc' ? priceA - priceB : priceB - priceA;
   });
 }
 
@@ -526,15 +527,10 @@ function renderProductsWithPagination(productsArr, page = 1) {
 function renderFilteredAndSorted(page = 1) {
   const keyword = searchBox.value.trim();
   const sortTitleOrder = document.getElementById('sort-title').value;
-  const sortPriceOrder = document.getElementById('sort-price').value;
 
   let filtered = filterProducts(products, keyword, activeTab === 'featured');
 
-  // Áp dụng sắp xếp theo giá trước nếu được chọn
-  if (sortPriceOrder) {
-    filtered = sortByPrice(filtered, sortPriceOrder);
-  } else if (sortTitleOrder) {
-    // Nếu không sắp xếp theo giá, áp dụng sắp xếp theo tên
+  if (sortTitleOrder) {
     filtered = sortByTitle(filtered, sortTitleOrder);
   }
 
@@ -544,7 +540,9 @@ function renderFilteredAndSorted(page = 1) {
 document.getElementById('btn-search').addEventListener('click', () => renderFilteredAndSorted(1));
 searchBox.addEventListener('input', () => renderFilteredAndSorted(1));
 document.getElementById('sort-title').addEventListener('change', () => renderFilteredAndSorted(1));
-document.getElementById('sort-price').addEventListener('change', () => renderFilteredAndSorted(1));
+document.getElementById('btn-filter-price').addEventListener('click', () => renderFilteredAndSorted(1));
+document.getElementById('minPrice').addEventListener('input', () => renderFilteredAndSorted(1));
+document.getElementById('maxPrice').addEventListener('input', () => renderFilteredAndSorted(1));
 
 document.getElementById('btn-select-image').addEventListener('click', () => {
   document.getElementById('bookImageUpload').click();
@@ -792,7 +790,7 @@ async function fetchCategoriesForSelect() {
       select.appendChild(option);
     });
 
-    if (!select.choicesInstance) {
+    if (!select.choicesInstance && typeof Choices !== 'undefined') {
       select.choicesInstance = new Choices(select, {
         removeItemButton: true,
         placeholder: true,
@@ -809,113 +807,124 @@ async function fetchCategoriesForSelect() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
-  const filterCategorySelect = document.getElementById('filter-category');
-  const toggleCategoryBtn = document.getElementById('toggle-category-btn');
-  const filterChoicesWrap = document.getElementById('category-filter-choices-wrap');
-  let filterCategoryChoices = null;
-  let isOpen = false;
+function renderImagePreviews(preview, files, existingImages) {
+  preview.innerHTML = '';
+  const fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
 
-  async function fetchCategoriesForFilter() {
-    try {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-      }
-
-      const res = await fetch(categoriesURL, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!res.ok) {
-        const errorText = await res.text().then(text => {
-          try {
-            const json = JSON.parse(text);
-            return json.message || text;
-          } catch {
-            return text;
-          }
-        });
-        throw new Error(errorText || 'Lỗi lấy danh mục');
-      }
-      const data = await res.json();
-      filterCategorySelect.innerHTML = '';
-      data.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat._id;
-        option.textContent = cat.name;
-        filterCategorySelect.appendChild(option);
-      });
-
-      if (!filterCategoryChoices) {
-        filterCategoryChoices = new Choices(filterCategorySelect, {
-          removeItemButton: true,
-          searchResultLimit: 10,
-          placeholder: true,
-          placeholderValue: 'Chọn danh mục...',
-          searchPlaceholderValue: 'Tìm danh mục...',
-          noResultsText: 'Không tìm thấy',
-          itemSelectText: '',
-          shouldSort: false
-        });
-      }
-    } catch (err) {
-      console.error('Lỗi load categories:', err);
-      showErrorDialog('Lỗi Danh Mục', 'Không thể tải danh mục lọc: ' + err.message);
-    }
-  }
-
-  await fetchCategoriesForFilter();
-
-  toggleCategoryBtn.addEventListener('click', function(e) {
-    e.preventDefault();
-    isOpen = !isOpen;
-    if (isOpen) {
-      filterChoicesWrap.style.display = 'block';
-      toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
-    } else {
-      filterChoicesWrap.style.display = 'none';
-      toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+  existingImages.forEach((url, index) => {
+    if (!deletedImageIndices.includes(url)) {
+      const div = document.createElement('div');
+      div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+      div.setAttribute('data-existing', 'true');
+      div.setAttribute('data-url', url);
+      div.innerHTML = `
+        <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
+        <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+      `;
+      preview.appendChild(div);
     }
   });
 
-  filterCategorySelect.addEventListener('change', () => {
-    renderFilteredAndSorted(1);
+  Array.from(files).forEach((file, index) => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const div = document.createElement('div');
+      div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
+      div.innerHTML = `
+        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd;">
+        <button class="delete-image-btn" data-index="${index + existingImages.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
+        <button class="edit-image-btn" data-index="${index + existingImages.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
+      `;
+      preview.appendChild(div);
+    };
+    reader.readAsDataURL(file);
   });
+}
 
-  // Tab switching logic
-  document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', function() {
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      activeTab = this.getAttribute('data-tab');
-      renderFilteredAndSorted(1);
-    });
+function updateImageIndices(preview) {
+  const deleteButtons = preview.querySelectorAll('.delete-image-btn');
+  const editButtons = preview.querySelectorAll('.edit-image-btn');
+  deleteButtons.forEach((btn, idx) => btn.setAttribute('data-index', idx));
+  editButtons.forEach((btn, idx) => btn.setAttribute('data-index', idx));
+}
+
+function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyện này?') {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-delete-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.innerHTML = `
+      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
+          <span style="font-size: 15px;">${message}</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
+          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector('#btn-cancel-delete').onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    overlay.querySelector('#btn-ok-delete').onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
   });
+}
 
-  window.filterProducts = function(products, keyword, isFeaturedTab = false) {
-    const lower = keyword.toLowerCase();
-    const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
-    return products.filter(p => {
-      if (isFeaturedTab && !p.featured) return false;
-      const matchText =
-        (p.title || '').toLowerCase().includes(lower) ||
-        (p.author || '').toLowerCase().includes(lower) ||
-        (p.description || '').toLowerCase().includes(lower);
+function showConfirmToggleFeaturedDialog(message) {
+  return new Promise(resolve => {
+    const overlay = document.createElement('div');
+    overlay.id = 'confirm-toggle-featured-overlay';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.innerHTML = `
+      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <img src="https://img.icons8.com/fluency/24/star.png" alt="star-icon" />
+          <span style="font-size: 15px;">${message}</span>
+        </div>
+        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button id="btn-cancel-toggle" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
+          <button id="btn-ok-toggle" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
 
-      let matchCategory = true;
-      if (selectedCats.length > 0) {
-        const prodCatIds = (p.categories || []).map(c => c._id || c);
-        matchCategory = selectedCats.some(catId => prodCatIds.includes(catId));
-      }
-      return matchText && matchCategory;
-    });
-  };
+    overlay.querySelector('#btn-cancel-toggle').onclick = () => {
+      overlay.remove();
+      resolve(false);
+    };
+    overlay.querySelector('#btn-ok-toggle').onclick = () => {
+      overlay.remove();
+      resolve(true);
+    };
+  });
+}
 
-  products = await fetchProducts();
-  renderFilteredAndSorted(1);
-});
+function showSuccessToggleFeatured(isFeatured) {
+  const dialog = document.createElement('div');
+  dialog.id = 'dialog-success-toggle-featured';
+  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  const message = isFeatured ? 'Đã đặt làm nổi bật thành công!' : 'Đã bỏ trạng thái nổi bật!';
+  dialog.innerHTML = `
+    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
+      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
+      <h3 style="margin-top: 12px; font-size: 18px;">${message}</h3>
+      <button onclick="document.getElementById('dialog-success-toggle-featured').remove()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
+    </div>
+  `;
+  document.body.appendChild(dialog);
+}
 
 function showErrorDialog(title, message, url = '', status = '') {
   const dialog = document.createElement('div');
@@ -980,111 +989,125 @@ function closeAddBookDialog() {
   if (dialog) dialog.remove();
 }
 
-function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyện này?') {
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.id = 'confirm-delete-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
-    overlay.innerHTML = `
-      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-          <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
-          <span style="font-size: 15px;">${message}</span>
-        </div>
-        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
-          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
+document.addEventListener('DOMContentLoaded', async () => {
+  const filterCategorySelect = document.getElementById('filter-category');
+  const toggleCategoryBtn = document.getElementById('toggle-category-btn');
+  const filterChoicesWrap = document.getElementById('category-filter-choices-wrap');
+  let isOpen = false;
 
-    overlay.querySelector('#btn-cancel-delete').onclick = () => {
-      overlay.remove();
-      resolve(false);
-    };
-    overlay.querySelector('#btn-ok-delete').onclick = () => {
-      overlay.remove();
-      resolve(true);
-    };
+  async function fetchCategoriesForFilter() {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
+      }
+
+      console.log('Fetching categories for filter...');
+      const res = await fetch(categoriesURL, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) {
+        const errorText = await res.text().then(text => {
+          try {
+            const json = JSON.parse(text);
+            return json.message || text;
+          } catch {
+            return text;
+          }
+        });
+        throw new Error(errorText || 'Lỗi lấy danh mục');
+      }
+      const data = await res.json();
+      console.log('Categories fetched:', data);
+
+      filterCategorySelect.innerHTML = '';
+      data.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat._id;
+        option.textContent = cat.name;
+        filterCategorySelect.appendChild(option);
+      });
+
+      // Initialize Choices.js for filterCategorySelect
+      if (typeof Choices !== 'undefined') {
+        filterCategoryChoices = new Choices(filterCategorySelect, {
+          removeItemButton: true,
+          searchResultLimit: 10,
+          placeholder: true,
+          placeholderValue: 'Chọn danh mục...',
+          searchPlaceholderValue: 'Tìm danh mục...',
+          noResultsText: 'Không tìm thấy',
+          itemSelectText: '',
+          shouldSort: false
+        });
+        console.log('Choices.js initialized for filterCategorySelect:', filterCategoryChoices);
+      } else {
+        console.warn('Choices.js not loaded, falling back to basic select behavior.');
+        filterCategorySelect.addEventListener('change', () => renderFilteredAndSorted(1));
+      }
+    } catch (err) {
+      console.error('Lỗi load categories:', err);
+      // Initialize Choices.js with empty options as a fallback
+      if (typeof Choices !== 'undefined' && !filterCategoryChoices) {
+        filterCategoryChoices = new Choices(filterCategorySelect, {
+          removeItemButton: true,
+          searchResultLimit: 10,
+          placeholder: true,
+          placeholderValue: 'Chọn danh mục...',
+          searchPlaceholderValue: 'Tìm danh mục...',
+          noResultsText: 'Không tìm thấy',
+          itemSelectText: '',
+          shouldSort: false
+        });
+        console.log('Choices.js initialized with fallback:', filterCategoryChoices);
+      }
+      showErrorDialog('Lỗi Danh Mục', 'Không thể tải danh mục lọc: ' + err.message);
+    }
+  }
+
+  // Ensure categories are fetched before rendering products
+  await fetchCategoriesForFilter();
+
+  // Add event listeners for category toggle and filter
+  if (toggleCategoryBtn) {
+    toggleCategoryBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      isOpen = !isOpen;
+      if (isOpen) {
+        filterChoicesWrap.style.display = 'block';
+        toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-up"></i>';
+      } else {
+        filterChoicesWrap.style.display = 'none';
+        toggleCategoryBtn.innerHTML = '<i class="fa fa-chevron-down"></i>';
+      }
+    });
+  }
+
+  if (filterCategorySelect) {
+    filterCategorySelect.addEventListener('change', () => {
+      console.log('Filter category changed, re-rendering...');
+      renderFilteredAndSorted(1);
+    });
+  }
+
+  // Add tab event listeners
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      activeTab = this.getAttribute('data-tab');
+      renderFilteredAndSorted(1);
+    });
   });
-}
 
-function showConfirmToggleFeaturedDialog(message) {
-  return new Promise(resolve => {
-    const overlay = document.createElement('div');
-    overlay.id = 'confirm-toggle-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
-    overlay.innerHTML = `
-      <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
-        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
-          <img src="https://img.icons8.com/fluency/24/star--v1.png" alt="star-icon" />
-          <span style="font-size: 15px;">${message}</span>
-        </div>
-        <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
-        <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-toggle" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
-          <button id="btn-ok-toggle" style="padding: 6px 16px; background: #00cfff; color: #fff; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(overlay);
-
-    overlay.querySelector('#btn-cancel-toggle').onclick = () => {
-      overlay.remove();
-      resolve(false);
-    };
-    overlay.querySelector('#btn-ok-toggle').onclick = () => {
-      overlay.remove();
-      resolve(true);
-    };
-  });
-}
-
-function showSuccessToggleFeatured(newFeaturedStatus) {
-  const dialog = document.createElement('div');
-  dialog.id = 'dialog-success-toggle-featured';
-  dialog.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
-  const message = newFeaturedStatus ? 'Đã đặt truyện làm nổi bật!' : 'Đã bỏ trạng thái nổi bật!';
-  dialog.innerHTML = `
-    <div style="background: #fff; border-radius: 12px; padding: 24px 32px; max-width: 360px; width: 100%; text-align: center;">
-      <img src="https://img.icons8.com/color/48/000000/ok--v1.png" alt="ok">
-      <h3 style="margin-top: 12px; font-size: 18px;">${message}</h3>
-      <button onclick="document.getElementById('dialog-success-toggle-featured').remove()" style="margin-top: 20px; padding: 8px 24px; background: #00cfff; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">OK</button>
-    </div>
-  `;
-  document.body.appendChild(dialog);
-}
-
-function renderImagePreviews(preview, files, existingImages) {
-  preview.innerHTML = existingImages.map((url, index) => `
-    <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
-      <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'">
-      <button class="delete-image-btn" data-index="${index}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-      <button class="edit-image-btn" data-index="${index}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-    </div>
-  `).join('');
-
-  Array.from(files).forEach((file, i) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const div = document.createElement('div');
-      div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
-      div.innerHTML = `
-        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-        <button class="delete-image-btn" data-index="${i + existingImages.length}" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button>
-        <button class="edit-image-btn" data-index="${i + existingImages.length}" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button>
-      `;
-      preview.appendChild(div);
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function updateImageIndices(preview) {
-  const buttons = preview.querySelectorAll('.delete-image-btn, .edit-image-btn');
-  buttons.forEach((btn, index) => {
-    btn.setAttribute('data-index', index);
-  });
-}
+  // Fetch products and render
+  try {
+    products = await fetchProducts();
+    renderFilteredAndSorted(1);
+  } catch (err) {
+    console.error('Failed to fetch products:', err);
+    showErrorDialog('Lỗi Tải Sản Phẩm', 'Không thể tải danh sách sản phẩm: ' + err.message);
+  }
+});

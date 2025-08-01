@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Quản lý danh sách truyện tranh với giao diện thân thiện và tính năng tìm kiếm, lọc nâng cao." />
+  <meta name="keywords" content="quản lý truyện tranh, sách, admin dashboard, quản lý sản phẩm" />
   <title>Quản lý truyện tranh</title>
   <link rel="stylesheet" href="/assets/css/DSsanpham.css" />
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-  <script src="https://cdn.ckbox.io/CKFinder/CKFinder.js"></script>
   <style>
     :root {
       --theme: #6c63ff;
@@ -210,6 +211,14 @@
       flex: 1;
     }
 
+    .search-filter input[type="number"] {
+      padding: 10px 12px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 120px;
+    }
+
     .search-filter select {
       padding: 10px 12px;
       font-size: 16px;
@@ -400,16 +409,18 @@
     dialog {
       border: none;
       border-radius: 12px;
-      padding: 20px;
-      width: 300px;
-      max-width: 90%;
+      padding: 24px 32px;
+      width: 360px;
+      max-width: 95%;
       box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
       z-index: 1002;
+      background: #fff;
+      animation: popup 0.2s;
     }
 
     dialog::backdrop {
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.4);
     }
 
     .notification {
@@ -428,20 +439,89 @@
       border-color: var(--danger);
       color: var(--danger);
     }
+
+    .product-card {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: #fff;
+      align-items: flex-start;
+    }
+
+    .product-card img {
+      max-width: 80px;
+      border-radius: 4px;
+    }
+
+    .product-card .info {
+      flex: 1;
+      font-size: 14px;
+    }
+
+    .product-card .info h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      color: #0ea5e9;
+    }
+
+    .product-card .info p,
+    .product-card .info span {
+      margin: 4px 0;
+    }
+
+    .product-card .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .product-card .actions button {
+      padding: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    .product-card .actions button:hover {
+      background: #0056b3;
+    }
+
+    .product-card .actions .delete-btn {
+      background: #ff4d4f;
+    }
+
+    .product-card .actions .delete-btn:hover {
+      background: #ff7875;
+    }
+
+    .product-card .actions .toggle-featured-btn {
+      background: #ffc107;
+    }
+
+    .product-card .actions .toggle-featured-btn:hover {
+      background: #e0a800;
+    }
   </style>
 </head>
 <body>
   <header class="header">
     <h1 class="logo">SleekAdmin</h1>
     <div class="user">
-      <input type="text" placeholder="Tìm kiếm..." id="searchInput" />
-      <img id="headerAvatar" class="avatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Avatar" />
+      <input type="text" placeholder="Tìm kiếm..." id="searchInput" aria-label="Tìm kiếm người dùng" />
+      <img id="headerAvatar" class="avatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="Ảnh đại diện người dùng" />
     </div>
   </header>
 
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="Ảnh hồ sơ người dùng" aria-label="Chọn để cập nhật ảnh đại diện" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
@@ -464,13 +544,13 @@
 
   <aside class="sidebar hidden" id="settingsSidebar">
     <div class="profile" style="text-align: left;">
-      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;" aria-label="Quay lại menu chính">
         <span style="font-size: 20px;">←</span> Quay lại
       </button>
     </div>
     <nav>
       <ul>
-        <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
+        <li><button id="logoutButton" class="btn-danger" aria-label="Đăng xuất">Đăng xuất</button></li>
       </ul>
     </nav>
   </aside>
@@ -484,32 +564,30 @@
       </div>
       <div class="search-filter" style="display: flex; gap: 6px; align-items: center; margin-bottom: 16px;">
         <div style="position:relative; flex:1; display:flex; align-items:center;">
-          <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" />
+          <input type="text" class="input" placeholder="Tìm truyện..." id="searchBox" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; outline: none; width:100%;" aria-label="Tìm kiếm truyện tranh" />
           <div id="category-filter-choices-wrap" style="position:absolute; left:0; top:0; width:100%; display:none; z-index:10;">
-            <select id="filter-category" multiple></select>
+            <select id="filter-category" multiple aria-label="Lọc theo danh mục"></select>
           </div>
-          <button id="toggle-category-btn" type="button" style="position:absolute; right:4px; top:7px; background:transparent; border:none; cursor:pointer; font-size:18px; z-index:11;">
+          <button id="toggle-category-btn" type="button" style="position:absolute; right:4px; top:7px; background:transparent; border:none; cursor:pointer; font-size:18px; z-index:11;" aria-label="Mở/đóng bộ lọc danh mục">
             <i class="fa fa-chevron-down"></i>
           </button>
         </div>
-        <button id="btn-search" type="button" style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+        <button id="btn-search" type="button" style="display: flex; align-items: center; gap: 6px; background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer; transition: background 0.2s;" aria-label="Tìm kiếm">
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24">
             <circle cx="11" cy="11" r="7" stroke="#fff" stroke-width="2"/>
             <path stroke="#fff" stroke-width="2" stroke-linecap="round" d="M20 20l-3-3"/>
           </svg>
           Tìm kiếm
         </button>
-        <select id="sort-title" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;">
+        <select id="sort-title" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;" aria-label="Sắp xếp theo tên">
           <option value="">Sắp xếp theo tên</option>
           <option value="asc">Tên A → Z</option>
           <option value="desc">Tên Z → A</option>
         </select>
-        <select id="sort-price" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;">
-          <option value="">Sắp xếp theo giá</option>
-          <option value="asc">Giá thấp → cao</option>
-          <option value="desc">Giá cao → thấp</option>
-        </select>
-        <button class="btn btn-add" id="addBookBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;">+ Thêm truyện</button>
+        <input type="number" id="minPrice" placeholder="Giá từ (₫)" min="0" step="1000" aria-label="Giá tối thiểu" />
+        <input type="number" id="maxPrice" placeholder="Giá đến (₫)" min="0" step="1000" aria-label="Giá tối đa" />
+        <button id="btn-filter-price" type="button" style="background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Lọc theo giá">Lọc giá</button>
+        <button class="btn btn-add" id="addBookBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Thêm truyện mới">+ Thêm truyện</button>
       </div>
       <div class="product-grid" id="productGrid">
         <!-- Các sản phẩm sẽ được render ở đây từ API -->
@@ -519,38 +597,46 @@
 
   <div class="dialog-overlay" id="dialogOverlay">
     <div class="dialog-box">
-      <button class="close-btn" id="closeDialogBtn" title="Đóng">×</button>
+      <button class="close-btn" id="closeDialogBtn" title="Đóng" aria-label="Đóng cửa sổ">×</button>
       <h2 id="dialogTitle">Thêm truyện mới</h2>
       <form id="addBookForm">
-        <input type="text" id="bookName" placeholder="Tên truyện" required />
-        <input type="text" id="bookAuthor" placeholder="Tác giả" required />
-        <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required />
+        <label for="bookName">Tên truyện</label>
+        <input type="text" id="bookName" placeholder="Tên truyện" required aria-required="true" />
+        <label for="bookAuthor">Tác giả</label>
+        <input type="text" id="bookAuthor" placeholder="Tác giả" required aria-required="true" />
+        <label for="bookPrice">Giá tiền</label>
+        <input type="number" id="bookPrice" placeholder="Giá tiền" min="0" step="0.01" required aria-required="true" />
+        <label for="bookDesc">Mô tả</label>
         <textarea id="bookDesc" placeholder="Mô tả"></textarea>
-        <button type="button" id="btn-select-image">Chọn thư viện ảnh</button>
-        <input type="file" id="bookImageUpload" accept="image/*" style="display:none">
+        <label for="bookImageUpload">Thư viện ảnh</label>
+        <button type="button" id="btn-select-image" aria-label="Chọn thư viện ảnh">Chọn thư viện ảnh</button>
+        <input type="file" id="bookImageUpload" accept="image/*" style="display:none" multiple aria-label="Tải lên ảnh bìa" />
         <div id="uploadedImagesPreview" style="margin-top: 10px;"></div>
-        <input type="hidden" id="bookImages">
-        <label for="bookThumbnailUpload" style="margin-top:10px;">Chọn ảnh đại diện (thumbnail):</label>
-        <input type="file" id="bookThumbnailUpload" accept="image/*" style="display:none">
-        <button type="button" id="btn-select-thumbnail">Chọn ảnh đại diện</button>
+        <label for="bookThumbnailUpload">Ảnh đại diện (thumbnail)</label>
+        <input type="file" id="bookThumbnailUpload" accept="image/*" style="display:none" aria-label="Tải lên ảnh đại diện" />
+        <button type="button" id="btn-select-thumbnail" aria-label="Chọn ảnh đại diện">Chọn ảnh đại diện</button>
         <div id="thumbnailPreview" style="margin-top: 10px;"></div>
-        <input type="hidden" id="bookThumbnail">
-        <input type="number" id="bookStock" placeholder="Số lượng" min="0" required />
-        <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required />
-        <input type="text" id="bookPublisher" placeholder="Nhà xuất bản" required />
-        <input type="text" id="bookLanguage" placeholder="Ngôn ngữ" required />
-        <select id="bookCategory" multiple></select>
-        <button type="submit">Lưu</button>
+        <label for="bookStock">Số lượng</label>
+        <input type="number" id="bookStock" placeholder="Số lượng" min="0" required aria-required="true" />
+        <label for="bookPubDate">Ngày xuất bản</label>
+        <input type="date" id="bookPubDate" placeholder="Ngày xuất bản" required aria-required="true" />
+        <label for="bookPublisher">Nhà xuất bản</label>
+        <input type="text" id="bookPublisher" placeholder="Nhà xuất bản" required aria-required="true" />
+        <label for="bookLanguage">Ngôn ngữ</label>
+        <input type="text" id="bookLanguage" placeholder="Ngôn ngữ" required aria-required="true" />
+        <label for="bookCategory">Danh mục</label>
+        <select id="bookCategory" multiple aria-label="Chọn danh mục"></select>
+        <button type="submit" aria-label="Lưu truyện">Lưu</button>
       </form>
     </div>
   </div>
 
   <dialog id="uploadDialog">
-    <h4>Chọn ảnh mới</h4>
-    <input type="file" id="avatarUpload" accept="image/*" />
-    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;">Tải lên</button>
+    <h4>Cập nhật ảnh đại diện</h4>
+    <input type="file" id="avatarUpload" accept="image/*" aria-label="Chọn ảnh đại diện mới" />
+    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;" aria-label="Tải lên ảnh">Tải lên</button>
     <div id="uploadMessage" class="notification"></div>
-    <button id="cancelButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
+    <button id="cancelButton" class="btn-danger" style="margin-top: 10px;" aria-label="Đóng cửa sổ">Đóng</button>
   </dialog>
 
   <script src="/assets/js/danhsachsanpham.js"></script>
@@ -584,14 +670,16 @@
         .then(res => {
           if (res.ok) {
             localStorage.removeItem('userAvatar');
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userId');
             alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
             window.location.href = 'login';
           } else {
-            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+            alert('Không tìm thấy trang đăng nhập. Vui lòng kiểm tra server.');
           }
         })
         .catch(() => {
-          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+          alert('Lỗi kết nối server. Vui lòng kiểm tra lại.');
         });
     };
 
@@ -622,12 +710,16 @@
       const file = fileInput.files[0];
 
       if (!file) {
-        alert('Vui lòng chọn một ảnh.');
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
+        uploadMessage.className = 'notification error-message';
         return;
       }
 
       if (!file.type.startsWith('image/')) {
-        alert('Vui lòng chọn một file ảnh hợp lệ.');
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
+        uploadMessage.className = 'notification error-message';
         return;
       }
 
@@ -635,12 +727,16 @@
       const userId = localStorage.getItem('userId');
 
       if (!token) {
-        alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
+        uploadMessage.className = 'notification error-message';
         return;
       }
 
       if (!userId) {
-        alert('Thiếu userId. Vui lòng đăng nhập lại.');
+        uploadMessage.style.display = 'block';
+        uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
+        uploadMessage.className = 'notification error-message';
         return;
       }
 
@@ -652,7 +748,7 @@
         formData.append('avatar', file);
         formData.append('userId', userId);
 
-        const response = await fetch('https://server-shelf-stacker.onrender.com/api/user-upload/avatar', {
+        const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formData
@@ -662,7 +758,7 @@
           let errorMsg = 'Lỗi khi tải ảnh lên';
           try {
             const errData = await response.json();
-            if (errData.message) errorMsg = errData.message;
+            errorMsg = errData.message || errorMsg;
           } catch {}
           throw new Error(errorMsg);
         }
