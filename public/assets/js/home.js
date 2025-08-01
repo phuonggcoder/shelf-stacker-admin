@@ -61,7 +61,8 @@ function resetUploadDialog() {
   uploadButton.textContent = 'Tải lên';
 }
 
-uploadButton.onclick = async () => {
+uploadButton.onclick = async (event) => {
+  event.preventDefault(); // Prevent default form submission if inside a form
   const fileInput = document.getElementById('avatarUpload');
   const file = fileInput.files[0];
 
@@ -93,8 +94,8 @@ uploadButton.onclick = async () => {
 
   try {
     const formData = new FormData();
-    formData.append('avatar', file);
     formData.append('userId', userId);
+    formData.append('avatar', file);
 
     const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
       method: 'POST',
