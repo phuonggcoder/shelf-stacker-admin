@@ -153,7 +153,10 @@ async function fetchStats() {
       null: 5
     },
     paymentStats: {
-      null: 79
+      COD: 30,
+      ZALOPAY: 25,
+      MOMO: 24,
+      null: 0
     },
     successCount: 3,
     failedCount: 21
@@ -234,7 +237,7 @@ async function fetchStats() {
       labels: paymentLabels,
       datasets: [{
         data: Object.values(data.paymentStats || {}),
-        backgroundColor: ['#d9d9d9'],
+        backgroundColor: ['#ff4d4f', '#0ea5e9', '#28a745', '#d9d9d9'],
         borderColor: ['#fff'],
         borderWidth: 2
       }]
