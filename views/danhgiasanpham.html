@@ -11,6 +11,7 @@
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     :root {
       --theme: #6c63ff;
@@ -174,9 +175,10 @@
       display: flex;
       gap: 10px;
       margin-bottom: 20px;
+      position: relative;
     }
 
-    .tab {
+    .tab-parent {
       padding: 10px 20px;
       border: 1px solid #0ea5e9;
       border-radius: 8px;
@@ -185,15 +187,21 @@
       color: #0ea5e9;
       font-weight: 500;
       transition: all 0.2s;
+      position: relative;
+      z-index: 1;
     }
 
-    .tab.active {
+    .tab-parent.active {
       background: #0ea5e9;
       color: #fff;
     }
 
-    .tab:hover:not(.active) {
+    .tab-parent:hover:not(.active) {
       background: #bae6fd;
+    }
+
+    .tab-child {
+      display: none; /* Ẩn hoàn toàn tab-child */
     }
 
     .search-filter {
@@ -479,14 +487,19 @@
     }
 
     .product-card .actions button {
-      padding: 5px;
+      padding: 8px 12px;
       cursor: pointer;
       border: none;
       border-radius: 4px;
       background: #007bff;
       color: #fff;
-      font-size: 14px;
+      font-size: 16px;
       transition: background 0.2s;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .product-card .actions button:hover {
@@ -559,8 +572,8 @@
     <section class="management-section">
       <h2 class="title">Danh sách truyện tranh</h2>
       <div class="tabs">
-        <div class="tab active" data-tab="all">Tất cả sách</div>
-        <div class="tab" data-tab="featured">Sách nổi bật</div>
+        <div class="tab-parent active" data-tab-parent="all">Tất cả sách</div>
+        <div class="tab-parent" data-tab-parent="featured">Sách nổi bật</div>
       </div>
       <div class="search-filter" style="display: flex; gap: 6px; align-items: center; margin-bottom: 16px;">
         <div style="position:relative; flex:1; display:flex; align-items:center;">
@@ -588,6 +601,7 @@
         <input type="number" id="maxPrice" placeholder="Giá đến (₫)" min="0" step="1000" aria-label="Giá tối đa" />
         <button id="btn-filter-price" type="button" style="background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Lọc theo giá">Lọc giá</button>
         <button class="btn btn-add" id="addBookBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Thêm truyện mới">+ Thêm truyện</button>
+        <button id="exportExcelBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Xuất Excel">Xuất Excel</button>
       </div>
       <div class="product-grid" id="productGrid">
         <!-- Các sản phẩm sẽ được render ở đây từ API -->
@@ -647,6 +661,19 @@
         document.getElementById('sidebarAvatar').src = savedAvatar;
         document.getElementById('headerAvatar').src = savedAvatar;
       }
+
+      // Loại bỏ sự kiện cho tab-child vì không cần dropdown
+      const tabParents = document.querySelectorAll('.tab-parent');
+      tabParents.forEach(parent => {
+        parent.addEventListener('click', () => {
+          // Chỉ chuyển đổi active giữa các tab-parent
+          tabParents.forEach(p => p.classList.remove('active'));
+          parent.classList.add('active');
+          const tabType = parent.getAttribute('data-tab-parent');
+          console.log(`Switched to ${tabType} tab`);
+          // Thêm logic để load dữ liệu tương ứng nếu cần
+        });
+      });
     };
 
     const uploadDialog = document.getElementById('uploadDialog');
