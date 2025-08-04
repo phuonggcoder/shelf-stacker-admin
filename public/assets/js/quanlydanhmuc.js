@@ -7,6 +7,12 @@ function getToken() {
   return localStorage.getItem('authToken') || '';
 }
 
+// Vietnamese locale-aware comparison
+function vietnameseCompare(a, b) {
+  const viCollator = new Intl.Collator('vi', { sensitivity: 'base' });
+  return viCollator.compare(a, b);
+}
+
 // Hàm render danh mục với phân trang
 function renderCategoriesWithPagination(categoriesArr, page = 1) {
   const tbody = document.getElementById('category-table-body');
@@ -89,7 +95,8 @@ async function fetchCategories() {
     const data = await res.json();
     categories = Array.isArray(data) ? data : [];
     const sortOrder = document.getElementById('sort-order').value;
-    const filtered = filterCategories(categories, '', '', sortOrder);
+    const customLetter = document.getElementById('custom-sort-letter').value.trim();
+    const filtered = filterCategories(categories, '', '', sortOrder, customLetter);
     renderCategoriesWithPagination(filtered, 1);
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
@@ -184,7 +191,7 @@ document.addEventListener('click', async function(e) {
 });
 
 // Hàm lọc và sắp xếp danh mục
-function filterCategories(categories, keyword, status, sortOrder) {
+function filterCategories(categories, keyword, status, sortOrder, customLetter = '') {
   const lower = keyword.toLowerCase();
   let filtered = categories.filter(c =>
     ((c.name || '').toLowerCase().includes(lower) ||
@@ -197,11 +204,36 @@ function filterCategories(categories, keyword, status, sortOrder) {
     )
   );
 
-  // Sắp xếp theo tên
-  if (sortOrder === 'name-asc') {
-    filtered.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-  } else if (sortOrder === 'name-desc') {
-    filtered.sort((a, b) => (b.name || '').localeCompare(a.name || ''));
+  // Custom sorting logic
+  if (sortOrder === 'custom' && customLetter) {
+    const lowerCustomLetter = customLetter.toLowerCase();
+    filtered.sort((a, b) => {
+      const aName = (a.name || '').toLowerCase();
+      const bName = (b.name || '').toLowerCase();
+      const aStartsWith = aName.startsWith(lowerCustomLetter) ? -1 : 1;
+      const bStartsWith = bName.startsWith(lowerCustomLetter) ? -1 : 1;
+      if (aStartsWith !== bStartsWith) {
+        return aStartsWith - bStartsWith;
+      }
+      return vietnameseCompare(aName, bName);
+    });
+  } else {
+    switch (sortOrder) {
+      case 'name-asc':
+        filtered.sort((a, b) => vietnameseCompare(a.name || '', b.name || ''));
+        break;
+      case 'name-desc':
+        filtered.sort((a, b) => vietnameseCompare(b.name || '', a.name || ''));
+        break;
+      case 'created-asc':
+        filtered.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+        break;
+      case 'created-desc':
+        filtered.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+        break;
+      default:
+        filtered.sort((a, b) => vietnameseCompare(a.name || '', b.name || ''));
+    }
   }
 
   return filtered;
@@ -212,7 +244,8 @@ document.getElementById('btn-search').addEventListener('click', function() {
   const keyword = document.getElementById('search-slug').value.trim();
   const status = document.getElementById('filter-status').value;
   const sortOrder = document.getElementById('sort-order').value;
-  const filtered = filterCategories(categories, keyword, status, sortOrder);
+  const customLetter = document.getElementById('custom-sort-letter').value.trim();
+  const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
   renderCategoriesWithPagination(filtered, 1);
 });
 
@@ -220,7 +253,8 @@ document.getElementById('search-slug').addEventListener('input', function() {
   const keyword = this.value;
   const status = document.getElementById('filter-status').value;
   const sortOrder = document.getElementById('sort-order').value;
-  const filtered = filterCategories(categories, keyword, status, sortOrder);
+  const customLetter = document.getElementById('custom-sort-letter').value.trim();
+  const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
   renderCategoriesWithPagination(filtered, 1);
 });
 
@@ -228,15 +262,28 @@ document.getElementById('filter-status').addEventListener('change', function() {
   const keyword = document.getElementById('search-slug').value.trim();
   const status = this.value;
   const sortOrder = document.getElementById('sort-order').value;
-  const filtered = filterCategories(categories, keyword, status, sortOrder);
+  const customLetter = document.getElementById('custom-sort-letter').value.trim();
+  const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
   renderCategoriesWithPagination(filtered, 1);
 });
 
 document.getElementById('sort-order').addEventListener('change', function() {
+  const customSortInput = document.getElementById('custom-sort-letter');
+  customSortInput.style.display = this.value === 'custom' ? 'block' : 'none';
   const keyword = document.getElementById('search-slug').value.trim();
   const status = document.getElementById('filter-status').value;
   const sortOrder = this.value;
-  const filtered = filterCategories(categories, keyword, status, sortOrder);
+  const customLetter = customSortInput.value.trim();
+  const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
+  renderCategoriesWithPagination(filtered, 1);
+});
+
+document.getElementById('custom-sort-letter').addEventListener('input', function() {
+  const keyword = document.getElementById('search-slug').value.trim();
+  const status = document.getElementById('filter-status').value;
+  const sortOrder = document.getElementById('sort-order').value;
+  const customLetter = this.value.trim();
+  const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
   renderCategoriesWithPagination(filtered, 1);
 });
 
@@ -376,7 +423,8 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       }
       
       const sortOrder = document.getElementById('sort-order').value;
-      const filtered = filterCategories(categories, '', '', sortOrder);
+      const customLetter = document.getElementById('custom-sort-letter').value.trim();
+      const filtered = filterCategories(categories, '', '', sortOrder, customLetter);
       renderCategoriesWithPagination(filtered, catCurrentPage);
       resetCategoryForm();
     } else {
