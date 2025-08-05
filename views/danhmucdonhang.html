@@ -248,6 +248,7 @@
       padding: 12px;
       text-align: left;
       border-bottom: 1px solid #eee;
+      vertical-align: middle; /* Căn giữa nội dung theo chiều dọc */
     }
 
     th {
@@ -406,6 +407,9 @@
     .actions {
       display: flex;
       gap: 10px;
+      align-items: center; /* Căn giữa theo chiều dọc */
+      justify-content: center; /* Căn giữa theo chiều ngang */
+      min-height: 80px; /* Đảm bảo chiều cao tối thiểu khớp với ảnh */
     }
 
     .btn-detail, .btn-update {
@@ -414,6 +418,12 @@
       border-radius: 5px;
       cursor: pointer;
       font-size: 14px;
+      white-space: nowrap; /* Ngăn nút bị ngắt dòng */
+      height: 100%; /* Đảm bảo chiều cao khớp với các ô khác */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1; /* Điều chỉnh line-height để tránh lệch */
     }
 
     .btn-detail {
