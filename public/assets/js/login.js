@@ -22,8 +22,8 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
     const data = await response.json();
 
     if (response.ok) {
-      if (data.token) {
-        localStorage.setItem('authToken', data.token);
+      if (data.access_token) {
+        localStorage.setItem('authToken', data.access_token);
       }
       if (data.user && data.user.id) {
         localStorage.setItem('userId', data.user.id);
