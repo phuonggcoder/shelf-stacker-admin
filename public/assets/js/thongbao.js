@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   logoutButton.addEventListener('click', () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
-    window.location.href = '/login'; // Chuyển hướng đến trang đăng nhập
+    window.location.href = '/login';
   });
 
   // Xử lý hiển thị các trường dựa trên loại thông báo
@@ -48,24 +48,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleInput = document.getElementById('notificationTitle');
 
     // Ẩn tất cả các trường bổ sung trước
-    userIdLabel.style.display = 'none';
-    userIdInput.style.display = 'none';
-    userIdsLabel.style.display = 'none';
-    userIdsInput.style.display = 'none';
-    orderIdLabel.style.display = 'none';
-    orderIdInput.style.display = 'none';
-    orderStatusLabel.style.display = 'none';
-    orderStatusSelect.style.display = 'none';
-    paymentStatusLabel.style.display = 'none';
-    paymentStatusSelect.style.display = 'none';
-    paymentMethodLabel.style.display = 'none';
-    paymentMethodSelect.style.display = 'none';
-    amountLabel.style.display = 'none';
-    amountInput.style.display = 'none';
-    discountLabel.style.display = 'none';
-    discountInput.style.display = 'none';
-    validUntilLabel.style.display = 'none';
-    validUntilInput.style.display = 'none';
+    [userIdLabel, userIdInput, userIdsLabel, userIdsInput, orderIdLabel, orderIdInput, orderStatusLabel, orderStatusSelect,
+      paymentStatusLabel, paymentStatusSelect, paymentMethodLabel, paymentMethodSelect, amountLabel, amountInput,
+      discountLabel, discountInput, validUntilLabel, validUntilInput].forEach(el => el.style.display = 'none');
 
     // Cập nhật placeholder mặc định
     messageInput.placeholder = 'Nhập nội dung thông báo';
@@ -81,28 +66,14 @@ document.addEventListener('DOMContentLoaded', () => {
         userIdsInput.style.display = 'block';
         break;
       case 'order':
-        userIdLabel.style.display = 'block';
-        userIdInput.style.display = 'block';
-        orderIdLabel.style.display = 'block';
-        orderIdInput.style.display = 'block';
-        orderStatusLabel.style.display = 'block';
-        orderStatusSelect.style.display = 'block';
-        amountLabel.style.display = 'block';
-        amountInput.style.display = 'block';
+        [userIdLabel, userIdInput, orderIdLabel, orderIdInput, orderStatusLabel, orderStatusSelect, amountLabel, amountInput]
+          .forEach(el => el.style.display = 'block');
         messageInput.placeholder = 'Ví dụ: Đơn hàng {orderID} trạng thái {orderStatus}';
         titleInput.placeholder = 'Ví dụ: Cập nhật đơn hàng';
         break;
       case 'payment':
-        userIdLabel.style.display = 'block';
-        userIdInput.style.display = 'block';
-        orderIdLabel.style.display = 'block';
-        orderIdInput.style.display = 'block';
-        paymentStatusLabel.style.display = 'block';
-        paymentStatusSelect.style.display = 'block';
-        paymentMethodLabel.style.display = 'block';
-        paymentMethodSelect.style.display = 'block';
-        amountLabel.style.display = 'block';
-        amountInput.style.display = 'block';
+        [userIdLabel, userIdInput, orderIdLabel, orderIdInput, paymentStatusLabel, paymentStatusSelect, paymentMethodLabel,
+          paymentMethodSelect, amountLabel, amountInput].forEach(el => el.style.display = 'block');
         messageInput.placeholder = 'Ví dụ: Thanh toán {paymentStatus} cho đơn hàng {orderID}';
         titleInput.placeholder = 'Ví dụ: Cập nhật thanh toán';
         break;
@@ -112,16 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
         userIdInput.style.display = 'block';
         userIdInput.placeholder = 'Nhập User ID (để trống để gửi tất cả)';
         if (this.value === 'promotion') {
-          discountLabel.style.display = 'block';
-          discountInput.style.display = 'block';
-          validUntilLabel.style.display = 'block';
-          validUntilInput.style.display = 'block';
+          [discountLabel, discountInput, validUntilLabel, validUntilInput].forEach(el => el.style.display = 'block');
           messageInput.placeholder = 'Ví dụ: Khuyến mãi giảm giá {discount}% đến {validUntil}';
           titleInput.placeholder = 'Ví dụ: Ưu đãi đặc biệt';
         }
         break;
       case 'urgent':
-        // Không cần thêm trường, gửi đến tất cả
         break;
     }
   });
@@ -129,19 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
   // Xử lý gửi thông báo
   document.getElementById('sendNotification').addEventListener('click', async function() {
     const type = document.getElementById('notificationType').value;
-    const userId = document.getElementById('userId').value;
-    const userIds = document.getElementById('userIds').value;
-    const orderId = document.getElementById('orderId').value;
+    const userId = document.getElementById('userId').value.trim();
+    const userIds = document.getElementById('userIds').value.trim();
+    const orderId = document.getElementById('orderId').value.trim();
     const orderStatus = document.getElementById('orderStatus').value;
     const paymentStatus = document.getElementById('paymentStatus').value;
     const paymentMethod = document.getElementById('paymentMethod').value;
-    const amount = document.getElementById('amount').value;
-    const discount = document.getElementById('discount').value;
+    const amount = document.getElementById('amount').value.trim();
+    const discount = document.getElementById('discount').value.trim();
     const validUntil = document.getElementById('validUntil').value;
-    const title = document.getElementById('notificationTitle').value;
-    let message = document.getElementById('notificationMessage').value;
+    const title = document.getElementById('notificationTitle').value.trim();
+    let message = document.getElementById('notificationMessage').value.trim();
     const imageFile = document.getElementById('imageFile').files[0];
-    const imageUrlInput = document.getElementById('imageUrl').value;
+    const imageUrlInput = document.getElementById('imageUrl').value.trim();
     const statusDiv = document.getElementById('notificationStatus');
     const historyTable = document.getElementById('notificationHistory');
 
@@ -153,38 +120,24 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    if (type === 'byUserId' && !userId) {
-      statusDiv.style.display = 'block';
-      statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập User ID';
-      return;
-    }
+    const validationRules = {
+      'byUserId': () => !userId,
+      'multicast': () => !userIds,
+      'order': () => !userId || !orderId || !orderStatus,
+      'payment': () => !userId || !orderId || !paymentStatus || !paymentMethod,
+      'promotion': () => discount && !validUntil
+    };
 
-    if (type === 'multicast' && !userIds) {
+    if (validationRules[type]?.()) {
       statusDiv.style.display = 'block';
       statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập danh sách User ID';
-      return;
-    }
-
-    if (type === 'order' && (!userId || !orderId || !orderStatus)) {
-      statusDiv.style.display = 'block';
-      statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập User ID, Order ID và trạng thái đơn hàng';
-      return;
-    }
-
-    if (type === 'payment' && (!userId || !orderId || !paymentStatus || !paymentMethod)) {
-      statusDiv.style.display = 'block';
-      statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập User ID, Order ID, trạng thái thanh toán và phương thức thanh toán';
-      return;
-    }
-
-    if (type === 'promotion' && (discount && !validUntil)) {
-      statusDiv.style.display = 'block';
-      statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập thời hạn hiệu lực cho khuyến mãi';
+      statusDiv.textContent = {
+        'byUserId': 'Vui lòng nhập User ID',
+        'multicast': 'Vui lòng nhập danh sách User ID',
+        'order': 'Vui lòng nhập User ID, Order ID và trạng thái đơn hàng',
+        'payment': 'Vui lòng nhập User ID, Order ID, trạng thái thanh toán và phương thức thanh toán',
+        'promotion': 'Vui lòng nhập thời hạn hiệu lực cho khuyến mãi'
+      }[type] || 'Dữ liệu không hợp lệ';
       return;
     }
 
@@ -192,12 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let imageUrl = null;
     if (imageFile || imageUrlInput) {
       const formData = new FormData();
-      if (imageFile) {
-        formData.append('imageFile', imageFile);
-      }
-      if (imageUrlInput) {
-        formData.append('imageUrl', imageUrlInput);
-      }
+      if (imageFile) formData.append('imageFile', imageFile);
+      if (imageUrlInput) formData.append('imageUrl', imageUrlInput);
       try {
         const response = await fetch(`${BASE_URL}/api/notifications/upload-image`, {
           method: 'POST',
@@ -207,23 +156,22 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         });
         const result = await response.json();
-        if (result.success) {
-          imageUrl = result.url;
-        } else {
+        if (result.success) imageUrl = result.url;
+        else {
           statusDiv.style.display = 'block';
           statusDiv.classList.add('error-message');
-          statusDiv.textContent = result.message;
+          statusDiv.textContent = result.message || 'Lỗi upload hình ảnh';
           return;
         }
       } catch (error) {
         statusDiv.style.display = 'block';
         statusDiv.classList.add('error-message');
-        statusDiv.textContent = 'Lỗi khi upload hình ảnh: ' + error.message;
+        statusDiv.textContent = `Lỗi khi upload hình ảnh: ${error.message}`;
         return;
       }
     }
 
-    // Xử lý thông báo
+    // Chuẩn bị body cho request
     let endpoint = `${BASE_URL}/api/notifications/send`;
     let body = { title, message, image: imageUrl };
 
@@ -243,19 +191,12 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
       case 'order':
         endpoint = `${BASE_URL}/api/notifications/order`;
-        body.userId = userId;
-        body.orderId = orderId;
-        body.orderStatus = orderStatus;
-        body.amount = amount;
+        Object.assign(body, { userId, orderId, orderStatus, amount });
         message = message.replace('{orderID}', orderId).replace('{orderStatus}', orderStatus);
         break;
       case 'payment':
         endpoint = `${BASE_URL}/api/notifications/payment`;
-        body.userId = userId;
-        body.orderId = orderId;
-        body.paymentStatus = paymentStatus;
-        body.paymentMethod = paymentMethod;
-        body.amount = amount;
+        Object.assign(body, { userId, orderId, paymentStatus, paymentMethod, amount });
         message = message.replace('{orderID}', orderId).replace('{paymentStatus}', paymentStatus);
         break;
       case 'marketing':
@@ -266,8 +207,7 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'promotion':
         endpoint = `${BASE_URL}/api/notifications/promotion`;
         if (userId) body.userId = userId;
-        body.discount = discount;
-        body.validUntil = validUntil;
+        Object.assign(body, { discount, validUntil });
         message = message.replace('{discount}', discount || '').replace('{validUntil}', validUntil || '');
         break;
     }
@@ -287,9 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (result.success) {
         statusDiv.style.display = 'block';
         statusDiv.classList.remove('error-message');
-        statusDiv.textContent = result.message;
+        statusDiv.textContent = result.message || 'Gửi thông báo thành công';
 
-        // Thêm vào lịch sử thông báo
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${new Date().toLocaleString()}</td>
@@ -303,30 +242,22 @@ document.addEventListener('DOMContentLoaded', () => {
         historyTable.prepend(row);
 
         // Xóa nội dung sau khi gửi
-        document.getElementById('notificationTitle').value = '';
-        document.getElementById('notificationMessage').value = '';
-        document.getElementById('userId').value = '';
-        document.getElementById('userIds').value = '';
-        document.getElementById('orderId').value = '';
-        document.getElementById('amount').value = '';
-        document.getElementById('discount').value = '';
-        document.getElementById('validUntil').value = '';
-        document.getElementById('imageFile').value = '';
-        document.getElementById('imageUrl').value = '';
+        [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
+         document.getElementById('userId'), document.getElementById('userIds'), document.getElementById('orderId'),
+         document.getElementById('amount'), document.getElementById('discount'), document.getElementById('validUntil'),
+         document.getElementById('imageFile'), document.getElementById('imageUrl')]
+          .forEach(el => el.value = '');
 
-        // Ẩn thông báo trạng thái sau 3 giây
-        setTimeout(() => {
-          statusDiv.style.display = 'none';
-        }, 3000);
+        setTimeout(() => statusDiv.style.display = 'none', 3000);
       } else {
         statusDiv.style.display = 'block';
         statusDiv.classList.add('error-message');
-        statusDiv.textContent = result.message;
+        statusDiv.textContent = result.message || 'Gửi thông báo thất bại';
       }
     } catch (error) {
       statusDiv.style.display = 'block';
       statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Lỗi khi gửi thông báo: ' + error.message;
+      statusDiv.textContent = `Lỗi khi gửi thông báo: ${error.message}`;
     }
   });
 
@@ -348,12 +279,12 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         statusDiv.style.display = 'block';
         statusDiv.classList.add('error-message');
-        statusDiv.textContent = result.message;
+        statusDiv.textContent = result.message || 'Lấy thống kê thất bại';
       }
     } catch (error) {
       statusDiv.style.display = 'block';
       statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Lỗi khi lấy thống kê: ' + error.message;
+      statusDiv.textContent = `Lỗi khi lấy thống kê: ${error.message}`;
     }
   });
 });
