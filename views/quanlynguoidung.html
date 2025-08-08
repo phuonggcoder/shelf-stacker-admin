@@ -92,6 +92,74 @@
     dialog::backdrop {
       background: rgba(0, 0, 0, 0.5);
     }
+
+    .sidebar {
+      width: 260px;
+      height: 100vh;
+      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
+      color: #fff;
+      padding: 80px 0 20px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      overflow-y: auto;
+      transition: transform 0.3s ease;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+    .sidebar.hidden {
+      transform: translateX(-100%);
+    }
+    .sidebar .profile {
+      text-align: center;
+      padding: 0 20px;
+      margin-bottom: 20px;
+    }
+    .sidebar .profile img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+    .sidebar .profile h3 {
+      margin: 4px 0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .sidebar nav ul {
+      list-style: none;
+      padding: 0 20px;
+      margin: 0;
+    }
+    .sidebar nav ul li {
+      margin-bottom: 15px;
+    }
+    .sidebar nav ul li a,
+    .sidebar nav ul li button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      color: #e0f2fe;
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      border-radius: 8px;
+      transition: all 0.2s;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .sidebar nav ul li a:hover,
+    .sidebar nav ul li button:hover {
+      background: #fff;
+      color: #0ea5e9;
+    }
   </style>
 </head>
 <body>
@@ -105,13 +173,14 @@
 
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User Profile" />
+      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
       <h3>Tuấn Anh</h3>
       <p>Nhà thiết kế UI/UX</p>
     </div>
     <nav>
       <ul>
         <li><a href="home"><i class="fas fa-home"></i> Trang chủ</a></li>
+        <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
         <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Quản lý danh mục</a></li>
         <li><a href="danhgiasanpham"><i class="fas fa-book"></i> Danh sách truyện tranh</a></li>
         <li><a href="quanlynguoidung"><i class="fas fa-users-cog"></i> Quản lý người dùng</a></li>
