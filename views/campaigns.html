@@ -543,7 +543,7 @@
       const savedAvatar = localStorage.getItem('userAvatar');
       if (savedAvatar) {
         document.getElementById('sidebarAvatar').src = savedAvatar;
-        document.getElementById('headerLogo').src = savedAvatar;
+       
       }
     };
 
@@ -678,7 +678,7 @@
 
         // Update avatar images
         document.getElementById('sidebarAvatar').src = imageUrl;
-        document.getElementById('headerLogo').src = imageUrl;
+       
 
         // Store avatar URL in localStorage
         localStorage.setItem('userAvatar', imageUrl);
