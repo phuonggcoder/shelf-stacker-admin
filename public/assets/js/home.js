@@ -1,8 +1,8 @@
 window.onload = () => {
+  const sidebarAvatar = document.getElementById('sidebarAvatar');
   const savedAvatar = localStorage.getItem('userAvatar');
-  if (savedAvatar) {
-    document.getElementById('sidebarAvatar').src = savedAvatar;
-    document.getElementById('headerAvatar').src = savedAvatar;
+  if (sidebarAvatar && savedAvatar) {
+    sidebarAvatar.src = savedAvatar;
   }
   fetchStats();
 };
