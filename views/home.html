@@ -305,6 +305,59 @@
       padding-left: 18px;
       font-size: 13px;
     }
+
+    .settings-form {
+      padding: 20px;
+    }
+
+    .settings-form label {
+      display: block;
+      margin-bottom: 5px;
+      color: #e0f2fe;
+    }
+
+    .settings-form input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    .settings-form select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+
+    .settings-form button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #loginDialog {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 1003;
+    }
+
+    #loginDialog::backdrop {
+      background: rgba(0, 0, 0, 0.3);
+    }
   </style>
 </head>
 <body>
@@ -351,6 +404,27 @@
     </div>
     <nav>
       <ul>
+        <li>
+          <div class="settings-form">
+            <label for="fullName">Họ và tên:</label>
+            <input type="text" id="fullName" value="New Admin Name" />
+            <label for="phoneNumber">Số điện thoại:</label>
+            <input type="text" id="phoneNumber" value="032578763" />
+            <label for="birthDate">Ngày sinh:</label>
+            <input type="date" id="birthDate" value="1990-01-01" />
+            <label for="gender">Giới tính:</label>
+            <select id="gender">
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+            <label for="email">Email:</label>
+            <input type="email" id="email" value="newadmin@example.com" readonly />
+            <label for="username">Tên đăng nhập:</label>
+            <input type="text" id="username" value="vann" readonly />
+            <button id="updateButton" class="btn-primary">Cập nhật thông tin</button>
+            <div id="updateMessage" class="notification"></div>
+          </div>
+        </li>
         <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
       </ul>
     </nav>
@@ -360,7 +434,6 @@
   <header class="header">
     <h1 class="logo">Sleek Admin</h1>
     <div class="user">
-      <!-- Thay avatar bằng logo -->
       <img id="headerLogo" class="avatar" src="/assets/images/image.png" alt="Logo ShelfStacker" />
     </div>
   </header>
@@ -412,13 +485,140 @@
     <button id="cancelButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
   </dialog>
 
+  <!-- Login Dialog -->
+  <dialog id="loginDialog">
+    <div class="settings-form">
+      <label for="loginEmail">Email:</label>
+      <input type="email" id="loginEmail" value="adminnn@gmail.com" />
+      <label for="loginPassword">Mật khẩu:</label>
+      <input type="password" id="loginPassword" value="1234" />
+      <button id="loginButton" class="btn-primary">Đăng nhập</button>
+      <div id="loginMessage" class="notification"></div>
+    </div>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/assets/js/home.js"></script>
   <script>
-function toggleMenu(id) {
-  const el = document.getElementById(id);
-  el.style.display = el.style.display === 'none' ? 'block' : 'none';
-}
-</script>
+    function toggleMenu(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Sidebar toggle
+    document.getElementById('settingsLink').addEventListener('click', () => {
+      document.getElementById('mainSidebar').classList.add('hidden');
+      document.getElementById('settingsSidebar').classList.remove('hidden');
+    });
+
+    document.getElementById('backButton').addEventListener('click', () => {
+      document.getElementById('settingsSidebar').classList.add('hidden');
+      document.getElementById('mainSidebar').classList.remove('hidden');
+    });
+
+    // Login functionality
+    document.getElementById('logoutButton').addEventListener('click', () => {
+      localStorage.removeItem('token');
+      document.getElementById('loginDialog').showModal();
+    });
+
+    document.getElementById('loginButton').addEventListener('click', () => {
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      const data = {
+        email: email,
+        password: password
+      };
+
+      fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        const messageDiv = document.getElementById('loginMessage');
+        if (data.message === 'Login successful') {
+          localStorage.setItem('token', data.access_token);
+          messageDiv.textContent = 'Đăng nhập thành công';
+          messageDiv.className = 'notification';
+          document.getElementById('loginDialog').close();
+          location.reload();
+        } else {
+          messageDiv.textContent = 'Đăng nhập thất bại: ' + (data.error || 'Lỗi không xác định');
+          messageDiv.className = 'notification error-message';
+        }
+        messageDiv.style.display = 'block';
+        setTimeout(() => messageDiv.style.display = 'none', 3000);
+      })
+      .catch(error => {
+        document.getElementById('loginMessage').textContent = 'Lỗi: ' + error.message;
+        document.getElementById('loginMessage').className = 'notification error-message';
+        document.getElementById('loginMessage').style.display = 'block';
+        setTimeout(() => document.getElementById('loginMessage').style.display = 'none', 3000);
+      });
+    });
+
+    // Update user info
+    document.getElementById('updateButton').addEventListener('click', () => {
+      const fullName = document.getElementById('fullName').value;
+      const phoneNumber = document.getElementById('phoneNumber').value;
+      const birthDate = document.getElementById('birthDate').value;
+      const gender = document.getElementById('gender').value;
+      const email = document.getElementById('email').value;
+      const username = document.getElementById('username').value;
+
+      const data = {
+        full_name: fullName,
+        phone_number: phoneNumber,
+        birth_date: birthDate,
+        gender: gender,
+        email: email,
+        username: username
+      };
+
+      const token = localStorage.getItem('token');
+
+      fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/update', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => {
+        if (response.status === 401) {
+          document.getElementById('updateMessage').textContent = 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+          document.getElementById('updateMessage').className = 'notification error-message';
+          document.getElementById('updateMessage').style.display = 'block';
+          setTimeout(() => document.getElementById('updateMessage').style.display = 'none', 3000);
+          document.getElementById('loginDialog').showModal();
+          return;
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (!data) return;
+        const messageDiv = document.getElementById('updateMessage');
+        if (data.message === 'User updated successfully') {
+          messageDiv.textContent = 'Cập nhật thông tin thành công';
+          messageDiv.className = 'notification';
+        } else {
+          messageDiv.textContent = 'Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định');
+          messageDiv.className = 'notification error-message';
+        }
+        messageDiv.style.display = 'block';
+        setTimeout(() => messageDiv.style.display = 'none', 3000);
+      })
+      .catch(error => {
+        document.getElementById('updateMessage').textContent = 'Lỗi: ' + error.message;
+        document.getElementById('updateMessage').className = 'notification error-message';
+        document.getElementById('updateMessage').style.display = 'block';
+        setTimeout(() => document.getElementById('updateMessage').style.display = 'none', 3000);
+      });
+    });
+  </script>
 </body>
 </html>
