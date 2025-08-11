@@ -1,12 +1,136 @@
+function toggleMenu(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+// Sidebar toggle
+document.getElementById('settingsLink').addEventListener('click', () => {
+  document.getElementById('mainSidebar').classList.add('hidden');
+  document.getElementById('settingsSidebar').classList.remove('hidden');
+});
+
+document.getElementById('backButton').addEventListener('click', () => {
+  document.getElementById('settingsSidebar').classList.add('hidden');
+  document.getElementById('mainSidebar').classList.remove('hidden');
+});
+
+// Login functionality
+document.getElementById('logoutButton').addEventListener('click', () => {
+  localStorage.removeItem('token');
+  document.getElementById('loginDialog').showModal();
+});
+
+document.getElementById('loginButton').addEventListener('click', () => {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+
+  const data = {
+    email: email,
+    password: password
+  };
+
+  fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    const messageDiv = document.getElementById('loginMessage');
+    if (data.message === 'Login successful') {
+      localStorage.setItem('token', data.access_token);
+      messageDiv.textContent = 'Đăng nhập thành công';
+      messageDiv.className = 'notification';
+      document.getElementById('loginDialog').close();
+      location.reload();
+    } else {
+      messageDiv.textContent = 'Đăng nhập thất bại: ' + (data.error || 'Lỗi không xác định');
+      messageDiv.className = 'notification error-message';
+    }
+    messageDiv.style.display = 'block';
+    setTimeout(() => messageDiv.style.display = 'none', 3000);
+  })
+  .catch(error => {
+    document.getElementById('loginMessage').textContent = 'Lỗi: ' + error.message;
+    document.getElementById('loginMessage').className = 'notification error-message';
+    document.getElementById('loginMessage').style.display = 'block';
+    setTimeout(() => document.getElementById('loginMessage').style.display = 'none', 3000);
+  });
+});
+
+// Update user info
 window.onload = () => {
+  const userData = JSON.parse(localStorage.getItem('userData'));
+  if (userData) {
+    document.getElementById('fullName').value = userData.full_name || '';
+    document.getElementById('phoneNumber').value = userData.phone_number || '';
+    document.getElementById('birthDate').value = userData.birth_date || '1990-01-01';
+    document.getElementById('gender').value = userData.gender || 'male';
+    document.getElementById('email').value = userData.email || '';
+    document.getElementById('username').value = userData.username || '';
+  }
   const sidebarAvatar = document.getElementById('sidebarAvatar');
   const savedAvatar = localStorage.getItem('userAvatar');
   if (sidebarAvatar && savedAvatar) {
     sidebarAvatar.src = savedAvatar;
   }
+  const headerAvatar = document.getElementById('headerAvatar');
+  if (headerAvatar && savedAvatar) {
+    headerAvatar.src = savedAvatar;
+  }
   fetchStats();
 };
 
+document.getElementById('updateButton').addEventListener('click', () => {
+  const fullName = document.getElementById('fullName').value;
+  const phoneNumber = document.getElementById('phoneNumber').value;
+  const birthDate = document.getElementById('birthDate').value;
+  const gender = document.getElementById('gender').value;
+  const email = document.getElementById('email').value;
+  const username = document.getElementById('username').value;
+
+  const data = {
+    full_name: fullName,
+    phone_number: phoneNumber,
+    birth_date: birthDate,
+    gender: gender,
+    email: email,
+    username: username
+  };
+
+  const token = localStorage.getItem('authToken');
+
+  fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/update', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .then(data => {
+    const messageDiv = document.getElementById('updateMessage');
+    if (data.message === 'User updated successfully') {
+      localStorage.setItem('userData', JSON.stringify(data.user)); // Update local storage with new data
+      messageDiv.textContent = 'Cập nhật thông tin thành công';
+      messageDiv.className = 'notification';
+    } else {
+      messageDiv.textContent = 'Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định');
+      messageDiv.className = 'notification error-message';
+    }
+    messageDiv.style.display = 'block';
+    setTimeout(() => messageDiv.style.display = 'none', 3000);
+  })
+  .catch(error => {
+    document.getElementById('updateMessage').textContent = 'Lỗi: ' + error.message;
+    document.getElementById('updateMessage').className = 'notification error-message';
+    document.getElementById('updateMessage').style.display = 'block';
+    setTimeout(() => document.getElementById('updateMessage').style.display = 'none', 3000);
+  });
+});
+
+// Avatar upload and stats fetching
 const uploadDialog = document.getElementById('uploadDialog');
 const uploadMessage = document.getElementById('uploadMessage');
 const uploadButton = document.getElementById('uploadButton');
@@ -24,19 +148,8 @@ document.getElementById('backButton').onclick = () => {
 };
 
 document.getElementById('logoutButton').onclick = () => {
-  fetch('login')
-    .then(res => {
-      if (res.ok) {
-        localStorage.removeItem('userAvatar');
-        alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
-        window.location.href = 'login';
-      } else {
-        alert('Không tìm thấy file login.html, vui lòng tạo file này.');
-      }
-    })
-    .catch(() => {
-      alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
-    });
+  localStorage.removeItem('token');
+  document.getElementById('loginDialog').showModal();
 };
 
 sidebarAvatar.onclick = () => {
@@ -62,7 +175,7 @@ function resetUploadDialog() {
 }
 
 uploadButton.onclick = async (event) => {
-  event.preventDefault(); // Prevent default form submission if inside a form
+  event.preventDefault();
   const fileInput = document.getElementById('avatarUpload');
   const file = fileInput.files[0];
 

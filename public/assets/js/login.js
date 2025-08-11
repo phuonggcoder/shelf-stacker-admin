@@ -25,11 +25,10 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
       if (data.access_token) {
         localStorage.setItem('authToken', data.access_token);
       }
-      if (data.user && data.user.id) {
-        localStorage.setItem('userId', data.user.id);
+      if (data.user) {
+        localStorage.setItem('userData', JSON.stringify(data.user)); // Store full user data
       }
-
-      window.location.href = 'home';
+      window.location.href = 'home'; // Redirect to home
     } else {
       errorMsg.textContent = data.message || 'Email hoặc mật khẩu không đúng.';
     }
