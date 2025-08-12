@@ -392,6 +392,9 @@ function renderProducts(products) {
           showSuccessToggleFeatured(newFeaturedStatus);
           products = await fetchProducts();
           renderFilteredAndSorted(currentPage);
+          if (activeTab === 'featured') {
+            window.location.reload(); // Reload trang khi ở tab Sách nổi bật
+          }
         } catch (err) {
           showErrorDialog('Có lỗi khi cập nhật trạng thái nổi bật!', err.message);
         }
@@ -675,13 +678,26 @@ addBookForm.addEventListener('submit', async function(e) {
 
   await new Promise(resolve => setTimeout(resolve, 0));
 
+  const price = parseFloat(document.getElementById('bookPrice').value);
+  const stock = parseInt(document.getElementById('bookStock').value);
+
+  if (isNaN(price) || price < 1) {
+    showErrorDialog('Lỗi nhập liệu', 'Giá tiền phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+
+  if (isNaN(stock) || stock < 1) {
+    showErrorDialog('Lỗi nhập liệu', 'Số lượng phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+
   const id = addBookForm.getAttribute('data-edit-id');
   const formData = new FormData();
 
   formData.append('title', document.getElementById('bookName').value.trim());
   formData.append('author', document.getElementById('bookAuthor').value.trim());
-  formData.append('price', document.getElementById('bookPrice').value);
-  formData.append('stock', document.getElementById('bookStock').value);
+  formData.append('price', price);
+  formData.append('stock', stock);
   formData.append('publication_date', document.getElementById('bookPubDate').value);
   formData.append('publisher', document.getElementById('bookPublisher').value.trim());
   formData.append('language', document.getElementById('bookLanguage').value.trim());
