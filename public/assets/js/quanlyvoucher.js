@@ -143,24 +143,37 @@ function editVoucher(id) {
 function submitEditVoucher() {
   const token = localStorage.getItem('authToken');
   const updated = {
+    voucher_id: document.getElementById('edit-voucher-id').value.trim(),
     discount_type: document.getElementById('edit-discount-type').value,
     voucher_type: document.getElementById('edit-voucher-type').value,
-    discount_value: parseInt(document.getElementById('edit-discount-value').value),
-    min_order_value: parseInt(document.getElementById('edit-min-order').value),
+    discount_value: parseFloat(document.getElementById('edit-discount-value').value),
+    min_order_value: parseFloat(document.getElementById('edit-min-order').value),
     usage_limit: parseInt(document.getElementById('edit-usage-limit').value),
     max_per_user: parseInt(document.getElementById('edit-max-per-user').value),
     is_active: document.getElementById('edit-is-active').value === 'true'
   };
 
-  if (updated.min_order_value < 1) {
+  // Kiểm tra trùng voucher_id khi sửa
+  const existingVoucher = allVouchers.find(v => v.voucher_id.toLowerCase() === updated.voucher_id.toLowerCase() && v._id !== editingVoucherId);
+  if (existingVoucher) {
+    alert('Mã voucher đã tồn tại. Vui lòng chọn mã khác.');
+    return;
+  }
+
+  // Kiểm tra các giá trị số không nhỏ hơn 1
+  if (isNaN(updated.discount_value) || updated.discount_value < 1) {
+    alert('Giá trị giảm giá phải lớn hơn hoặc bằng 1.');
+    return;
+  }
+  if (isNaN(updated.min_order_value) || updated.min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;
   }
-  if (updated.usage_limit < 1) {
+  if (isNaN(updated.usage_limit) || updated.usage_limit < 1) {
     alert('Số lần sử dụng phải lớn hơn hoặc bằng 1.');
     return;
   }
-  if (updated.max_per_user < 1) {
+  if (isNaN(updated.max_per_user) || updated.max_per_user < 1) {
     alert('Số lần tối đa mỗi người phải lớn hơn hoặc bằng 1.');
     return;
   }
@@ -202,11 +215,24 @@ function submitAddVoucher() {
   const end_date = document.getElementById('add-end-date').value;
   const is_active = document.getElementById('add-is-active').value === 'true';
 
+  // Kiểm tra đầy đủ thông tin
   if (!voucher_id || !discount_type || !voucher_type || isNaN(discount_value) || isNaN(min_order_value) || isNaN(usage_limit) || isNaN(max_per_user) || !start_date || !end_date) {
     alert('Vui lòng nhập đầy đủ thông tin hợp lệ.');
     return;
   }
 
+  // Kiểm tra trùng voucher_id
+  const existingVoucher = allVouchers.find(v => v.voucher_id.toLowerCase() === voucher_id.toLowerCase());
+  if (existingVoucher) {
+    alert('Mã voucher đã tồn tại. Vui lòng chọn mã khác.');
+    return;
+  }
+
+  // Kiểm tra các giá trị số không nhỏ hơn 1
+  if (discount_value < 1) {
+    alert('Giá trị giảm giá phải lớn hơn hoặc bằng 1.');
+    return;
+  }
   if (min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;

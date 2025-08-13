@@ -26,6 +26,24 @@ async function fetchTrashCategories() {
   }
 }
 
+async function checkCategoryHasProducts(categoryId) {
+  try {
+    const res = await fetch(`${base_url}/api/books?category=${categoryId}`, {
+      headers: {
+        'Authorization': 'Bearer ' + getToken()
+      }
+    });
+    if (!res.ok) {
+      throw new Error('Lỗi khi kiểm tra sản phẩm trong danh mục.');
+    }
+    const data = await res.json();
+    return data.books && data.books.length > 0;
+  } catch (err) {
+    console.error('Lỗi kiểm tra sản phẩm:', err);
+    return false; // Giả định không có sản phẩm nếu API lỗi, để tránh chặn xóa không cần thiết
+  }
+}
+
 function renderTrashCategories(categories) {
   const grid = document.getElementById('trashCategoryGrid');
   grid.innerHTML = '';
@@ -92,6 +110,13 @@ function renderTrashCategories(categories) {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog('Bạn có chắc chắn muốn xóa vĩnh viễn danh mục này? Hành động này không thể hoàn tác!')) {
         try {
+          // Kiểm tra xem danh mục có sản phẩm hay không
+          const hasProducts = await checkCategoryHasProducts(id);
+          if (hasProducts) {
+            showErrorDialog('Lỗi xóa danh mục!', 'Danh mục này vẫn còn chứa sản phẩm. Vui lòng xóa hoặc chuyển các sản phẩm trước khi xóa vĩnh viễn.');
+            return;
+          }
+
           console.log('Bắt đầu yêu cầu xóa vĩnh viễn cho ID:', id);
           const res = await fetch(`${base_url}/api/categories/${id}/force`, {
             method: 'DELETE',

@@ -390,11 +390,6 @@ function renderProducts(products) {
           }
 
           showSuccessToggleFeatured(newFeaturedStatus);
-          products = await fetchProducts();
-          renderFilteredAndSorted(currentPage);
-          if (activeTab === 'featured') {
-            window.location.reload(); // Reload trang khi ở tab Sách nổi bật
-          }
         } catch (err) {
           showErrorDialog('Có lỗi khi cập nhật trạng thái nổi bật!', err.message);
         }
@@ -680,6 +675,15 @@ addBookForm.addEventListener('submit', async function(e) {
 
   const price = parseFloat(document.getElementById('bookPrice').value);
   const stock = parseInt(document.getElementById('bookStock').value);
+  const title = document.getElementById('bookName').value.trim();
+  const id = addBookForm.getAttribute('data-edit-id');
+
+  // Kiểm tra trùng tên truyện
+  const existingBook = products.find(p => p.title.toLowerCase() === title.toLowerCase() && (!id || p._id !== id));
+  if (existingBook && !id) {
+    showErrorDialog('Lỗi nhập liệu', 'Tên truyện đã tồn tại. Vui lòng chọn tên khác.');
+    return;
+  }
 
   if (isNaN(price) || price < 1) {
     showErrorDialog('Lỗi nhập liệu', 'Giá tiền phải lớn hơn hoặc bằng 1.');
@@ -691,10 +695,9 @@ addBookForm.addEventListener('submit', async function(e) {
     return;
   }
 
-  const id = addBookForm.getAttribute('data-edit-id');
   const formData = new FormData();
 
-  formData.append('title', document.getElementById('bookName').value.trim());
+  formData.append('title', title);
   formData.append('author', document.getElementById('bookAuthor').value.trim());
   formData.append('price', price);
   formData.append('stock', stock);
@@ -770,8 +773,8 @@ addBookForm.addEventListener('submit', async function(e) {
     dialogOverlay.classList.remove('active');
     deletedImageIndices = [];
     existingCoverImages = [];
-    products = await fetchProducts();
-    renderFilteredAndSorted(currentPage);
+    products = await fetchProducts(); // Cập nhật lại danh sách sản phẩm sau khi thêm/sửa
+    renderFilteredAndSorted(1);
   } catch (err) {
     showErrorDialog('Có lỗi khi lưu truyện!', err.message);
   }
@@ -954,6 +957,7 @@ function showAddBookSuccessDialog(action, message = 'Dữ liệu đã được l
 
   overlay.querySelector('#btn-ok-success').onclick = () => {
     overlay.remove();
+    window.location.reload(); // Reload page after dialog is closed
   };
 }
 
@@ -977,7 +981,7 @@ function showSuccessDeletebook() {
 
   overlay.querySelector('#btn-ok-delete-success').onclick = () => {
     overlay.remove();
-    renderFilteredAndSorted(currentPage);
+    window.location.reload(); // Reload page after dialog is closed
   };
 }
 
@@ -1001,6 +1005,7 @@ function showSuccessToggleFeatured(isFeatured) {
 
   overlay.querySelector('#btn-ok-toggle-success').onclick = () => {
     overlay.remove();
+    window.location.reload(); // Reload page after dialog is closed
   };
 }
 
