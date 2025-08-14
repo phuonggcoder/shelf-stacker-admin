@@ -1,3 +1,8 @@
+// Chặn truy cập nếu chưa đăng nhập
+if (!localStorage.getItem('authToken')) {
+  window.location.href = 'login';
+}
+
 function toggleMenu(id) {
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -14,10 +19,10 @@ document.getElementById('backButton').addEventListener('click', () => {
   document.getElementById('mainSidebar').classList.remove('hidden');
 });
 
-// Login functionality
+// Đăng xuất: xóa authToken và chuyển về trang đăng nhập
 document.getElementById('logoutButton').addEventListener('click', () => {
-  localStorage.removeItem('token');
-  document.getElementById('loginDialog').showModal();
+  localStorage.removeItem('authToken');
+  window.location.href = 'login';
 });
 
 document.getElementById('loginButton').addEventListener('click', () => {
