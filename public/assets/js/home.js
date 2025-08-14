@@ -342,7 +342,16 @@ async function fetchStats() {
     }
   };
 
-  const paymentLabels = Object.keys(data.paymentStats).map(key => key === 'null' ? 'Không xác định' : key);
+  const paymentLabels = Object.keys(data.paymentStats).map(key => {
+    if (key === 'null') return 'Không xác định';
+    if (key === 'COD') return 'Thanh toán khi nhận hàng';
+    if (key === 'ZALOPAY') return 'ZaloPay';
+    if (key === 'MOMO') return 'Momo';
+    if (key === 'VNPAY') return 'VNPay';
+    if (key === 'BANK') return 'Chuyển khoản';
+    if (key === 'PAYPAL') return 'Paypal';
+    return key;
+  });
 
   const paymentChartConfig = {
     type: 'doughnut',
@@ -350,7 +359,15 @@ async function fetchStats() {
       labels: paymentLabels,
       datasets: [{
         data: Object.values(data.paymentStats || {}),
-        backgroundColor: ['#ff4d4f', '#0ea5e9', '#28a745', '#d9d9d9'],
+        backgroundColor: [
+          '#0ea5e9', // COD - xanh dương
+          '#ff4d4f', // ZALOPAY - đỏ
+          '#ffc107', // MOMO - vàng
+          '#6c63ff', // VNPAY - tím
+          '#28a745', // Chuyển khoản - xanh lá
+          '#f59e42', // Paypal - cam
+          '#d9d9d9'  // Không xác định - xám
+        ],
         borderColor: ['#fff'],
         borderWidth: 2
       }]
@@ -360,7 +377,7 @@ async function fetchStats() {
       plugins: {
         legend: {
           position: 'top',
-          labels: { font: { size: 14 }, color: '#333' }
+          labels: { font: { size: 15 }, color: '#222' }
         },
         title: { display: false }
       }
