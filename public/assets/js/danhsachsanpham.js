@@ -321,8 +321,11 @@ function renderProducts(products) {
         ? `<div style="position: relative; display: inline-block;"><img src="${thumb}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'"><button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button><button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button></div>`
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
+      // Sửa dòng này:
+      // existingCoverImages = book.main_image || [];
+      existingCoverImages = book.cover_image || [];
+
       const coverPreview = document.getElementById('uploadedImagesPreview');
-      existingCoverImages = book.main_image || [];
       coverPreview.innerHTML = existingCoverImages.map((url, index) => `
         <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
           <img src="${url}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
