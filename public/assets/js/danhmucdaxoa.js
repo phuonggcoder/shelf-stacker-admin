@@ -28,7 +28,7 @@ async function fetchTrashCategories() {
 
 async function checkCategoryHasProducts(categoryId) {
   try {
-    const res = await fetch(`${base_url}/api/books?category=${categoryId}`, {
+    const res = await fetch(`${base_url}/api/books/category/${categoryId}`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -37,10 +37,15 @@ async function checkCategoryHasProducts(categoryId) {
       throw new Error('Lỗi khi kiểm tra sản phẩm trong danh mục.');
     }
     const data = await res.json();
-    return data.books && data.books.length > 0;
+    // Đảm bảo kiểm tra đúng mảng books
+    if (Array.isArray(data.books) && data.books.length > 0) {
+      return true;
+    }
+    return false;
   } catch (err) {
     console.error('Lỗi kiểm tra sản phẩm:', err);
-    return false; // Giả định không có sản phẩm nếu API lỗi, để tránh chặn xóa không cần thiết
+    // Nếu lỗi, không cho xóa
+    return true;
   }
 }
 
@@ -117,7 +122,7 @@ function renderTrashCategories(categories) {
             return;
           }
 
-          console.log('Bắt đầu yêu cầu xóa vĩnh viễn cho ID:', id);
+          // Nếu không có sản phẩm thì mới gọi API xóa vĩnh viễn
           const res = await fetch(`${base_url}/api/categories/${id}/force`, {
             method: 'DELETE',
             headers: {
@@ -126,14 +131,12 @@ function renderTrashCategories(categories) {
           });
           if (!res.ok) {
             const error = await res.json();
-            console.error('Lỗi từ server:', error);
             showErrorDialog('Xóa vĩnh viễn thất bại!', error.message || 'Vui lòng thử lại sau hoặc liên hệ admin.');
             return;
           }
           showSuccessDeletebook();
           fetchTrashCategories();
         } catch (err) {
-          console.error('Lỗi kết nối:', err);
           showErrorDialog('Lỗi!', 'Lỗi kết nối! Vui lòng kiểm tra kết nối internet và thử lại.');
         }
       }
