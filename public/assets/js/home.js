@@ -22,6 +22,8 @@ document.getElementById('backButton').addEventListener('click', () => {
 // Đăng xuất: xóa authToken và chuyển về trang đăng nhập
 document.getElementById('logoutButton').addEventListener('click', () => {
   localStorage.removeItem('authToken');
+  localStorage.removeItem('userAvatar');
+  localStorage.removeItem('userId');
   window.location.href = 'login';
 });
 
@@ -38,12 +40,12 @@ document.getElementById('loginButton').addEventListener('click', () => {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
-  })
+  })  
   .then(response => response.json())
   .then(data => {
     const messageDiv = document.getElementById('loginMessage');
     if (data.message === 'Login successful') {
-      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('authToken', data.access_token); // Đúng key!
       messageDiv.textContent = 'Đăng nhập thành công';
       messageDiv.className = 'notification';
       document.getElementById('loginDialog').close();
