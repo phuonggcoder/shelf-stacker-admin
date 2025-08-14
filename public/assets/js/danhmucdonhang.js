@@ -771,23 +771,13 @@ window.onload = () => {
   const logoutButton = document.getElementById('logoutButton');
   if (logoutButton) {
     logoutButton.onclick = () => {
-      fetch('login')
-        .then(res => {
-          if (res.ok) {
-            localStorage.removeItem('userAvatar');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userId');
-            showNotification('success', 'Đăng xuất thành công!');
-            setTimeout(() => {
-              window.location.href = 'login.html';
-            }, 1000);
-          } else {
-            showNotification('error', 'Không tìm thấy trang đăng nhập.');
-          }
-        })
-        .catch(() => {
-          showNotification('error', 'Lỗi khi đăng xuất. Vui lòng thử lại.');
-        });
+      localStorage.removeItem('userAvatar');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userId');
+      showNotification('success', 'Đăng xuất thành công!');
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 1000);
     };
   }
 

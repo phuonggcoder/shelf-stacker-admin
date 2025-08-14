@@ -539,8 +539,11 @@
 
     // Login functionality
     document.getElementById('logoutButton').addEventListener('click', () => {
-      localStorage.removeItem('token');
-      document.getElementById('loginDialog').showModal();
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userAvatar');
+      localStorage.removeItem('userId');
+      alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+      window.location.href = 'login';
     });
 
     document.getElementById('loginButton').addEventListener('click', () => {
@@ -667,8 +670,11 @@
     };
 
     document.getElementById('logoutButton').onclick = () => {
-      localStorage.removeItem('token');
-      document.getElementById('loginDialog').showModal();
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userAvatar');
+      localStorage.removeItem('userId');
+      alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+      window.location.href = 'login';
     };
 
     sidebarAvatar.onclick = () => {
