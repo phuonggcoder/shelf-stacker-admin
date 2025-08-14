@@ -1,4 +1,6 @@
 let allUsers = [];
+let currentPage = 1;
+const USERS_PER_PAGE = 15;
 
 function getToken() {
   return localStorage.getItem('authToken') || '';
@@ -105,10 +107,22 @@ function renderUsers(users) {
   const tbody = document.getElementById('user-table-body');
   if (!users.length) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Không có dữ liệu</td></tr>';
+    renderPagination(1, 1);
     return;
   }
+
+  // Phân trang
+  const totalPages = Math.ceil(users.length / USERS_PER_PAGE);
+  if (currentPage > totalPages) currentPage = totalPages;
+  if (currentPage < 1) currentPage = 1;
+  const startIdx = (currentPage - 1) * USERS_PER_PAGE;
+  const endIdx = startIdx + USERS_PER_PAGE;
+  const usersToShow = users.slice(startIdx, endIdx);
+
   tbody.innerHTML = '';
-  users.forEach((user, idx) => {
+  usersToShow.forEach((user, idx) => {
+    // ...existing code render từng user...
+    // Sửa lại idx nếu cần: idx + startIdx
     const address = user.address
       ? `<div><b>Địa chỉ:</b> ${user.address.street || ''}, ${user.address.ward || ''}, ${user.address.district || ''}, ${user.address.city || ''}, ${user.address.country || ''}</div>`
       : '<div><b>Địa chỉ:</b> Không có</div>';
@@ -125,13 +139,13 @@ function renderUsers(users) {
         </td>
         <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : ''}</td>
         <td class="actions">
-          <button class="btn btn-detail" data-idx="${idx}">Chi tiết</button>
+          <button class="btn btn-detail" data-idx="${idx + startIdx}">Chi tiết</button>
           <button class="btn btn-lock-toggle" data-id="${user._id}" data-active="${user.isActive}">
             ${user.isActive ? 'Khóa' : 'Mở khóa'}
           </button>
         </td>
       </tr>
-      <tr class="user-detail-row" id="detail-row-${idx}" style="display:none; background:#f8f9fa;">
+      <tr class="user-detail-row" id="detail-row-${idx + startIdx}" style="display:none; background:#f8f9fa;">
         <td colspan="6" style="padding:12px 24px;">
           ${address}
           <div><b>Giới tính:</b> ${user.gender || 'Không rõ'}</div>
@@ -141,6 +155,70 @@ function renderUsers(users) {
       </tr>
     `;
   });
+
+  renderPagination(currentPage, totalPages);
+}
+
+function renderPagination(page, totalPages) {
+  const pagination = document.getElementById('pagination');
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+  pagination.innerHTML = `
+    <button id="prevPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+      <span style="font-size:18px;">&#60;</span>
+    </button>
+    <span style="font-weight:600;color:#0ea5e9;font-size:18px;margin:0 18px;">Trang ${page} / ${totalPages}</span>
+    <button id="nextPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+      <span style="font-size:18px;">&#62;</span>
+    </button>
+  `;
+
+  // Thêm CSS cho nút bo tròn và hiệu ứng
+  if (!document.getElementById('page-circle-btn-style')) {
+    const style = document.createElement('style');
+    style.id = 'page-circle-btn-style';
+    style.innerHTML = `
+      .page-circle-btn {
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        border: 1.5px solid #0ea5e9;
+        background: #fff;
+        color: #0ea5e9;
+        font-size: 18px;
+        cursor: pointer;
+        transition: background 0.2s, border-color 0.2s;
+        outline: none;
+      }
+      .page-circle-btn:disabled {
+        border-color: #e0e0e0;
+        color: #bdbdbd;
+        background: #f5f5f5;
+        cursor: not-allowed;
+      }
+      .page-circle-btn:not(:disabled):hover {
+        background: #e0f2fe;
+        border-color: #007bff;
+        color: #007bff;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  document.getElementById('prevPage').onclick = () => {
+    if (page > 1) {
+      currentPage--;
+      filterAndRenderUsers();
+    }
+  };
+  document.getElementById('nextPage').onclick = () => {
+    if (page < totalPages) {
+      currentPage++;
+      filterAndRenderUsers();
+    }
+  };
 }
 
 // Tìm kiếm người dùng
@@ -163,8 +241,14 @@ document.addEventListener('DOMContentLoaded', () => {
   loadSuccessDialogHTML(); // Tải dialog thành công
   fetchUsers();
 
-  document.querySelector('.search-filter .input').addEventListener('input', filterAndRenderUsers);
-  document.querySelector('.search-filter .select').addEventListener('change', filterAndRenderUsers);
+  document.querySelector('.search-filter .input').addEventListener('input', () => {
+    currentPage = 1;
+    filterAndRenderUsers();
+  });
+  document.querySelector('.search-filter .select').addEventListener('change', () => {
+    currentPage = 1;
+    filterAndRenderUsers();
+  });
 
   document.getElementById('user-table-body').addEventListener('click', function (e) {
     if (e.target.classList.contains('btn-detail')) {
