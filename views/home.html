@@ -596,10 +596,6 @@
       if (sidebarAvatar && savedAvatar) {
         sidebarAvatar.src = savedAvatar;
       }
-      const headerAvatar = document.getElementById('headerAvatar');
-      if (headerAvatar && savedAvatar) {
-        headerAvatar.src = savedAvatar;
-      }
       fetchStats();
     };
 
@@ -754,7 +750,7 @@
         const imageUrl = data.avatar || URL.createObjectURL(file);
 
         document.getElementById('sidebarAvatar').src = imageUrl;
-        document.getElementById('headerAvatar').src = imageUrl;
+      
 
         localStorage.setItem('userAvatar', imageUrl);
 
