@@ -19,6 +19,7 @@ app.get('/voucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'vo
 app.get('/khoiphucvoucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'khoiphucvoucher.html')));
 app.get('/campaigns', (req, res) => res.sendFile(path.join(__dirname, 'views', 'campaigns.html')));
 app.get('/thongbao', (req, res) => res.sendFile(path.join(__dirname, 'views', 'thongbao.html')));
+app.get('/category-products', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category-products.html')));
 
 // Chuyển hướng trang chủ về /login
 app.get('/', (req, res) => {
