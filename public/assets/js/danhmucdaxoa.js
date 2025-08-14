@@ -6,6 +6,8 @@ function getToken() {
   return localStorage.getItem('authToken') || '';
 }
 
+let trashCategoriesData = [];
+
 async function fetchTrashCategories() {
   const grid = document.getElementById('trashCategoryGrid');
   grid.innerHTML = '<p>Đang tải...</p>';
@@ -19,11 +21,24 @@ async function fetchTrashCategories() {
       grid.innerHTML = '<p>Lỗi tải dữ liệu! Vui lòng thử lại sau.</p>';
       return;
     }
-    const categories = await res.json();
-    renderTrashCategories(categories);
+    trashCategoriesData = await res.json();
+    renderTrashCategories(trashCategoriesData);
   } catch (err) {
     grid.innerHTML = '<p>Lỗi kết nối server! Vui lòng kiểm tra kết nối internet.</p>';
   }
+}
+
+function filterTrashCategories(keyword) {
+  keyword = keyword.trim().toLowerCase();
+  if (!keyword) {
+    renderTrashCategories(trashCategoriesData);
+    return;
+  }
+  const filtered = trashCategoriesData.filter(cat =>
+    (cat.name && cat.name.toLowerCase().includes(keyword)) ||
+    (cat.slug && cat.slug.toLowerCase().includes(keyword))
+  );
+  renderTrashCategories(filtered);
 }
 
 async function checkCategoryHasProducts(categoryId) {
@@ -144,7 +159,18 @@ function renderTrashCategories(categories) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', fetchTrashCategories);
+document.addEventListener('DOMContentLoaded', () => {
+  fetchTrashCategories();
+  document.getElementById('btn-search-trash').onclick = () => {
+    const keyword = document.getElementById('search-trash-category').value;
+    filterTrashCategories(keyword);
+  };
+  document.getElementById('search-trash-category').onkeyup = (e) => {
+    if (e.key === 'Enter') {
+      filterTrashCategories(e.target.value);
+    }
+  };
+});
 
 // Dialog functions
 function showSuccessDeletebook() {
