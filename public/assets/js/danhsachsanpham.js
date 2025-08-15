@@ -321,8 +321,6 @@ function renderProducts(products) {
         ? `<div style="position: relative; display: inline-block;"><img src="${thumb}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'"><button class="delete-thumbnail-btn" style="position: absolute; top: 2px; right: 2px; background: #ff4444; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-times"></i></button><button class="edit-thumbnail-btn" style="position: absolute; top: 25px; right: 2px; background: #007bff; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;"><i class="fas fa-edit"></i></button></div>`
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
-      // Sửa dòng này:
-      // existingCoverImages = book.main_image || [];
       existingCoverImages = book.cover_image || [];
 
       const coverPreview = document.getElementById('uploadedImagesPreview');
@@ -436,13 +434,13 @@ async function fetchProducts() {
 
 function filterProducts(products, keyword, isFeaturedTab = false) {
   const lower = keyword.toLowerCase();
-  const selectedCats = (filterCategoryChoices && typeof filterCategoryChoices.getValue === 'function') 
-    ? filterCategoryChoices.getValue(true) 
+  const selectedCats = filterCategoryChoices && typeof filterCategoryChoices.getValue === 'function'
+    ? filterCategoryChoices.getValue(true)
     : [];
   const minPrice = parseFloat(document.getElementById('minPrice')?.value) || 0;
   const maxPrice = parseFloat(document.getElementById('maxPrice')?.value) || Infinity;
 
-  console.log('Filtering products with categories:', selectedCats);
+  console.log('Filtering products with selected categories:', selectedCats);
 
   return products.filter(p => {
     if (isFeaturedTab && !p.featured) return false;
@@ -455,9 +453,12 @@ function filterProducts(products, keyword, isFeaturedTab = false) {
 
     let matchCategory = true;
     if (selectedCats.length > 0) {
-      const prodCatIds = (p.categories || []).map(c => c._id || c);
+      const prodCatIds = (p.categories || []).map(c => {
+        return typeof c === 'object' && c._id ? c._id : c;
+      });
       matchCategory = selectedCats.some(catId => prodCatIds.includes(catId));
     }
+
     return matchText && matchCategory && matchPrice;
   });
 }
@@ -544,12 +545,33 @@ function renderFilteredAndSorted(page = 1) {
   renderProductsWithPagination(filtered, page);
 }
 
-document.getElementById('btn-search').addEventListener('click', () => renderFilteredAndSorted(1));
-searchBox.addEventListener('input', () => renderFilteredAndSorted(1));
-document.getElementById('sort-title').addEventListener('change', () => renderFilteredAndSorted(1));
-document.getElementById('btn-filter-price').addEventListener('click', () => renderFilteredAndSorted(1));
-document.getElementById('minPrice').addEventListener('input', () => renderFilteredAndSorted(1));
-document.getElementById('maxPrice').addEventListener('input', () => renderFilteredAndSorted(1));
+document.getElementById('btn-search').addEventListener('click', () => {
+  console.log('Search button clicked');
+  renderFilteredAndSorted(1);
+});
+searchBox.addEventListener('input', () => {
+  console.log('Search input changed:', searchBox.value);
+  renderFilteredAndSorted(1);
+});
+document.getElementById('sort-title').addEventListener('change', () => {
+  console.log('Sort order changed:', document.getElementById('sort-title').value);
+  renderFilteredAndSorted(1);
+});
+document.getElementById('btn-filter-price').addEventListener('click', () => {
+  console.log('Price filter applied:', {
+    minPrice: document.getElementById('minPrice').value,
+    maxPrice: document.getElementById('maxPrice').value
+  });
+  renderFilteredAndSorted(1);
+});
+document.getElementById('minPrice').addEventListener('input', () => {
+  console.log('Min price changed:', document.getElementById('minPrice').value);
+  renderFilteredAndSorted(1);
+});
+document.getElementById('maxPrice').addEventListener('input', () => {
+  console.log('Max price changed:', document.getElementById('maxPrice').value);
+  renderFilteredAndSorted(1);
+});
 
 document.getElementById('btn-select-image').addEventListener('click', () => {
   document.getElementById('bookImageUpload').click();
@@ -1071,19 +1093,37 @@ toggleCategoryBtn.addEventListener('click', () => {
   categoryFilterWrap.style.display = categoryFilterWrap.style.display === 'none' ? 'block' : 'none';
 });
 
-fetch(categoriesURL)
-  .then(res => res.ok ? res.json() : Promise.reject(res))
+fetch(categoriesURL, {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+  }
+})
+  .then(res => {
+    if (!res.ok) {
+      throw new Error(`Lỗi tải danh mục: ${res.statusText}`);
+    }
+    return res.json();
+  })
   .then(data => {
     filterCategory.innerHTML = data.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('');
-    filterCategoryChoices = new Choices(filterCategory, {
-      removeItemButton: true,
-      placeholder: true,
-      placeholderValue: 'Lọc theo danh mục...',
-      searchPlaceholderValue: 'Tìm danh mục...',
-      noResultsText: 'Không tìm thấy',
-      itemSelectText: '',
-      shouldSort: false
-    });
+    if (typeof Choices !== 'undefined') {
+      filterCategoryChoices = new Choices(filterCategory, {
+        removeItemButton: true,
+        placeholder: true,
+        placeholderValue: 'Lọc theo danh mục...',
+        searchPlaceholderValue: 'Tìm danh mục...',
+        noResultsText: 'Không tìm thấy',
+        itemSelectText: '',
+        shouldSort: false
+      });
+      filterCategoryChoices.passedElement.element.addEventListener('change', () => {
+        console.log('Category filter changed:', filterCategoryChoices.getValue(true));
+        renderFilteredAndSorted(1);
+      });
+    } else {
+      console.error('Choices.js không được tải.');
+      showErrorDialog('Lỗi Khởi Tạo', 'Không thể tải Choices.js để khởi tạo bộ lọc danh mục.');
+    }
   })
   .catch(err => {
     console.error('Lỗi tải danh mục:', err);
