@@ -2,10 +2,12 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
 
     const STATUS_MAP = {
       Pending: 'Chờ xác nhận',
-      Processing: 'Đang xử lý',
-      Shipped: 'Đang giao',
+      AwaitingPickup: 'Chờ lấy hàng',
+      OutForDelivery: 'Chờ giao hàng',
       Delivered: 'Đã giao',
-      Cancelled: 'Đã huỷ'
+      Returned: 'Trả hàng',
+      Cancelled: 'Đã huỷ',
+      Refunded: 'Đã hoàn tiền'
     };
 
     function getFullImageURL(path) {
@@ -15,14 +17,21 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
     }
 
     function isValidStatusTransition(currentStatus, newStatus) {
-      const validTransitions = {
-        Pending: ['Processing', 'Cancelled'],
-        Processing: ['Shipped', 'Cancelled'],
-        Shipped: ['Delivered', 'Cancelled'],
-        Delivered: ['Cancelled'],
-        Cancelled: []
-      };
-      return validTransitions[currentStatus]?.includes(newStatus) || false;
+      // Chỉ cho admin cập nhật từ Pending -> AwaitingPickup
+      if (currentStatus === 'Pending') {
+        return newStatus === 'AwaitingPickup' || newStatus === 'Pending';
+      }
+      // Cho phép từ AwaitingPickup/OutForDelivery sang Cancelled, Returned, Refunded
+      if (currentStatus === 'AwaitingPickup' || currentStatus === 'OutForDelivery') {
+        return (
+          newStatus === currentStatus ||
+          newStatus === 'Cancelled' ||
+          newStatus === 'Returned' ||
+          newStatus === 'Refunded'
+        );
+      }
+      // Các trạng thái khác chỉ cho phép giữ nguyên
+      return currentStatus === newStatus;
     }
 
     async function loadOrders(orderId = '') {
@@ -308,14 +317,17 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
           const order = window._loadedOrders.find(o => o._id === orderId);
           const currentStatus = order?.order_status;
 
-          const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+          const validStatuses = [
+            'Pending', 'AwaitingPickup', 'OutForDelivery',
+            'Delivered', 'Returned', 'Cancelled', 'Refunded'
+          ];
           if (!newStatus || !validStatuses.includes(newStatus)) {
             showNotification('error', 'Trạng thái không hợp lệ.');
             return;
           }
 
           if (!isValidStatusTransition(currentStatus, newStatus)) {
-            showNotification('error', `Không thể chuyển từ ${STATUS_MAP[currentStatus]} sang ${STATUS_MAP[newStatus]}.`);
+            showNotification('error', `Không thể chuyển từ ${STATUS_MAP[currentStatus] || currentStatus} sang ${STATUS_MAP[newStatus] || newStatus}.`);
             return;
           }
 
@@ -341,15 +353,10 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
 
             showNotification('success', '✅ Cập nhật trạng thái thành công');
 
-            if (newStatus === 'Cancelled' && currentStatus === 'Delivered') {
-              showNotification('success', '📩 Đơn hàng đã bị hủy, hệ thống sẽ xử lý hoàn tiền.');
-            }
-
             closeUpdateModal();
             await loadOrders();
           } catch (err) {
-            console.error('[Cập nhật lỗi]:', err);
-            showNotification('error', '❌ ' + err.message);
+            showNotification('error', '❌ ' + (err.message || 'Có lỗi xảy ra, vui lòng thử lại!'));
           }
         });
       }
@@ -431,10 +438,12 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
       if (statusFilter && statusFilter !== '') {
         const statusMap = {
           pending: 'Pending',
-          processing: 'Processing',
-          shipped: 'Shipped',
+          awaitingpickup: 'AwaitingPickup',
+          outfordelivery: 'OutForDelivery',
           delivered: 'Delivered',
-          cancelled: 'Cancelled'
+          returned: 'Returned',
+          cancelled: 'Cancelled',
+          refunded: 'Refunded'
         };
         const statusKey = statusMap[statusFilter];
         if (statusKey) {
@@ -508,10 +517,12 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
       if (statusFilter && statusFilter !== '') {
         const statusMap = {
           pending: 'Pending',
-          processing: 'Processing',
-          shipped: 'Shipped',
+          awaitingpickup: 'AwaitingPickup',
+          outfordelivery: 'OutForDelivery',
           delivered: 'Delivered',
-          cancelled: 'Cancelled'
+          returned: 'Returned',
+          cancelled: 'Cancelled',
+          refunded: 'Refunded'
         };
         const statusKey = statusMap[statusFilter];
         if (statusKey) {

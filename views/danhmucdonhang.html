@@ -658,10 +658,12 @@
       <div class="tabs">
         <button class="tab-button active" data-status="all">Tất cả</button>
         <button class="tab-button" data-status="Pending">Chờ xác nhận</button>
-        <button class="tab-button" data-status="Processing">Đang xử lý</button>
-        <button class="tab-button" data-status="Shipped">Đang giao</button>
+        <button class="tab-button" data-status="AwaitingPickup">Chờ lấy hàng</button>
+        <button class="tab-button" data-status="OutForDelivery">Chờ giao hàng</button>
         <button class="tab-button" data-status="Delivered">Đã giao</button>
+        <button class="tab-button" data-status="Returned">Trả hàng</button>
         <button class="tab-button" data-status="Cancelled">Đã huỷ</button>
+        <button class="tab-button" data-status="Refunded">Đã hoàn tiền</button>
       </div>
       <div class="search-filter">
         <input type="text" id="order-search" placeholder="Tìm theo mã đơn / tên / SĐT" />
@@ -669,10 +671,12 @@
         <select id="statusFilter">
           <option value="">-- Trạng thái --</option>
           <option value="pending">Chờ xác nhận</option>
-          <option value="processing">Đang xử lý</option>
-          <option value="shipped">Đang giao</option>
+          <option value="awaitingpickup">Chờ lấy hàng</option>
+          <option value="outfordelivery">Chờ giao hàng</option>
           <option value="delivered">Đã giao</option>
+          <option value="returned">Trả hàng</option>
           <option value="cancelled">Đã huỷ</option>
+          <option value="refunded">Đã hoàn tiền</option>
         </select>
         <input type="date" id="startDate" />
         <input type="date" id="endDate" />
@@ -716,10 +720,12 @@
       <label for="statusSelect">Trạng thái mới:</label>
       <select id="statusSelect" style="width: 100%; margin: 8px 0;">
         <option value="Pending">Chờ xác nhận</option>
-        <option value="Processing">Đang xử lý</option>
-        <option value="Shipped">Đang giao</option>
+        <option value="AwaitingPickup">Chờ lấy hàng</option>
+        <option value="OutForDelivery">Chờ giao hàng</option>
         <option value="Delivered">Đã giao</option>
+        <option value="Returned">Trả hàng</option>
         <option value="Cancelled">Đã huỷ</option>
+        <option value="Refunded">Đã hoàn tiền</option>
       </select>
       <div style="text-align: right;">
         <button id="btnSaveStatus" class="btn-success" style="background: var(--success); color: white;">Lưu</button>
