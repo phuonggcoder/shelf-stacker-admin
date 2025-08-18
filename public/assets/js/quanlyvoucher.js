@@ -201,6 +201,19 @@ function submitEditVoucher() {
     });
 }
 
+function resetAddVoucherForm() {
+  document.getElementById('add-voucher-id').value = '';
+  document.getElementById('add-discount-type').value = 'order';
+  document.getElementById('add-voucher-type').value = 'fixed';
+  document.getElementById('add-discount-value').value = '';
+  document.getElementById('add-min-order').value = '';
+  document.getElementById('add-usage-limit').value = '';
+  document.getElementById('add-max-per-user').value = '';
+  document.getElementById('add-start-date').value = '';
+  document.getElementById('add-end-date').value = '';
+  document.getElementById('add-is-active').value = 'true';
+}
+
 function submitAddVoucher() {
   const token = localStorage.getItem('authToken');
 
@@ -273,6 +286,7 @@ function submitAddVoucher() {
     })
     .then(() => {
       showAddVoucherSuccessDialog();
+      resetAddVoucherForm();
       closeAddDialog();
       fetchVouchers();
     })
