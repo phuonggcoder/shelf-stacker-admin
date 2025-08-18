@@ -17,16 +17,15 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
     }
 
     function isValidStatusTransition(currentStatus, newStatus) {
-      // Chỉ cho admin cập nhật từ Pending -> AwaitingPickup
+      // Admin chỉ được cập nhật từ Pending -> AwaitingPickup
       if (currentStatus === 'Pending') {
         return newStatus === 'AwaitingPickup' || newStatus === 'Pending';
       }
-      // Cho phép từ AwaitingPickup/OutForDelivery sang Cancelled, Returned, Refunded
+      // Cho phép từ AwaitingPickup/OutForDelivery sang Cancelled, Refunded (KHÔNG cho Returned)
       if (currentStatus === 'AwaitingPickup' || currentStatus === 'OutForDelivery') {
         return (
           newStatus === currentStatus ||
           newStatus === 'Cancelled' ||
-          newStatus === 'Returned' ||
           newStatus === 'Refunded'
         );
       }
