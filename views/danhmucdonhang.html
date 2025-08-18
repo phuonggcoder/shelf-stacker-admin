@@ -483,14 +483,104 @@
       padding-left: 18px;
       font-size: 13px;
     }
+
+    .notification-bell {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .notification-bell .fa-bell {
+      font-size: 18px;
+      color: #e0f2fe;
+    }
+
+    .notification-bell .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #ff4d4f;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0; /* Đổi từ left: 0 sang right: 0 */
+      width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      padding: 10px;
+      color: #333;
+      max-height: 400px;
+      overflow-y: auto;
+      /* Thêm dòng sau để không bị tràn phải */
+      box-sizing: border-box;
+    }
+
+    .notification-dropdown.active {
+      display: block;
+    }
+
+    .notification-item {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .notification-item:hover {
+      background: #f0f9ff;
+    }
+
+    .notification-item img {
+      width: 40px;
+      height: 56px;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+
+    .notification-item div {
+      flex: 1;
+    }
+
+    .notification-item div p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .notification-item div p strong {
+      color: #0ea5e9;
+    }
+
+    .notification-item div p span {
+      color: #666;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
   <header class="header">
     <h1 class="logo">Sleek Admin</h1>
     <div class="user">
-    
-      <img id="s" class="avatar" src="/assets/images/image.png" alt="Logo ShelfStacker" />
+      <img id="headerAvatar" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" class="badge">0</span>
+        <div id="notificationDropdown" class="notification-dropdown"></div>
+      </span>
     </div>
   </header>
 
@@ -518,7 +608,7 @@
           <ul class="menu-child" id="categoryMenu" style="display:none;">
             <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
             <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-                  <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li> 
+            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>
           </ul>
         </li>
         <li>
@@ -539,7 +629,7 @@
             <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
           </ul>
         </li>
-        <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
+                <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
         <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
         <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
       </ul>
@@ -646,9 +736,12 @@
 
   <script src="/assets/js/danhmucdonhang.js"></script>
   <script>
-    function toggleMenu(id) {
-      const el = document.getElementById(id);
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    const notificationBell = document.querySelector('.notification-bell');
+    if (notificationBell) {
+      notificationBell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleNotificationDropdown();
+      });
     }
   </script>
 </body>
