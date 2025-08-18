@@ -121,8 +121,6 @@ function renderUsers(users) {
 
   tbody.innerHTML = '';
   usersToShow.forEach((user, idx) => {
-    // ...existing code render từng user...
-    // Sửa lại idx nếu cần: idx + startIdx
     const address = user.address
       ? `<div><b>Địa chỉ:</b> ${user.address.street || ''}, ${user.address.ward || ''}, ${user.address.district || ''}, ${user.address.city || ''}, ${user.address.country || ''}</div>`
       : '<div><b>Địa chỉ:</b> Không có</div>';
@@ -175,7 +173,6 @@ function renderPagination(page, totalPages) {
     </button>
   `;
 
-  // Thêm CSS cho nút bo tròn và hiệu ứng
   if (!document.getElementById('page-circle-btn-style')) {
     const style = document.createElement('style');
     style.id = 'page-circle-btn-style';
@@ -249,6 +246,91 @@ document.addEventListener('DOMContentLoaded', () => {
     filterAndRenderUsers();
   });
 
+  document.getElementById('btnAddAdmin').onclick = () => {
+    document.getElementById('addAdminDialog').showModal();
+  };
+
+  document.getElementById('cancelAddAdmin').onclick = () => {
+    document.getElementById('addAdminDialog').close();
+  };
+
+  document.getElementById('addAdminForm').onsubmit = async (e) => {
+    e.preventDefault();
+
+    const email = document.getElementById('adminEmail').value.trim();
+    const fullName = document.getElementById('adminFullName').value.trim();
+    const username = document.getElementById('adminUsername').value.trim();
+    const password = document.getElementById('adminPassword').value.trim();
+
+    if (!email || !fullName || !username || !password) {
+      document.getElementById('addAdminMessage').textContent = 'Vui lòng điền đầy đủ thông tin.';
+      document.getElementById('addAdminMessage').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('addAdminMessage').style.display = 'none';
+
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    try {
+      const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/users/admin/create', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, full_name: fullName, username, password, roles: ['admin'] })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        let errorMsg = data.message || 'Lỗi khi thêm admin';
+        throw new Error(errorMsg);
+      }
+
+      document.getElementById('addAdminMessage').textContent = 'Thêm admin thành công!';
+      document.getElementById('addAdminMessage').style.display = 'block';
+
+      // Reset form fields
+      document.getElementById('adminEmail').value = '';
+      document.getElementById('adminFullName').value = '';
+      document.getElementById('adminUsername').value = '';
+      document.getElementById('adminPassword').value = '';
+
+      setTimeout(() => {
+        document.getElementById('addAdminDialog').close();
+        // Chuyển sang tab Admin và hiển thị dữ liệu mới
+        document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
+        const adminTab = document.querySelector('.user-tab[data-type="admin"]');
+        if (adminTab) adminTab.classList.add('active');
+        fetchUsers(); // Load lại danh sách
+        setTimeout(() => filterAndRenderUsersByTab('admin'), 400);
+      }, 1000);
+
+    } catch (error) {
+      document.getElementById('addAdminMessage').textContent = 'Lỗi: ' + error.message;
+      document.getElementById('addAdminMessage').style.display = 'block';
+    }
+  };
+
+  // Tab switching
+  document.querySelectorAll('.user-tab').forEach(tab => {
+    tab.onclick = function() {
+      document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const type = this.getAttribute('data-type');
+      currentPage = 1;
+      filterAndRenderUsersByTab(type);
+    };
+  });
+
+  // Detail and lock toggle event listeners
   document.getElementById('user-table-body').addEventListener('click', function (e) {
     if (e.target.classList.contains('btn-detail')) {
       const idx = e.target.getAttribute('data-idx');
@@ -267,16 +349,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const isActive = e.target.getAttribute('data-active') === 'true';
       showLockUserDialog(id, isActive);
     }
-  });
-
-  document.querySelectorAll('.user-tab').forEach(tab => {
-    tab.onclick = function() {
-      document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
-      this.classList.add('active');
-      const type = this.getAttribute('data-type');
-      currentPage = 1;
-      filterAndRenderUsersByTab(type);
-    };
   });
 });
 

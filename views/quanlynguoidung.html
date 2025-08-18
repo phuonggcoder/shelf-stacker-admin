@@ -75,16 +75,16 @@
       box-sizing: border-box;
       margin: 0;
       min-height: 200px;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
     }
 
     dialog[open] {
       display: flex;
       flex-direction: column;
       gap: 10px;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       background: #fff;
       z-index: 1002;
     }
@@ -196,7 +196,7 @@
     }
     .user-status-tabs .user-tab {
       background: #f3f8fd;
-      color: #222; /* Màu chữ đen */
+      color: #222;
       border: none;
       border-radius: 7px;
       padding: 8px 18px;
@@ -228,39 +228,85 @@
     }
 
     #addAdminDialog {
-      min-width: 320px;
-      display: flex;
+      min-width: 340px;
+      max-width: 95vw;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+      padding: 32px 28px 18px 28px;
+      border: none;
+      background: #fff;
+      display: none;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    #addAdminDialog[open] {
+      display: flex;
+    }
+
+    #addAdminDialog h3 {
+      margin-bottom: 18px;
+      font-size: 22px;
+      color: #0ea5e9;
+      text-align: center;
+      font-weight: 600;
     }
 
     #addAdminDialog input {
-      padding: 10px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      font-size: 15px;
+      border: 1px solid #dbeafe;
+      border-radius: 7px;
+      background: #f3f8fd;
+      color: #222;
     }
 
-    #addAdminDialog button {
+    #addAdminDialog input:focus {
+      border-color: #0ea5e9;
+      outline: none;
+      background: #fff;
+    }
+
+    #addAdminDialog button[type="submit"] {
       background: #0ea5e9;
       color: #fff;
       border: none;
-      border-radius: 6px;
+      border-radius: 7px;
       padding: 8px 18px;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
+      margin-right: 8px;
+      transition: background 0.2s;
+    }
+
+    #addAdminDialog button[type="submit"]:hover {
+      background: #38bdf8;
     }
 
     #addAdminDialog #cancelAddAdmin {
       background: #eee;
       color: #222;
+      border-radius: 7px;
+      padding: 8px 18px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+
+    #addAdminDialog #cancelAddAdmin:hover {
+      background: #e0e0e0;
     }
 
     #addAdminMessage {
-      color: red;
+      color: #e11d48;
       font-size: 14px;
+      margin-bottom: 6px;
+      text-align: center;
       display: none;
     }
   </style>
@@ -299,7 +345,6 @@
           <ul class="menu-child" id="categoryMenu" style="display:none;">
             <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
             <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-            
           </ul>
         </li>
         <li>
@@ -559,9 +604,14 @@
     };
 
     document.getElementById('btnAddAdmin').onclick = () => {
+      // Reset các trường input về rỗng
+      document.getElementById('adminEmail').value = '';
+      document.getElementById('adminFullName').value = '';
+      document.getElementById('adminUsername').value = '';
+      document.getElementById('adminPassword').value = '';
+
       document.getElementById('addAdminDialog').showModal();
     };
-
     document.getElementById('cancelAddAdmin').onclick = () => {
       document.getElementById('addAdminDialog').close();
     };
