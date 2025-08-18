@@ -235,7 +235,6 @@ function filterAndRenderUsers() {
   renderUsers(filtered);
 }
 
-// DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   loadLockUserDialogHTML();
   loadSuccessDialogHTML(); // Tải dialog thành công
@@ -269,4 +268,22 @@ document.addEventListener('DOMContentLoaded', () => {
       showLockUserDialog(id, isActive);
     }
   });
+
+  document.querySelectorAll('.user-tab').forEach(tab => {
+    tab.onclick = function() {
+      document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+      const type = this.getAttribute('data-type');
+      currentPage = 1;
+      filterAndRenderUsersByTab(type);
+    };
+  });
 });
+
+function filterAndRenderUsersByTab(type) {
+  let filtered = allUsers;
+  if (type === 'active') filtered = filtered.filter(u => u.isActive);
+  if (type === 'locked') filtered = filtered.filter(u => !u.isActive);
+  if (type === 'admin') filtered = filtered.filter(u => Array.isArray(u.roles) && u.roles.includes('admin'));
+  renderUsers(filtered);
+}

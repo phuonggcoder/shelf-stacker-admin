@@ -160,6 +160,59 @@
       background: #fff;
       color: #0ea5e9;
     }
+
+    .user-status-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .user-tab {
+      padding: 10px 15px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background: none;
+      color: #333;
+      cursor: pointer;
+      transition: background 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .user-tab:hover {
+      background: #f0f0f0;
+    }
+
+    .user-tab.active {
+      background: #0ea5e9;
+      color: #fff;
+      border-color: #0ea5e9;
+    }
+
+    .user-tab i {
+      font-size: 16px;
+    }
+    .user-status-tabs .user-tab {
+      background: #f3f8fd;
+      color: #222; /* Màu chữ đen */
+      border: none;
+      border-radius: 7px;
+      padding: 8px 18px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .user-status-tabs .user-tab.active {
+      background: #0ea5e9;
+      color: #fff;
+    }
+    .user-status-tabs .user-tab:not(.active):hover {
+      background: #bae6fd;
+      color: #0ea5e9;
+    }
   </style>
 </head>
 <body>
@@ -245,6 +298,12 @@
           <option value="active">Đang hoạt động</option>
           <option value="locked">Đã khóa</option>
         </select>
+      </div>
+      <div class="user-status-tabs">
+        <button class="user-tab active" data-type="all">Tất cả</button>
+        <button class="user-tab" data-type="active">Đang hoạt động</button>
+        <button class="user-tab" data-type="locked">Đã khóa</button>
+        <button class="user-tab" data-type="admin"><i class="fas fa-user-shield"></i> Admin</button>
       </div>
       <div class="table-wrapper">
         <table class="user-table">

@@ -466,16 +466,14 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
         });
       }
 
+      // Sắp xếp theo chọn lọc mới nhất/cũ nhất
+      const sortOrderEl = document.getElementById('sortOrder');
+      const sortOrder = sortOrderEl ? sortOrderEl.value : 'desc';
       filteredOrders.sort((a, b) => {
-        const aIsPending = a.order_status === 'Pending';
-        const bIsPending = b.order_status === 'Pending';
-        
-        if (aIsPending && !bIsPending) return -1;
-        if (!aIsPending && bIsPending) return 1;
-
         const dateA = new Date(a.order_date || a.createdAt || 0);
         const dateB = new Date(b.order_date || b.createdAt || 0);
-        return dateA - dateB;
+        if (sortOrder === 'desc') return dateB - dateA; // Mới nhất lên đầu
+        else return dateA - dateB; // Cũ nhất lên đầu
       });
 
       renderOrders(filteredOrders);
@@ -919,3 +917,9 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
     }
 
     let lastNotifiedOrderId = null;
+
+    document.getElementById('sortOrder').addEventListener('change', function() {
+      const activeTab = document.querySelector('.tab-button.active');
+      const status = activeTab ? activeTab.dataset.status : 'all';
+      filterOrdersByStatus(status);
+    });
