@@ -262,24 +262,25 @@ uploadButton.onclick = async (event) => {
 
 async function fetchStats() {
   const defaultData = {
-    totalOrders: 79,
-    totalRevenue: 8018406,
+    totalOrders: 229,
+    totalRevenue: 30248226,
     statusStats: {
-      Cancelled: 21,
-      Delivered: 3,
-      Shipped: 2,
-      Processing: 1,
-      Pending: 47,
-      null: 5
+      Cancelled: 54,
+      Processing: 16,
+      Pending: 131,
+      Shipped: 8,
+      AwaitingPickup: 2,
+      null: 5,
+      Delivered: 13
     },
     paymentStats: {
-      COD: 30,
-      ZALOPAY: 25,
-      MOMO: 24,
-      null: 0
+      ZALOPAY: 95,
+      PAYOS: 10,
+      MOMO: 1,
+      COD: 123
     },
-    successCount: 3,
-    failedCount: 21
+    successCount: 13,
+    failedCount: 54
   };
 
   const token = localStorage.getItem('authToken');
