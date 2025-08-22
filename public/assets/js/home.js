@@ -1,404 +1,491 @@
-  // Chặn truy cập nếu chưa đăng nhập
-  if (!localStorage.getItem('authToken')) {
-    window.location.href = 'login';
-  }
-
-  function toggleMenu(id) {
-    const el = document.getElementById(id);
-    el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  }
-
-  // Sidebar toggle
-  document.getElementById('settingsLink').addEventListener('click', () => {
-    document.getElementById('mainSidebar').classList.add('hidden');
-    document.getElementById('settingsSidebar').classList.remove('hidden');
-  });
-
-  document.getElementById('backButton').addEventListener('click', () => {
-    document.getElementById('settingsSidebar').classList.add('hidden');
-    document.getElementById('mainSidebar').classList.remove('hidden');
-  });
-
-  // Đăng xuất: xóa authToken và chuyển về trang đăng nhập
-  document.getElementById('logoutButton').addEventListener('click', () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userAvatar');
-    localStorage.removeItem('userId');
-    window.location.href = 'login';
-  });
-
-  document.getElementById('loginButton').addEventListener('click', () => {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-
-    const data = {
-      email: email,
-      password: password
-    };
-
-    fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    })  
-    .then(response => response.json())
-    .then(data => {
-      const messageDiv = document.getElementById('loginMessage');
-      if (data.message === 'Login successful') {
-        localStorage.setItem('authToken', data.access_token); // Đúng key!
-        messageDiv.textContent = 'Đăng nhập thành công';
-        messageDiv.className = 'notification';
-        document.getElementById('loginDialog').close();
-        location.reload();
-      } else {
-        messageDiv.textContent = 'Đăng nhập thất bại: ' + (data.error || 'Lỗi không xác định');
-        messageDiv.className = 'notification error-message';
-      }
-      messageDiv.style.display = 'block';
-      setTimeout(() => messageDiv.style.display = 'none', 3000);
-    })
-    .catch(error => {
-      document.getElementById('loginMessage').textContent = 'Lỗi: ' + error.message;
-      document.getElementById('loginMessage').className = 'notification error-message';
-      document.getElementById('loginMessage').style.display = 'block';
-      setTimeout(() => document.getElementById('loginMessage').style.display = 'none', 3000);
-    });
-  });
-
-  // Update user info
-  window.onload = () => {
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    if (userData) {
-      document.getElementById('fullName').value = userData.full_name || '';
-      document.getElementById('phoneNumber').value = userData.phone_number || '';
-      document.getElementById('birthDate').value = userData.birth_date || '1990-01-01';
-      document.getElementById('gender').value = userData.gender || 'male';
-      document.getElementById('email').value = userData.email || '';
-      document.getElementById('username').value = userData.username || '';
-    }
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (sidebarAvatar && savedAvatar) {
-      sidebarAvatar.src = savedAvatar;
-    }
-    const headerAvatar = document.getElementById('headerAvatar');
-    if (headerAvatar && savedAvatar) {
-      headerAvatar.src = savedAvatar;
-    }
-    fetchStats();
-  };
-
-  document.getElementById('updateButton').addEventListener('click', () => {
-    const fullName = document.getElementById('fullName').value;
-    const phoneNumber = document.getElementById('phoneNumber').value;
-    const birthDate = document.getElementById('birthDate').value;
-    const gender = document.getElementById('gender').value;
-    const email = document.getElementById('email').value;
-    const username = document.getElementById('username').value;
-
-    const data = {
-      full_name: fullName,
-      phone_number: phoneNumber,
-      birth_date: birthDate,
-      gender: gender,
-      email: email,
-      username: username
-    };
-
-    const token = localStorage.getItem('authToken');
-
-    fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/update', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(data => {
-      const messageDiv = document.getElementById('updateMessage');
-      if (data.message === 'User updated successfully') {
-        localStorage.setItem('userData', JSON.stringify(data.user)); // Update local storage with new data
-        messageDiv.textContent = 'Cập nhật thông tin thành công';
-        messageDiv.className = 'notification';
-      } else {
-        messageDiv.textContent = 'Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định');
-        messageDiv.className = 'notification error-message';
-      }
-      messageDiv.style.display = 'block';
-      setTimeout(() => messageDiv.style.display = 'none', 3000);
-    })
-    .catch(error => {
-      document.getElementById('updateMessage').textContent = 'Lỗi: ' + error.message;
-      document.getElementById('updateMessage').className = 'notification error-message';
-      document.getElementById('updateMessage').style.display = 'block';
-      setTimeout(() => document.getElementById('updateMessage').style.display = 'none', 3000);
-    });
-  });
-
-  // Avatar upload and stats fetching
-  const uploadDialog = document.getElementById('uploadDialog');
-  const uploadMessage = document.getElementById('uploadMessage');
-  const uploadButton = document.getElementById('uploadButton');
-  const cancelButton = document.getElementById('cancelButton');
-  const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-  document.getElementById('settingsLink').onclick = () => {
-    document.getElementById('mainSidebar').classList.add('hidden');
-    document.getElementById('settingsSidebar').classList.remove('hidden');
-  };
-
-  document.getElementById('backButton').onclick = () => {
-    document.getElementById('settingsSidebar').classList.add('hidden');
-    document.getElementById('mainSidebar').classList.remove('hidden');
-  };
-
-  document.getElementById('logoutButton').onclick = () => {
-    localStorage.removeItem('token');
-    document.getElementById('loginDialog').showModal();
-  };
-
-  sidebarAvatar.onclick = () => {
-    uploadDialog.showModal();
-    resetUploadDialog();
-  };
-
-  cancelButton.onclick = () => {
-    uploadDialog.close();
-  };
-
-  uploadDialog.addEventListener('close', () => {
-    resetUploadDialog();
-  });
-
-  function resetUploadDialog() {
-    document.getElementById('avatarUpload').value = '';
-    uploadMessage.style.display = 'none';
-    uploadMessage.textContent = '';
-    uploadMessage.className = 'notification';
-    uploadButton.disabled = false;
-    uploadButton.textContent = 'Tải lên';
-  }
-
-  uploadButton.onclick = async (event) => {
-    event.preventDefault();
-    const fileInput = document.getElementById('avatarUpload');
-    const file = fileInput.files[0];
-
-    if (!file) {
-      alert('Vui lòng chọn một ảnh.');
-      return;
+if (!localStorage.getItem('authToken')) {
+      const loginDialog = document.getElementById('loginDialog');
+      if (loginDialog) loginDialog.showModal();
     }
 
-    if (!file.type.startsWith('image/')) {
-      alert('Vui lòng chọn một file ảnh hợp lệ.');
-      return;
+    function toggleMenu(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
-    const token = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-
-    if (!token) {
-      alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
-      return;
-    }
-
-    if (!userId) {
-      alert('Thiếu userId. Vui lòng đăng nhập lại.');
-      return;
-    }
-
-    uploadButton.disabled = true;
-    uploadButton.textContent = 'Đang tải...';
-
-    try {
-      const formData = new FormData();
-      formData.append('userId', userId);
-      formData.append('avatar', file);
-
-      const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
+    // Sidebar toggle
+    const settingsLink = document.getElementById('settingsLink');
+    if (settingsLink) {
+      settingsLink.addEventListener('click', () => {
+        const mainSidebar = document.getElementById('mainSidebar');
+        const settingsSidebar = document.getElementById('settingsSidebar');
+        if (mainSidebar) mainSidebar.classList.add('hidden');
+        if (settingsSidebar) settingsSidebar.classList.remove('hidden');
       });
-
-      if (!response.ok) {
-        let errorMsg = 'Lỗi khi tải ảnh lên';
-        try {
-          const errData = await response.json();
-          if (errData.message) errorMsg = errData.message;
-        } catch {}
-        throw new Error(errorMsg);
-      }
-
-      const data = await response.json();
-
-      const imageUrl = data.avatar || URL.createObjectURL(file);
-
-      document.getElementById('sidebarAvatar').src = imageUrl;
-      document.getElementById('headerAvatar').src = imageUrl;
-
-      localStorage.setItem('userAvatar', imageUrl);
-
-      uploadMessage.style.display = 'block';
-      uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-      uploadMessage.className = 'notification success-message';
-
-      setTimeout(() => {
-        uploadDialog.close();
-      }, 2000);
-
-    } catch (error) {
-      uploadMessage.style.display = 'block';
-      uploadMessage.textContent = 'Lỗi: ' + error.message;
-      uploadMessage.className = 'notification error-message';
-      uploadButton.disabled = false;
-      uploadButton.textContent = 'Tải lên';
     }
-  };
 
-  async function fetchStats() {
-    const defaultData = {
-      totalOrders: 229,
-      totalRevenue: 30248226,
-      statusStats: {
-        Cancelled: 54,
-        Processing: 16,
-        Pending: 131,
-        Shipped: 8,
-        AwaitingPickup: 2,
-        null: 5,
-        Delivered: 13
-      },
-      paymentStats: {
-        ZALOPAY: 95,
-        PAYOS: 10,
-        MOMO: 1,
-        COD: 123
-      },
-      successCount: 13,
-      failedCount: 54
-    };
+    const backButton = document.getElementById('backButton');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        const settingsSidebar = document.getElementById('settingsSidebar');
+        const mainSidebar = document.getElementById('mainSidebar');
+        if (settingsSidebar) settingsSidebar.classList.add('hidden');
+        if (mainSidebar) mainSidebar.classList.remove('hidden');
+      });
+    }
 
-    const token = localStorage.getItem('authToken');
-    let data = defaultData;
+    // Show edit profile dialog
+    const editProfileButton = document.getElementById('editProfileButton');
+    if (editProfileButton) {
+      editProfileButton.addEventListener('click', () => {
+        const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+        const editFullName = document.getElementById('editFullName');
+        const editPhoneNumber = document.getElementById('editPhoneNumber');
+        const editBirthDate = document.getElementById('editBirthDate');
+        const editGender = document.getElementById('editGender');
+        const editEmail = document.getElementById('editEmail');
+        const editUsername = document.getElementById('editUsername');
+        const editProfileDialog = document.getElementById('editProfileDialog');
 
-    if (token) {
-      try {
-        const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/orders/stats/summary', {
-          method: 'GET',
+        if (editFullName) editFullName.value = userData.full_name || '';
+        if (editPhoneNumber) editPhoneNumber.value = userData.phone_number || '';
+        if (editBirthDate) editBirthDate.value = userData.birth_date || '1990-01-01';
+        if (editGender) editGender.value = userData.gender || 'male';
+        if (editEmail) editEmail.value = userData.email || '';
+        if (editUsername) editUsername.value = userData.username || '';
+        if (editProfileDialog) editProfileDialog.showModal();
+      });
+    }
+
+    // Cancel edit profile
+    const cancelProfileButton = document.getElementById('cancelProfileButton');
+    if (cancelProfileButton) {
+      cancelProfileButton.addEventListener('click', () => {
+        const editProfileDialog = document.getElementById('editProfileDialog');
+        if (editProfileDialog) editProfileDialog.close();
+      });
+    }
+
+    // Save profile changes
+    const saveProfileButton = document.getElementById('saveProfileButton');
+    if (saveProfileButton) {
+      saveProfileButton.addEventListener('click', () => {
+        const fullName = document.getElementById('editFullName')?.value;
+        const phoneNumber = document.getElementById('editPhoneNumber')?.value;
+        const birthDate = document.getElementById('editBirthDate')?.value;
+        const gender = document.getElementById('editGender')?.value;
+        const email = document.getElementById('editEmail')?.value;
+        const username = document.getElementById('editUsername')?.value;
+        const editProfileMessage = document.getElementById('editProfileMessage');
+        const editProfileDialog = document.getElementById('editProfileDialog');
+
+        const data = {
+          full_name: fullName,
+          phone_number: phoneNumber,
+          birth_date: birthDate,
+          gender: gender,
+          email: email,
+          username: username
+        };
+
+        const token = localStorage.getItem('authToken');
+
+        fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/update', {
+          method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (editProfileMessage) {
+            if (data.message === 'User updated successfully') {
+              localStorage.setItem('userData', JSON.stringify(data.user));
+              editProfileMessage.textContent = 'Cập nhật thông tin thành công';
+              editProfileMessage.className = 'notification';
+              setTimeout(() => {
+                if (editProfileDialog) editProfileDialog.close();
+              }, 2000);
+            } else {
+              editProfileMessage.textContent = 'Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định');
+              editProfileMessage.className = 'notification error-message';
+            }
+            editProfileMessage.style.display = 'block';
+            setTimeout(() => {
+              if (editProfileMessage) editProfileMessage.style.display = 'none';
+            }, 3000);
+          }
+        })
+        .catch(error => {
+          if (editProfileMessage) {
+            editProfileMessage.textContent = 'Lỗi: ' + error.message;
+            editProfileMessage.className = 'notification error-message';
+            editProfileMessage.style.display = 'block';
+            setTimeout(() => {
+              if (editProfileMessage) editProfileMessage.style.display = 'none';
+            }, 3000);
           }
         });
-
-        if (response.ok) {
-          data = await response.json();
-        } else {
-          throw new Error('Failed to fetch stats');
-        }
-      } catch (error) {
-        console.error('Error fetching stats:', error.message);
-        const notification = document.createElement('div');
-        notification.className = 'notification error-message';
-        notification.textContent = 'Lỗi khi tải thống kê: ' + error.message;
-        notification.style.display = 'block';
-        document.querySelector('.stats').prepend(notification);
-        setTimeout(() => notification.remove(), 5000);
-      }
-    } else {
-      console.error('No auth token found. Using default data.');
+      });
     }
 
-    document.getElementById('totalOrders').textContent = data.totalOrders || 0;
-    document.getElementById('totalRevenue').textContent = (data.totalRevenue || 0).toLocaleString('vi-VN') + ' ₫';
-    document.getElementById('successCount').textContent = data.successCount || 0;
-    document.getElementById('failedCount').textContent = data.failedCount || 0;
+    // Login functionality
+    const logoutButton = document.getElementById('logoutButton');
+    if (logoutButton) {
+      logoutButton.addEventListener('click', () => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userAvatar');
+        localStorage.removeItem('userId');
+        const loginDialog = document.getElementById('loginDialog');
+        if (loginDialog) loginDialog.showModal();
+      });
+    }
 
-    const statusLabels = Object.keys(data.statusStats).map(key => key === 'null' ? 'Không xác định' : {
-      Cancelled: 'Hủy',
-      Delivered: 'Đã giao',
-      Shipped: 'Đang giao',
-      Processing: 'Đang xử lý',
-      Pending: 'Chờ xử lý'
-    }[key] || key);
+    const loginButton = document.getElementById('loginButton');
+    if (loginButton) {
+      loginButton.addEventListener('click', () => {
+        const email = document.getElementById('loginEmail')?.value;
+        const password = document.getElementById('loginPassword')?.value;
+        const loginMessage = document.getElementById('loginMessage');
+        const loginDialog = document.getElementById('loginDialog');
 
-    const statusChartConfig = {
-      type: 'pie',
-      data: {
-        labels: statusLabels,
-        datasets: [{
-          data: Object.values(data.statusStats || {}),
-          backgroundColor: ['#ff4d4f', '#28a745', '#38bdf8', '#ffc107', '#0ea5e9', '#d9d9d9'],
-          borderColor: ['#fff'],
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { font: { size: 14 }, color: '#333' }
-          },
-          title: { display: false }
+        const data = {
+          email: email,
+          password: password
+        };
+
+        fetch('https://server-shelf-stacker-w1ds.onrender.com/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (loginMessage) {
+            if (data.message === 'Login successful') {
+              localStorage.setItem('authToken', data.access_token);
+              loginMessage.textContent = 'Đăng nhập thành công';
+              loginMessage.className = 'notification';
+              if (loginDialog) loginDialog.close();
+              location.reload();
+            } else {
+              loginMessage.textContent = 'Đăng nhập thất bại: ' + (data.error || 'Lỗi không xác định');
+              loginMessage.className = 'notification error-message';
+            }
+            loginMessage.style.display = 'block';
+            setTimeout(() => {
+              if (loginMessage) loginMessage.style.display = 'none';
+            }, 3000);
+          }
+        })
+        .catch(error => {
+          if (loginMessage) {
+            loginMessage.textContent = 'Lỗi: ' + error.message;
+            loginMessage.className = 'notification error-message';
+            loginMessage.style.display = 'block';
+            setTimeout(() => {
+              if (loginMessage) loginMessage.style.display = 'none';
+            }, 3000);
+          }
+        });
+      });
+    }
+
+    // Avatar upload
+    const uploadDialog = document.getElementById('uploadDialog');
+    const uploadMessage = document.getElementById('uploadMessage');
+    const uploadButton = document.getElementById('uploadButton');
+    const cancelButton = document.getElementById('cancelButton');
+    const sidebarAvatar = document.getElementById('sidebarAvatar');
+
+    if (sidebarAvatar) {
+      sidebarAvatar.onclick = () => {
+        if (uploadDialog) {
+          uploadDialog.showModal();
+          resetUploadDialog();
         }
+      };
+    }
+
+    if (cancelButton) {
+      cancelButton.onclick = () => {
+        if (uploadDialog) uploadDialog.close();
+      };
+    }
+
+    if (uploadDialog) {
+      uploadDialog.addEventListener('close', () => {
+        resetUploadDialog();
+      });
+    }
+
+    function resetUploadDialog() {
+      const avatarUpload = document.getElementById('avatarUpload');
+      if (avatarUpload) avatarUpload.value = '';
+      if (uploadMessage) {
+        uploadMessage.style.display = 'none';
+        uploadMessage.textContent = '';
+        uploadMessage.className = 'notification';
       }
+      if (uploadButton) {
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Tải lên';
+      }
+    }
+
+    if (uploadButton) {
+      uploadButton.onclick = async (event) => {
+        event.preventDefault();
+        const fileInput = document.getElementById('avatarUpload');
+        const file = fileInput?.files[0];
+
+        if (!file) {
+          alert('Vui lòng chọn một ảnh.');
+          return;
+        }
+
+        if (!file.type.startsWith('image/')) {
+          alert('Vui lòng chọn một file ảnh hợp lệ.');
+          return;
+        }
+
+        const token = localStorage.getItem('authToken');
+        const userId = localStorage.getItem('userId');
+
+        if (!token) {
+          alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        if (!userId) {
+          alert('Thiếu userId. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        if (uploadButton) {
+          uploadButton.disabled = true;
+          uploadButton.textContent = 'Đang tải...';
+        }
+
+        try {
+          const formData = new FormData();
+          formData.append('userId', userId);
+          formData.append('avatar', file);
+
+          const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          if (!response.ok) {
+            let errorMsg = 'Lỗi khi tải ảnh lên';
+            try {
+              const errData = await response.json();
+              if (errData.message) errorMsg = errData.message;
+            } catch {}
+            throw new Error(errorMsg);
+          }
+
+          const data = await response.json();
+
+          const imageUrl = data.avatar || URL.createObjectURL(file);
+
+          const sidebarAvatar = document.getElementById('sidebarAvatar');
+          const headerAvatar = document.getElementById('headerAvatar');
+          if (sidebarAvatar) sidebarAvatar.src = imageUrl;
+          if (headerAvatar) headerAvatar.src = imageUrl;
+
+          localStorage.setItem('userAvatar', imageUrl);
+
+          if (uploadMessage) {
+            uploadMessage.style.display = 'block';
+            uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+            uploadMessage.className = 'notification success-message';
+          }
+
+          setTimeout(() => {
+            if (uploadDialog) uploadDialog.close();
+          }, 2000);
+
+        } catch (error) {
+          if (uploadMessage) {
+            uploadMessage.style.display = 'block';
+            uploadMessage.textContent = 'Lỗi: ' + error.message;
+            uploadMessage.className = 'notification error-message';
+          }
+          if (uploadButton) {
+            uploadButton.disabled = false;
+            uploadButton.textContent = 'Tải lên';
+          }
+        }
+      };
+    }
+
+    // Load user data on page load
+    window.onload = () => {
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+      const savedAvatar = localStorage.getItem('userAvatar');
+      const sidebarAvatar = document.getElementById('sidebarAvatar');
+      const headerAvatar = document.getElementById('headerAvatar');
+      
+      if (sidebarAvatar && savedAvatar) {
+        sidebarAvatar.src = savedAvatar;
+      }
+      if (headerAvatar && savedAvatar) {
+        headerAvatar.src = savedAvatar;
+      }
+      fetchStats();
     };
 
-    const paymentLabels = Object.keys(data.paymentStats).map(key => {
-      if (key === 'null') return 'Không xác định';
-      if (key === 'COD') return 'Thanh toán khi nhận hàng';
-      if (key === 'ZALOPAY') return 'ZaloPay';
-      if (key === 'MOMO') return 'Momo';
-      if (key === 'VNPAY') return 'VNPay';
-      if (key === 'BANK') return 'Chuyển khoản';
-      if (key === 'PAYPAL') return 'Paypal';
-      return key;
-    });
+    async function fetchStats() {
+      const defaultData = {
+        totalOrders: 234,
+        totalRevenue: 30700686,
+        statusStats: {
+          OutForDelivery: 10,
+          Shipped: 8,
+          Pending: 122,
+          AwaitingPickup: 5,
+          Cancelled: 55,
+          Processing: 16,
+          Delivered: 13,
+          null: 5
+        },
+        paymentStats: {
+          MOMO: 1,
+          PAYOS: 10,
+          COD: 128,
+          ZALOPAY: 95
+        },
+        successCount: 13,
+        failedCount: 55
+      };
 
-    const paymentChartConfig = {
-      type: 'doughnut',
-      data: {
-        labels: paymentLabels,
-        datasets: [{
-          data: Object.values(data.paymentStats || {}),
-          backgroundColor: [
-            '#0ea5e9', // COD - xanh dương
-            '#ff4d4f', // ZALOPAY - đỏ
-            '#ffc107', // MOMO - vàng
-            '#6c63ff', // VNPAY - tím
-            '#28a745', // Chuyển khoản - xanh lá
-            '#f59e42', // Paypal - cam
-            '#d9d9d9'  // Không xác định - xám
-          ],
-          borderColor: ['#fff'],
-          borderWidth: 2
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'top',
-            labels: { font: { size: 15 }, color: '#222' }
-          },
-          title: { display: false }
+      const token = localStorage.getItem('authToken');
+      let data = defaultData;
+
+      if (token) {
+        try {
+          const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/orders/stats/summary', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            data = await response.json();
+          } else {
+            throw new Error('Failed to fetch stats');
+          }
+        } catch (error) {
+          console.error('Error fetching stats:', error.message);
+          const notification = document.createElement('div');
+          notification.className = 'notification error-message';
+          notification.textContent = 'Lỗi khi tải thống kê: ' + error.message;
+          notification.style.display = 'block';
+          const statsSection = document.querySelector('.stats');
+          if (statsSection) statsSection.prepend(notification);
+          setTimeout(() => notification.remove(), 5000);
         }
+      } else {
+        console.error('No auth token found. Using default data.');
       }
-    };
 
-    const statusChartElement = document.getElementById('statusChart');
-    const paymentChartElement = document.getElementById('paymentChart');
+      const totalOrders = document.getElementById('totalOrders');
+      const totalRevenue = document.getElementById('totalRevenue');
+      const successCount = document.getElementById('successCount');
+      const failedCount = document.getElementById('failedCount');
 
-    if (statusChartElement) {
-      new Chart(statusChartElement, statusChartConfig);
+      if (totalOrders) totalOrders.textContent = data.totalOrders || 0;
+      if (totalRevenue) totalRevenue.textContent = (data.totalRevenue || 0).toLocaleString('vi-VN') + ' ₫';
+      if (successCount) successCount.textContent = data.successCount || 0;
+      if (failedCount) failedCount.textContent = data.failedCount || 0;
+
+      const statusLabels = Object.keys(data.statusStats).map(key => key === 'null' ? 'Không xác định' : {
+        Cancelled: 'Hủy',
+        Delivered: 'Đã giao',
+        Shipped: 'Đang giao',
+        Processing: 'Đang xử lý',
+        Pending: 'Chờ xử lý',
+        AwaitingPickup: 'Chờ nhận hàng'
+      }[key] || key);
+
+      const statusChartConfig = {
+        type: 'pie',
+        data: {
+          labels: statusLabels,
+          datasets: [{
+            data: Object.values(data.statusStats || {}),
+            backgroundColor: ['#ff4d4f', '#28a745', '#38bdf8', '#ffc107', '#0ea5e9', '#d9d9d9', '#6c63ff'],
+            borderColor: ['#fff'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { font: { size: 14 }, color: '#333' }
+            },
+            title: { display: false }
+          }
+        }
+      };
+
+      const paymentLabels = Object.keys(data.paymentStats).map(key => {
+        if (key === 'null') return 'Không xác định';
+        if (key === 'COD') return 'Thanh toán khi nhận hàng';
+        if (key === 'ZALOPAY') return 'ZaloPay';
+        if (key === 'MOMO') return 'Momo';
+        if (key === 'VNPAY') return 'VNPay';
+        if (key === 'BANK') return 'Chuyển khoản';
+        if (key === 'PAYPAL') return 'Paypal';
+        if (key === 'PAYOS') return 'PayOS';
+        return key;
+      });
+
+      const paymentChartConfig = {
+        type: 'doughnut',
+        data: {
+          labels: paymentLabels,
+          datasets: [{
+            data: Object.values(data.paymentStats || {}),
+            backgroundColor: [
+              '#0ea5e9', // COD
+              '#ff4d4f', // ZALOPAY
+              '#ffc107', // MOMO
+              '#6c63ff', // VNPAY
+              '#28a745', // BANK
+              '#f59e42', // PAYPAL
+              '#d9d9d9', // PAYOS
+              '#d9d9d9'  // Không xác định
+            ],
+            borderColor: ['#fff'],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { font: { size: 15 }, color: '#222' }
+            },
+            title: { display: false }
+          }
+        }
+      };
+
+      const statusChartElement = document.getElementById('statusChart');
+      const paymentChartElement = document.getElementById('paymentChart');
+
+      if (statusChartElement) {
+        new Chart(statusChartElement, statusChartConfig);
+      }
+      if (paymentChartElement) {
+        new Chart(paymentChartElement, paymentChartConfig);
+      }
     }
-    if (paymentChartElement) {
-      new Chart(paymentChartElement, paymentChartConfig);
-    }
-  }
