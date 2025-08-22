@@ -18,9 +18,7 @@
       width: calc(100% - 260px);
     }
 
-    .management-section {
-      /* No specific styles for management-section in the original */
-    }
+  /* management-section styles are in external CSS file */
 
     .title {
       font-size: 28px;
@@ -394,11 +392,12 @@
           <option value="locked">Đã khóa</option>
         </select>
       </div>
-      <div class="user-status-tabs">
-        <button class="user-tab active" data-type="all">Tất cả</button>
-        <button class="user-tab" data-type="active">Đang hoạt động</button>
-        <button class="user-tab" data-type="locked">Đã khóa</button>
+      <!-- Role tabs: All roles / Người dùng / Admin / Shipper -->
+      <div class="user-status-tabs role-tabs">
+        <button class="user-tab" data-type="all">Tất cả vai trò</button>
+        <button class="user-tab active" data-type="user"><i class="fas fa-user"></i> Người dùng</button>
         <button class="user-tab" data-type="admin"><i class="fas fa-user-shield"></i> Admin</button>
+        <button class="user-tab" data-type="shipper"><i class="fas fa-truck"></i> Shipper</button>
       </div>
       <div class="table-wrapper">
         <table class="user-table">
@@ -451,7 +450,7 @@
     </form>
   </dialog>
 
-  <script src="/public/config.js"></script>
+  <script src="/assets/js/config.js"></script>
   <script src="/assets/js/quanlynguoidung.js"></script>
   <script>
     // Load avatar from localStorage on page load

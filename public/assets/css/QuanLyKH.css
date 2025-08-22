@@ -9,8 +9,8 @@ body {
   max-width: 100%;
 }
 
-/* Ẩn thanh cuộn ngang của bảng và trang */
-body, .main, .table-wrapper, .user-table {
+/* Ẩn thanh cuộn ngang cho layout chính, nhưng cho phép bảng cuộn ngang */
+body, .main {
   overflow-x: hidden !important;
 }
 
@@ -323,6 +323,7 @@ search-filter .select {
   width: 100%;
   min-width: 0;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .user-table {
   width: 100%;
@@ -337,6 +338,7 @@ search-filter .select {
   overflow: hidden;
   box-shadow: 0 2px 8px #bae6fd22;
   margin-bottom: 0;
+  min-width: 980px; /* ensure enough width so action column shows; adjust as needed */
 }
 .user-table th,
 .user-table td {
@@ -361,6 +363,7 @@ search-filter .select {
 }
 .user-table td.actions {
   white-space: nowrap;
+  width: 220px; /* reserve space for action buttons */
 }
 
 /* Nút Thêm nhiều màu nổi bật */

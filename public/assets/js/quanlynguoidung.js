@@ -96,7 +96,8 @@ async function fetchUsers() {
     });
     const data = await res.json();
     allUsers = Array.isArray(data) ? data : [];
-    renderUsers(allUsers);
+  // Apply current filters/tabs after fetching so we stay on the same role tab
+  filterAndRenderUsers();
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
   }
@@ -141,6 +142,11 @@ function renderUsers(users) {
           <button class="btn btn-lock-toggle" data-id="${user._id}" data-active="${user.isActive}">
             ${user.isActive ? 'Khóa' : 'Mở khóa'}
           </button>
+          ${Array.isArray(user.roles) && user.roles.includes('shipper') ? `
+            <button class="btn btn-shipper-toggle" data-id="${user._id}" data-verified="${!!user.shipper_verified}">
+              ${user.shipper_verified ? 'Hủy duyệt Shipper' : 'Duyệt Shipper'}
+            </button>
+          ` : ''}
         </td>
       </tr>
       <tr class="user-detail-row" id="detail-row-${idx + startIdx}" style="display:none; background:#f8f9fa;">
@@ -222,13 +228,28 @@ function renderPagination(page, totalPages) {
 function filterAndRenderUsers() {
   const keyword = document.querySelector('.search-filter .input').value.trim().toLowerCase();
   const status = document.querySelector('.search-filter .select').value;
-  let filtered = allUsers.filter(u =>
-    (u.full_name || u.username || '').toLowerCase().includes(keyword) ||
-    (u.email || '').toLowerCase().includes(keyword) ||
-    (u.phone_number || '').toLowerCase().includes(keyword)
-  );
+  // Find currently active role tab (defaults to 'user' if none)
+  const activeRoleTab = document.querySelector('.role-tabs .user-tab.active');
+  const roleType = activeRoleTab ? activeRoleTab.getAttribute('data-type') : 'user';
+
+  let filtered = allUsers.filter(u => {
+    const matchesKeyword = ((u.full_name || u.username || '') + ' ' + (u.email || '') + ' ' + (u.phone_number || '')).toLowerCase().includes(keyword);
+    return matchesKeyword;
+  });
+
+  // status filter
   if (status === 'active') filtered = filtered.filter(u => u.isActive);
   if (status === 'locked') filtered = filtered.filter(u => !u.isActive);
+
+  // role filter
+  if (roleType === 'user') {
+    filtered = filtered.filter(u => !Array.isArray(u.roles) || (Array.isArray(u.roles) && !u.roles.includes('admin') && !u.roles.includes('shipper')));
+  } else if (roleType === 'admin') {
+    filtered = filtered.filter(u => Array.isArray(u.roles) && u.roles.includes('admin'));
+  } else if (roleType === 'shipper') {
+    filtered = filtered.filter(u => Array.isArray(u.roles) && u.roles.includes('shipper'));
+  } // 'all' means no role filtering
+
   renderUsers(filtered);
 }
 
@@ -320,13 +341,16 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   // Tab switching
+  // Combine role tabs and other status tabs into a single handler.
   document.querySelectorAll('.user-tab').forEach(tab => {
     tab.onclick = function() {
-      document.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
+      // Only one active in the role-tabs group; remove active from siblings then set
+      const group = this.parentElement;
+      group.querySelectorAll('.user-tab').forEach(t => t.classList.remove('active'));
       this.classList.add('active');
-      const type = this.getAttribute('data-type');
       currentPage = 1;
-      filterAndRenderUsersByTab(type);
+      // Use unified filter function which reads active role tab and search/status selects
+      filterAndRenderUsers();
     };
   });
 
@@ -349,13 +373,64 @@ document.addEventListener('DOMContentLoaded', () => {
       const isActive = e.target.getAttribute('data-active') === 'true';
       showLockUserDialog(id, isActive);
     }
+
+    if (e.target.classList.contains('btn-shipper-toggle')) {
+      const id = e.target.getAttribute('data-id');
+      const verified = e.target.getAttribute('data-verified') === 'true';
+      // Confirm action
+      const confirmMsg = verified ? 'Bạn có chắc muốn hủy duyệt shipper này?' : 'Bạn có chắc muốn duyệt shipper này?';
+      if (!confirm(confirmMsg)) return;
+
+  const token = getToken();
+      if (!token) {
+        alert('Bạn chưa đăng nhập hoặc token không hợp lệ.');
+        return;
+      }
+
+      // Determine API base URL from config or fallback
+      const apiBase = typeof base_url !== 'undefined' ? base_url : 'https://server-shelf-stacker-w1ds.onrender.com';
+
+      // Build payload. If we're un-verifying (verified === true), request clearing device tokens.
+      const payload = { shipper_verified: !verified };
+      if (verified === true) {
+        // un-verify -> clear device tokens to force re-registration/log out
+        payload.clearDeviceTokensOnUnverify = true;
+      }
+
+      // use /auth prefix (userRouter is mounted under /auth)
+      fetch(`${apiBase}/auth/users/${id}/shipper-status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(payload)
+      }).then(async res => {
+        const resText = await res.text().catch(() => '');
+        let resJson = {};
+        try { resJson = resText ? JSON.parse(resText) : {}; } catch(e) { /* not JSON */ }
+        if (res.ok) {
+          showSuccessDialog('Cập nhật trạng thái shipper thành công');
+          fetchUsers();
+        } else {
+          console.error('Shipper status update failed', { status: res.status, bodyText: resText, bodyJson: resJson });
+          alert('Thất bại: ' + (resJson.message || resJson.error || resText || 'Lỗi server'));
+        }
+      }).catch(err => {
+        console.error('Error updating shipper status:', err);
+        alert('Lỗi khi cập nhật trạng thái shipper');
+      });
+    }
   });
 });
 
+// Keep this helper for backwards compatibility but prefer filterAndRenderUsers
 function filterAndRenderUsersByTab(type) {
-  let filtered = allUsers;
-  if (type === 'active') filtered = filtered.filter(u => u.isActive);
-  if (type === 'locked') filtered = filtered.filter(u => !u.isActive);
-  if (type === 'admin') filtered = filtered.filter(u => Array.isArray(u.roles) && u.roles.includes('admin'));
-  renderUsers(filtered);
+  // set the appropriate role tab active
+  const tab = document.querySelector(`.role-tabs .user-tab[data-type="${type}"]`);
+  if (tab) {
+    document.querySelectorAll('.role-tabs .user-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  }
+  filterAndRenderUsers();
 }
