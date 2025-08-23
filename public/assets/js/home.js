@@ -44,23 +44,39 @@ if (backButton) {
 // Show edit profile dialog
 const editProfileButton = document.getElementById('editProfileButton');
 if (editProfileButton) {
-  editProfileButton.addEventListener('click', () => {
-    const userData = JSON.parse(localStorage.getItem('userData') || '{}');
-    const editFullName = document.getElementById('editFullName');
-    const editPhoneNumber = document.getElementById('editPhoneNumber');
-    const editBirthDate = document.getElementById('editBirthDate');
-    const editGender = document.getElementById('editGender');
-    const editEmail = document.getElementById('editEmail');
-    const editUsername = document.getElementById('editUsername');
-    const editProfileDialog = document.getElementById('editProfileDialog');
+  editProfileButton.addEventListener('click', async () => {
+    const token = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId'); // Đúng là id
 
-    if (editFullName) editFullName.value = userData.full_name || '';
-    if (editPhoneNumber) editPhoneNumber.value = userData.phone_number || '';
-    if (editBirthDate) editBirthDate.value = userData.birth_date || '1990-01-01';
-    if (editGender) editGender.value = userData.gender || 'male';
-    if (editEmail) editEmail.value = userData.email || '';
-    if (editUsername) editUsername.value = userData.username || '';
-    if (editProfileDialog) editProfileDialog.showModal();
+    if (!token || !userId) {
+      showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/auth/users/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      const result = await response.json();
+      if (result.success && result.user) {
+        const userData = result.user;
+        document.getElementById('editFullName').value = userData.full_name || '';
+        document.getElementById('editPhoneNumber').value = userData.phone_number || '';
+        document.getElementById('editBirthDate').value = userData.birth_date ? userData.birth_date.slice(0, 10) : '1990-01-01';
+        document.getElementById('editGender').value = userData.gender || 'male';
+        document.getElementById('editEmail').value = userData.email || '';
+        document.getElementById('editUsername').value = userData.username || '';
+        document.getElementById('editProfileDialog').showModal();
+      } else {
+        showNotification('error', 'Không lấy được thông tin người dùng.');
+      }
+    } catch (err) {
+      showNotification('error', 'Lỗi khi lấy thông tin người dùng.');
+    }
   });
 }
 
@@ -76,7 +92,7 @@ if (cancelProfileButton) {
 // Save profile changes
 const saveProfileButton = document.getElementById('saveProfileButton');
 if (saveProfileButton) {
-  saveProfileButton.addEventListener('click', () => {
+  saveProfileButton.addEventListener('click', async () => {
     const fullName = document.getElementById('editFullName')?.value;
     const phoneNumber = document.getElementById('editPhoneNumber')?.value;
     const birthDate = document.getElementById('editBirthDate')?.value;
@@ -85,6 +101,7 @@ if (saveProfileButton) {
     const username = document.getElementById('editUsername')?.value;
     const editProfileMessage = document.getElementById('editProfileMessage');
     const editProfileDialog = document.getElementById('editProfileDialog');
+    const token = localStorage.getItem('authToken');
 
     const data = {
       full_name: fullName,
@@ -95,46 +112,49 @@ if (saveProfileButton) {
       username: username
     };
 
-    const token = localStorage.getItem('authToken');
+    if (!token) {
+      showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+      return;
+    }
 
-    fetch(`${BASE_URL}/auth/update`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(data)
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (editProfileMessage) {
-          if (data.message === 'User updated successfully') {
-            localStorage.setItem('userData', JSON.stringify(data.user));
-            editProfileMessage.textContent = 'Cập nhật thông tin thành công';
-            editProfileMessage.className = 'notification';
-            setTimeout(() => {
-              if (editProfileDialog) editProfileDialog.close();
-            }, 2000);
-          } else {
-            editProfileMessage.textContent = 'Cập nhật thất bại: ' + (data.error || 'Lỗi không xác định');
-            editProfileMessage.className = 'notification error-message';
-          }
-          editProfileMessage.style.display = 'block';
-          setTimeout(() => {
-            if (editProfileMessage) editProfileMessage.style.display = 'none';
-          }, 3000);
-        }
-      })
-      .catch(error => {
-        if (editProfileMessage) {
-          editProfileMessage.textContent = 'Lỗi: ' + error.message;
-          editProfileMessage.className = 'notification error-message';
-          editProfileMessage.style.display = 'block';
-          setTimeout(() => {
-            if (editProfileMessage) editProfileMessage.style.display = 'none';
-          }, 3000);
-        }
+    try {
+      // SỬA ĐÚNG ĐƯỜNG DẪN API
+      const response = await fetch(`${BASE_URL}/auth/update`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(data)
       });
+      const result = await response.json();
+      if (editProfileMessage) {
+        if (result.success) {
+          localStorage.setItem('userData', JSON.stringify(result.user));
+          editProfileMessage.textContent = 'Cập nhật thông tin thành công';
+          editProfileMessage.className = 'notification';
+          setTimeout(() => {
+            if (editProfileDialog) editProfileDialog.close();
+          }, 2000);
+        } else {
+          editProfileMessage.textContent = 'Cập nhật thất bại: ' + (result.message || 'Lỗi không xác định');
+          editProfileMessage.className = 'notification error-message';
+        }
+        editProfileMessage.style.display = 'block';
+        setTimeout(() => {
+          if (editProfileMessage) editProfileMessage.style.display = 'none';
+        }, 3000);
+      }
+    } catch (error) {
+      if (editProfileMessage) {
+        editProfileMessage.textContent = 'Lỗi: ' + error.message;
+        editProfileMessage.className = 'notification error-message';
+        editProfileMessage.style.display = 'block';
+        setTimeout(() => {
+          if (editProfileMessage) editProfileMessage.style.display = 'none';
+        }, 3000);
+      }
+    }
   });
 }
 
@@ -173,9 +193,11 @@ if (loginButton) {
       .then(response => response.json())
       .then(data => {
         if (loginMessage) {
-          if (data.message === 'Login successful') {
+          if (data.access_token && data.user && data.user._id) {
+            // Sửa lại điều kiện này cho chắc chắn
             localStorage.setItem('authToken', data.access_token);
             localStorage.setItem('userId', data.user._id);
+            localStorage.setItem('userData', JSON.stringify(data.user));
             loginMessage.textContent = 'Đăng nhập thành công';
             loginMessage.className = 'notification';
             if (loginDialog) loginDialog.close();

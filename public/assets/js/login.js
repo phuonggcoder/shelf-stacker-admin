@@ -22,13 +22,10 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
     const data = await response.json();
 
     if (response.ok) {
-      if (data.access_token) {
-        localStorage.setItem('authToken', data.access_token); // Đúng key
-      }
-      if (data.user) {
-        localStorage.setItem('userData', JSON.stringify(data.user)); // Store full user data
-      }
-      window.location.href = 'home'; // Redirect to home
+      localStorage.setItem('authToken', data.access_token);
+      localStorage.setItem('userId', data.user.id); // Đúng là id, không phải _id
+      localStorage.setItem('userData', JSON.stringify(data.user));
+      window.location.href = 'home';
     } else {
       errorMsg.textContent = data.message || 'Email hoặc mật khẩu không đúng.';
     }
