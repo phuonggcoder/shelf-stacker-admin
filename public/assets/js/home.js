@@ -477,26 +477,26 @@ function renderNotifications(orders) {
 let lastNotifiedOrderId = null;
 
 async function fetchStats() {
+  // Dữ liệu mặc định từ BE bạn gửi
   const defaultData = {
-    totalOrders: 234,
-    totalRevenue: 30700686,
+    totalOrders: 237,
+    totalRevenue: 32036686,
     statusStats: {
-      OutForDelivery: 10,
-      Shipped: 8,
-      Pending: 122,
-      AwaitingPickup: 5,
       Cancelled: 55,
       Processing: 16,
-      Delivered: 13,
-      null: 5
+      Pending: 121,
+      Shipped: 8,
+      OutForDelivery: 15,
+      null: 5,
+      Delivered: 17
     },
     paymentStats: {
+      ZALOPAY: 96,
       MOMO: 1,
-      PAYOS: 10,
-      COD: 128,
-      ZALOPAY: 95
+      COD: 130,
+      PAYOS: 10
     },
-    successCount: 13,
+    successCount: 17,
     failedCount: 55
   };
 
@@ -539,6 +539,7 @@ async function fetchStats() {
     showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
   }
 
+  // Hiển thị số liệu lên dashboard
   const totalOrders = document.getElementById('totalOrders');
   const totalRevenue = document.getElementById('totalRevenue');
   const successCount = document.getElementById('successCount');
@@ -549,14 +550,17 @@ async function fetchStats() {
   if (successCount) successCount.textContent = data.successCount || 0;
   if (failedCount) failedCount.textContent = data.failedCount || 0;
 
-  const statusLabels = Object.keys(data.statusStats).map(key => key === 'null' ? 'Không xác định' : {
-    Cancelled: 'Hủy',
-    Delivered: 'Đã giao',
-    Shipped: 'Đang giao',
-    Processing: 'Đang xử lý',
-    Pending: 'Chờ xử lý',
-    AwaitingPickup: 'Chờ nhận hàng'
-  }[key] || key);
+  // Dịch trạng thái đơn hàng sang tiếng Việt
+  const statusLabels = Object.keys(data.statusStats).map(key => {
+    if (key === 'null') return 'Không xác định';
+    if (key === 'Cancelled') return 'Đã huỷ';
+    if (key === 'Delivered') return 'Đã giao';
+    if (key === 'Shipped') return 'Đang giao';
+    if (key === 'Processing') return 'Đang xử lý';
+    if (key === 'Pending') return 'Chờ xác nhận';
+    if (key === 'OutForDelivery') return 'Chờ giao hàng';
+    return key;
+  });
 
   const statusChart = {
     type: 'pie',
@@ -581,15 +585,13 @@ async function fetchStats() {
     }
   };
 
+  // Dịch phương thức thanh toán sang tiếng Việt
   const paymentLabels = Object.keys(data.paymentStats).map(key => {
-    if (key === 'null') return 'Không xác định';
     if (key === 'COD') return 'Thanh toán khi nhận hàng';
     if (key === 'ZALOPAY') return 'ZaloPay';
     if (key === 'MOMO') return 'Momo';
-    if (key === 'VNPAY') return 'VNPay';
-    if (key === 'BANK') return 'Chuyển khoản';
-    if (key === 'PAYPAL') return 'Paypal';
     if (key === 'PAYOS') return 'PayOS';
+    if (key === 'null') return 'Không xác định';
     return key;
   });
 
@@ -603,11 +605,8 @@ async function fetchStats() {
           '#0ea5e9', // COD
           '#ff4d4f', // ZALOPAY
           '#ffc107', // MOMO
-          '#6c63ff', // VNPAY
-          '#28a745', // BANK
-          '#f59e42', // PAYPAL
           '#d9d9d9', // PAYOS
-          '#d9d9d9'  // Không xác định
+          '#6c63ff', // Không xác định
         ],
         borderColor: ['#fff'],
         borderWidth: 2
