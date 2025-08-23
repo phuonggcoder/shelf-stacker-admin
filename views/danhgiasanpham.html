@@ -663,6 +663,9 @@
         <button id="btn-filter-price" type="button" style="background: #007bff; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Lọc theo giá">Lọc giá</button>
         <button class="btn btn-add" id="addBookBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Thêm truyện mới">+ Thêm truyện</button>
         <button id="exportExcelBtn" style="background: #28a745; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Xuất Excel">Xuất Excel</button>
+        <button class="btn btn-add" id="importGoogleBookBtn" style="background: #4285F4; color: #fff; border: none; border-radius: 5px; padding: 10px 18px; font-size: 16px; cursor: pointer;" aria-label="Thêm từ Google Books">
+          <i class="fab fa-google"></i> Thêm từ Google Books
+        </button>
       </div>
       <div class="product-grid" id="productGrid">
         <!-- Các sản phẩm sẽ được render ở đây từ API -->
@@ -703,6 +706,16 @@
         <select id="bookCategory" multiple aria-label="Chọn danh mục"></select>
         <button type="submit" aria-label="Lưu truyện">Lưu</button>
       </form>
+    </div>
+  </div>
+
+  <div class="dialog-overlay" id="googleBookDialogOverlay" style="display:none;">
+    <div class="dialog-box" style="min-width:400px;">
+      <button class="close-btn" id="closeGoogleBookDialogBtn" title="Đóng" aria-label="Đóng cửa sổ">×</button>
+      <h2>Tìm kiếm sách Google Books</h2>
+      <input type="text" id="googleBookSearchInput" placeholder="Nhập tên sách..." style="width:100%;padding:8px;margin-bottom:10px;" />
+      <button id="googleBookSearchBtn" class="btn-primary" style="margin-bottom:10px;">Tìm kiếm</button>
+      <div id="googleBookResults"></div>
     </div>
   </div>
 
@@ -873,6 +886,67 @@
         uploadMessage.className = 'notification error-message';
         uploadButton.disabled = false;
         uploadButton.textContent = 'Tải lên';
+      }
+    };
+
+    document.getElementById('importGoogleBookBtn').onclick = () => {
+      document.getElementById('googleBookDialogOverlay').style.display = 'flex';
+    };
+
+    document.getElementById('closeGoogleBookDialogBtn').onclick = () => {
+      document.getElementById('googleBookDialogOverlay').style.display = 'none';
+    };
+
+    document.getElementById('googleBookSearchBtn').onclick = async () => {
+      const query = document.getElementById('googleBookSearchInput').value.trim();
+      if (!query) {
+        alert('Vui lòng nhập tên sách để tìm kiếm.');
+        return;
+      }
+
+      const apiKey = 'AIzaSyD-YourAPIKeyHere'; // Thay thế bằng API Key của bạn
+      const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&key=${apiKey}`;
+
+      try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Lỗi khi kết nối đến Google Books API');
+
+        const data = await response.json();
+        const resultsDiv = document.getElementById('googleBookResults');
+        resultsDiv.innerHTML = '';
+
+        if (data.items && data.items.length > 0) {
+          data.items.forEach(item => {
+            const title = item.volumeInfo.title || 'Không có tiêu đề';
+            const authors = item.volumeInfo.authors ? item.volumeInfo.authors.join(', ') : 'Không có tác giả';
+            const thumbnail = item.volumeInfo.imageLinks ? item.volumeInfo.imageLinks.thumbnail : '';
+            const previewLink = item.volumeInfo.previewLink || '#';
+
+            const bookElement = document.createElement('div');
+            bookElement.className = 'book-result';
+            bookElement.style = 'display:flex;gap:10px;padding:10px;border-bottom:1px solid #ddd';
+
+            bookElement.innerHTML = `
+              <div style="flex-shrink:0;">
+                <img src="${thumbnail}" alt="Book Cover" style="width:60px;height:auto;border-radius:4px;">
+              </div>
+              <div style="flex-grow:1;">
+                <div style="font-weight:bold;color:#0ea5e9;">${title}</div>
+                <div style="color:#555;">Tác giả: ${authors}</div>
+              </div>
+              <div style="flex-shrink:0;">
+                <a href="${previewLink}" target="_blank" class="btn-primary" style="display:inline-block;padding:8px 12px;border-radius:4px;background:#0ea5e9;color:white;text-decoration:none;">Xem chi tiết</a>
+              </div>
+            `;
+
+            resultsDiv.appendChild(bookElement);
+          });
+        } else {
+          resultsDiv.innerHTML = '<div style="color:#999;text-align:center;padding:10px;">Không tìm thấy kết quả nào.</div>';
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Đã xảy ra lỗi. Vui lòng thử lại sau.');
       }
     };
   </script>

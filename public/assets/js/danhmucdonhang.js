@@ -16,18 +16,17 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
       return BASE_URL + path;
     }
 
-    function isValidStatusTransition(currentStatus, newStatus) {
-      // Admin chỉ được cập nhật từ Pending -> AwaitingPickup
-      if (currentStatus === 'Pending') {
-        return newStatus === 'AwaitingPickup' || newStatus === 'Pending';
+    function isValidStatusTransition(currentStatus, newStatus, order) {
+      // Nếu là trả hàng thì cho phép lên đã hoàn tiền
+      if (currentStatus === 'Returned') {
+        return newStatus === 'Refunded' || newStatus === 'Returned';
       }
-      // Cho phép từ AwaitingPickup/OutForDelivery sang Cancelled, Refunded (KHÔNG cho Returned)
-      if (currentStatus === 'AwaitingPickup' || currentStatus === 'OutForDelivery') {
-        return (
-          newStatus === currentStatus ||
-          newStatus === 'Cancelled' ||
-          newStatus === 'Refunded'
-        );
+      // Nếu là chờ xác nhận thì chỉ cho phép lên đã hoàn tiền với đơn COD
+      if (currentStatus === 'Pending') {
+        const isCOD = order?.payment_method === 'COD';
+        if (newStatus === 'Refunded' && isCOD) return true;
+        if (newStatus === 'Pending') return true;
+        return false;
       }
       // Các trạng thái khác chỉ cho phép giữ nguyên
       return currentStatus === newStatus;
@@ -290,7 +289,7 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
       if (statusSelect) {
         statusSelect.value = status;
         Array.from(statusSelect.options).forEach(option => {
-          option.disabled = !isValidStatusTransition(status, option.value) && option.value !== status;
+          option.disabled = !isValidStatusTransition(status, option.value, order) && option.value !== status;
         });
       }
       modal.style.display = 'flex';
@@ -325,7 +324,7 @@ const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
             return;
           }
 
-          if (!isValidStatusTransition(currentStatus, newStatus)) {
+          if (!isValidStatusTransition(currentStatus, newStatus, order)) {
             showNotification('error', `Không thể chuyển từ ${STATUS_MAP[currentStatus] || currentStatus} sang ${STATUS_MAP[newStatus] || newStatus}.`);
             return;
           }
