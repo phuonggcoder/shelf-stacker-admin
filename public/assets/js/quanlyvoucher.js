@@ -133,6 +133,7 @@ function editVoucher(id) {
       document.getElementById('edit-max-per-user').value = data.max_per_user || 1;
       document.getElementById('edit-is-active').value = data.is_active ? 'true' : 'false';
       document.getElementById('voucherEditDialog').style.display = 'flex';
+      updateDiscountValueInput('edit');
     })
     .catch(err => {
       console.error('Không thể lấy thông tin voucher:', err);
@@ -160,11 +161,20 @@ function submitEditVoucher() {
     return;
   }
 
-  // Kiểm tra các giá trị số không nhỏ hơn 1
-  if (isNaN(updated.discount_value) || updated.discount_value < 1) {
-    alert('Giá trị giảm giá phải lớn hơn hoặc bằng 1.');
-    return;
+  // Kiểm tra giá trị giảm giá từ 1 đến 100 (chỉ cho phần trăm)
+  if (updated.voucher_type === 'percentage') {
+    if (isNaN(updated.discount_value) || updated.discount_value < 1 || updated.discount_value > 100) {
+      alert('Giá trị giảm phần trăm phải từ 1% đến 100%.');
+      return;
+    }
+  } else {
+    if (isNaN(updated.discount_value) || updated.discount_value < 1) {
+      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1.');
+      return;
+    }
   }
+
+  // Kiểm tra các giá trị số không nhỏ hơn 1
   if (isNaN(updated.min_order_value) || updated.min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;
@@ -241,11 +251,20 @@ function submitAddVoucher() {
     return;
   }
 
-  // Kiểm tra các giá trị số không nhỏ hơn 1
-  if (discount_value < 1) {
-    alert('Giá trị giảm giá phải lớn hơn hoặc bằng 1.');
-    return;
+  // Kiểm tra giá trị giảm giá từ 1 đến 100 (chỉ cho phần trăm)
+  if (voucher_type === 'percentage') {
+    if (isNaN(discount_value) || discount_value < 1 || discount_value > 100) {
+      alert('Giá trị giảm phần trăm phải từ 1 đến 100%.');
+      return;
+    }
+  } else {
+    if (isNaN(discount_value) || discount_value < 1) {
+      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1.');
+      return;
+    }
   }
+
+  // Kiểm tra các giá trị số không nhỏ hơn 1
   if (min_order_value < 1) {
     alert('Giá trị đơn hàng tối thiểu phải lớn hơn hoặc bằng 1.');
     return;
@@ -296,8 +315,39 @@ function submitAddVoucher() {
     });
 }
 
+// Thêm sự kiện thay đổi cho loại voucher (add và edit)
+document.getElementById('add-voucher-type').addEventListener('change', function () {
+  updateDiscountValueInput('add');
+});
+document.getElementById('edit-voucher-type').addEventListener('change', function () {
+  updateDiscountValueInput('edit');
+});
+
+function updateDiscountValueInput(mode) {
+  const type = document.getElementById(`${mode}-voucher-type`).value;
+  const discountInput = document.getElementById(`${mode}-discount-value`);
+  const label = discountInput.previousElementSibling;
+  if (type === 'percentage') {
+    discountInput.setAttribute('type', 'number');
+    discountInput.setAttribute('min', '1');
+    discountInput.setAttribute('max', '100');
+    discountInput.setAttribute('step', '1');
+    discountInput.setAttribute('placeholder', 'Nhập % giảm (1-100)');
+    label.textContent = 'Giá trị giảm (%):';
+  } else {
+    discountInput.setAttribute('type', 'number');
+    discountInput.setAttribute('min', '1');
+    discountInput.removeAttribute('max');
+    discountInput.setAttribute('step', '1000');
+    discountInput.setAttribute('placeholder', 'Nhập số tiền giảm (VNĐ)');
+    label.textContent = 'Giá trị giảm (VNĐ):';
+  }
+}
+
+// Gọi khi mở dialog để cập nhật đúng UI
 function openAddDialog() {
   document.getElementById('voucherAddDialog').style.display = 'flex';
+  updateDiscountValueInput('add');
 }
 
 function closeAddDialog() {
