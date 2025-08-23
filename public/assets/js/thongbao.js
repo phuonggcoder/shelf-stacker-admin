@@ -326,16 +326,23 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const result = await response.json();
 
-      if (result.success) {
+      const statusDiv = document.getElementById('notificationStatus');
+      if (result.success && result.stats) {
+        // Hiển thị thống kê đẹp hơn
+        let html = `<b>Thống kê thông báo:</b><br>`;
+        for (const [key, value] of Object.entries(result.stats)) {
+          html += `<div><b>${key}:</b> ${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>`;
+        }
         statusDiv.style.display = 'block';
         statusDiv.classList.remove('error-message');
-        statusDiv.textContent = `Thống kê: ${JSON.stringify(result.stats, null, 2)}`;
+        statusDiv.innerHTML = html;
       } else {
         statusDiv.style.display = 'block';
         statusDiv.classList.add('error-message');
         statusDiv.textContent = result.message || 'Lấy thống kê thất bại';
       }
     } catch (error) {
+      const statusDiv = document.getElementById('notificationStatus');
       statusDiv.style.display = 'block';
       statusDiv.classList.add('error-message');
       statusDiv.textContent = `Lỗi khi lấy thống kê: ${error.message}`;
