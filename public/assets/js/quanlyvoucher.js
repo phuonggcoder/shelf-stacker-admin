@@ -167,11 +167,14 @@ function submitEditVoucher() {
       alert('Giá trị giảm phần trăm phải từ 1% đến 100%.');
       return;
     }
-  } else {
+  } else if (updated.voucher_type === 'fixed') {
     if (isNaN(updated.discount_value) || updated.discount_value < 1) {
-      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1.');
+      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1 VNĐ.');
       return;
     }
+  } else {
+    alert('Loại voucher không hợp lệ.');
+    return;
   }
 
   // Kiểm tra các giá trị số không nhỏ hơn 1
@@ -251,17 +254,20 @@ function submitAddVoucher() {
     return;
   }
 
-  // Kiểm tra giá trị giảm giá từ 1 đến 100 (chỉ cho phần trăm)
+  // Kiểm tra giá trị giảm giá đúng loại
   if (voucher_type === 'percentage') {
     if (isNaN(discount_value) || discount_value < 1 || discount_value > 100) {
-      alert('Giá trị giảm phần trăm phải từ 1 đến 100%.');
+      alert('Giá trị giảm phần trăm phải từ 1% đến 100%.');
+      return;
+    }
+  } else if (voucher_type === 'fixed') {
+    if (isNaN(discount_value) || discount_value < 1) {
+      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1 VNĐ.');
       return;
     }
   } else {
-    if (isNaN(discount_value) || discount_value < 1) {
-      alert('Giá trị giảm cố định phải lớn hơn hoặc bằng 1.');
-      return;
-    }
+    alert('Loại voucher không hợp lệ.');
+    return;
   }
 
   // Kiểm tra các giá trị số không nhỏ hơn 1
@@ -334,12 +340,12 @@ function updateDiscountValueInput(mode) {
     discountInput.setAttribute('step', '1');
     discountInput.setAttribute('placeholder', 'Nhập % giảm (1-100)');
     label.textContent = 'Giá trị giảm (%):';
-  } else {
+  } else if (type === 'fixed') {
     discountInput.setAttribute('type', 'number');
     discountInput.setAttribute('min', '1');
     discountInput.removeAttribute('max');
     discountInput.setAttribute('step', '1000');
-    discountInput.setAttribute('placeholder', 'Nhập số tiền giảm (VNĐ)');
+    discountInput.setAttribute('placeholder', 'Nhập số tiền giảm (VNĐ, >=1)');
     label.textContent = 'Giá trị giảm (VNĐ):';
   }
 }
