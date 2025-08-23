@@ -45,14 +45,15 @@ function renderVouchers(vouchers) {
 
   voucherTableBody.innerHTML = '';
   vouchers.forEach(voucher => {
-    const row = document.createElement('tr');
-    const discountTypeLabel = voucher.discount_type === 'order' ? 'Mã giảm giá' :
-                             voucher.discount_type === 'shipping' ? 'Mã freeship' : 'Mã vận chuyển';
+    // Chỉ còn 2 loại: order (Mã giảm giá), transport (Mã vận chuyển)
+    const discountTypeLabel = voucher.discount_type === 'order' ? 'Mã giảm giá' : 'Mã vận chuyển';
+    const voucherTypeLabel = voucher.voucher_type === 'percentage' ? 'Phần trăm' : 'Giảm cố định';
+    row = document.createElement('tr');
     row.innerHTML = `
       <td>${voucher.voucher_id}</td>
       <td>${discountTypeLabel}</td>
-      <td>${voucher.voucher_type}</td>
-      <td>${voucher.discount_value}</td>
+      <td>${voucherTypeLabel}</td>
+      <td>${voucher.voucher_type === 'percentage' ? voucher.discount_value + '%' : voucher.discount_value.toLocaleString('vi-VN') + ' VNĐ'}</td>
       <td>${formatDate(voucher.start_date)}</td>
       <td>${formatDate(voucher.end_date)}</td>
       <td>${voucher.is_active ? 'Đang hoạt động' : 'Ngưng hoạt động'}</td>
