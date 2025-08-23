@@ -370,6 +370,91 @@
     #editProfileDialog::backdrop {
       background: rgba(0, 0, 0, 0.3);
     }
+
+    .notification-bell {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+    .notification-bell .fa-bell {
+      font-size: 18px;
+      color: #0ea5e9;
+    }
+    .notification-bell .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #ff4d4f;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0;
+      width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      padding: 10px;
+      color: #333;
+      max-height: 400px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .notification-dropdown.active {
+      display: block;
+    }
+    .notification-item {
+      padding: 14px 10px;
+      border-bottom: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .notification-item:hover {
+      background: #f0f9ff;
+    }
+    .notification-item div {
+      flex: 1;
+      font-size: 15px;
+      color: #0ea5e9;
+      font-weight: 500;
+    }
+    .notification-item div p {
+      margin: 0;
+      font-size: 14px;
+    }
+    .notification-item div p strong {
+      color: #0ea5e9;
+    }
+    .notification-item div p span {
+      color: #666;
+      font-size: 12px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -449,6 +534,11 @@
     <h1 class="logo">Sleek Admin</h1>
     <div class="user">
       <img id="headerAvatar" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" class="badge">0</span>
+        <div id="notificationDropdown" class="notification-dropdown"></div>
+      </span>
     </div>
   </header>
 
@@ -535,8 +625,8 @@
       <button id="cancelProfileButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
     </div>
   </dialog>
+
   <script src="/assets/js/home.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
 </body>
 </html>

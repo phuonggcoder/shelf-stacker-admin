@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Xử lý hiển thị các trường dựa trên loại thông báo
-  document.getElementById('notificationType').addEventListener('change', function() {
+  document.getElementById('notificationType').addEventListener('change', function () {
     const userIdLabel = document.getElementById('userIdLabel');
     const userIdInput = document.getElementById('userId');
     const userIdsLabel = document.getElementById('userIdsLabel');
@@ -48,9 +48,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const titleInput = document.getElementById('notificationTitle');
 
     // Ẩn tất cả các trường bổ sung trước
-    [userIdLabel, userIdInput, userIdsLabel, userIdsInput, orderIdLabel, orderIdInput, orderStatusLabel, orderStatusSelect,
+    [
+      userIdLabel, userIdInput, userIdsLabel, userIdsInput, orderIdLabel, orderIdInput, orderStatusLabel, orderStatusSelect,
       paymentStatusLabel, paymentStatusSelect, paymentMethodLabel, paymentMethodSelect, amountLabel, amountInput,
-      discountLabel, discountInput, validUntilLabel, validUntilInput].forEach(el => el.style.display = 'none');
+      discountLabel, discountInput, validUntilLabel, validUntilInput
+    ].forEach(el => el.style.display = 'none');
 
     // Cập nhật placeholder mặc định
     messageInput.placeholder = 'Nhập nội dung thông báo';
@@ -60,10 +62,14 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'byUserId':
         userIdLabel.style.display = 'block';
         userIdInput.style.display = 'block';
+        messageInput.placeholder = 'Ví dụ: Chào mừng bạn quay trở lại!';
+        titleInput.placeholder = 'Ví dụ: Đăng nhập thành công';
         break;
       case 'multicast':
         userIdsLabel.style.display = 'block';
         userIdsInput.style.display = 'block';
+        messageInput.placeholder = 'Ví dụ: Cập nhật mới từ hệ thống!';
+        titleInput.placeholder = 'Ví dụ: Thông báo hệ thống';
         break;
       case 'order':
         [userIdLabel, userIdInput, orderIdLabel, orderIdInput, orderStatusLabel, orderStatusSelect, amountLabel, amountInput]
@@ -78,221 +84,63 @@ document.addEventListener('DOMContentLoaded', () => {
         titleInput.placeholder = 'Ví dụ: Cập nhật thanh toán';
         break;
       case 'marketing':
-      case 'promotion':
         userIdLabel.style.display = 'block';
         userIdInput.style.display = 'block';
         userIdInput.placeholder = 'Nhập User ID (để trống để gửi tất cả)';
-        if (this.value === 'promotion') {
-          [discountLabel, discountInput, validUntilLabel, validUntilInput].forEach(el => el.style.display = 'block');
-          messageInput.placeholder = 'Ví dụ: Khuyến mãi giảm giá {discount}% đến {validUntil}';
-          titleInput.placeholder = 'Ví dụ: Ưu đãi đặc biệt';
-        }
+        messageInput.placeholder = 'Ví dụ: Flash Sale - Giảm giá 70% cho tất cả sách!';
+        titleInput.placeholder = 'Ví dụ: Ưu đãi đặc biệt';
         break;
-      case 'urgent':
+      case 'promotion':
+        [userIdLabel, userIdInput, discountLabel, discountInput, validUntilLabel, validUntilInput]
+          .forEach(el => el.style.display = 'block');
+        userIdInput.placeholder = 'Nhập User ID (để trống để gửi tất cả)';
+        messageInput.placeholder = 'Ví dụ: Khuyến mãi giảm giá {discount}% đến {validUntil}';
+        titleInput.placeholder = 'Ví dụ: Ưu đãi đặc biệt';
+        break;
+      case 'system':
+        messageInput.placeholder = 'Ví dụ: Hệ thống sẽ bảo trì từ 2:00 - 4:00 sáng mai';
+        titleInput.placeholder = 'Ví dụ: Thông báo hệ thống';
         break;
     }
   });
 
   // Xử lý gửi thông báo
-  document.getElementById('sendNotification').addEventListener('click', async function() {
+  document.getElementById('sendNotification').addEventListener('click', async function () {
     const type = document.getElementById('notificationType').value;
     const userId = document.getElementById('userId').value.trim();
+    const userIds = document.getElementById('userIds').value.trim();
+    const orderId = document.getElementById('orderId').value.trim();
+    const orderStatus = document.getElementById('orderStatus').value;
+    const paymentStatus = document.getElementById('paymentStatus').value;
+    const paymentMethod = document.getElementById('paymentMethod').value;
+    const amount = document.getElementById('amount').value.trim();
+    const discount = document.getElementById('discount').value.trim();
+    const validUntil = document.getElementById('validUntil').value.trim();
     const title = document.getElementById('notificationTitle').value.trim();
     let message = document.getElementById('notificationMessage').value.trim();
     const imageFile = document.getElementById('imageFile').files[0];
     const imageUrlInput = document.getElementById('imageUrl').value.trim();
     const statusDiv = document.getElementById('notificationStatus');
     const historyTable = document.getElementById('notificationHistory');
-    const formData = new FormData(); // Chỉ khai báo 1 lần ở đây
+    const formData = new FormData();
 
     // Kiểm tra dữ liệu đầu vào
+    const validationRules = {
+      'byUserId': () => !userId,
+      'multicast': () => !userIds,
+      'order': () => !userId || !orderId || !orderStatus,
+      'payment': () => !userId || !orderId || !paymentStatus || !paymentMethod,
+      'promotion': () => discount && !validUntil,
+      'marketing': () => false,
+      'system': () => false
+    };
+
     if (!title || !message) {
       statusDiv.style.display = 'block';
       statusDiv.classList.add('error-message');
       statusDiv.textContent = 'Vui lòng nhập tiêu đề và nội dung thông báo';
       return;
     }
-    if (type === 'byUserId' && !userId) {
-      statusDiv.style.display = 'block';
-      statusDiv.classList.add('error-message');
-      statusDiv.textContent = 'Vui lòng nhập User ID';
-      return;
-    }
-
-    // Theo User ID (JSON)
-    if (type === 'byUserId') {
-      const payload = {
-        userId: userId,
-        title: title,
-        message: message,
-        type: 'immediate'
-      };
-
-      try {
-        const response = await fetch(`${BASE_URL}/api/noti/send`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-
-        if (result.success) {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.remove('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thành công';
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${new Date().toLocaleString()}</td>
-            <td>Theo User ID</td>
-            <td>${userId}</td>
-            <td>${title}</td>
-            <td>${message}</td>
-            <td>${result.image ? `<img src="${result.image}" style="max-width: 50px;" />` : 'Không'}</td>
-            <td>Đã gửi</td>
-          `;
-          historyTable.prepend(row);
-
-          [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
-           document.getElementById('userId'), document.getElementById('imageFile'), document.getElementById('imageUrl')]
-            .forEach(el => el.value = '');
-
-          setTimeout(() => statusDiv.style.display = 'none', 3000);
-        } else {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.add('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thất bại';
-        }
-      } catch (error) {
-        statusDiv.style.display = 'block';
-        statusDiv.classList.add('error-message');
-        statusDiv.textContent = `Lỗi khi gửi thông báo: ${error.message}`;
-      }
-      return;
-    }
-
-    // Nhiều User (form-data)
-    if (type === 'multicast') {
-      const userIds = document.getElementById('userIds').value.trim();
-      formData.append('userids', userIds);
-      formData.append('title', title);
-      formData.append('message', message);
-      formData.append('type', 'system');
-      formData.append('data', JSON.stringify({ foo: 'bar' }));
-      if (imageFile) formData.append('imageFile', imageFile);
-      if (imageUrlInput) formData.append('image', imageUrlInput);
-
-      try {
-        const response = await fetch(`${BASE_URL}/api/noti/send-multicast`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: formData
-        });
-        const result = await response.json();
-
-        if (result.success) {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.remove('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thành công';
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${new Date().toLocaleString()}</td>
-            <td>Nhiều User</td>
-            <td>${userIds}</td>
-            <td>${title}</td>
-            <td>${message}</td>
-            <td>${result.image ? `<img src="${result.image}" style="max-width: 50px;" />` : 'Không'}</td>
-            <td>Đã gửi</td>
-          `;
-          historyTable.prepend(row);
-
-          [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
-           document.getElementById('userIds'), document.getElementById('imageFile'), document.getElementById('imageUrl')]
-            .forEach(el => el.value = '');
-
-          setTimeout(() => statusDiv.style.display = 'none', 3000);
-        } else {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.add('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thất bại';
-        }
-      } catch (error) {
-        statusDiv.style.display = 'block';
-        statusDiv.classList.add('error-message');
-        statusDiv.textContent = `Lỗi khi gửi thông báo: ${error.message}`;
-      }
-      return;
-    }
-
-    // Gửi tất cả người dùng (form-data)
-    if (type === 'urgent') {
-      formData.append('title', title);
-      formData.append('message', message);
-      formData.append('type', 'system');
-      formData.append('data', JSON.stringify({ foo: 'bar' }));
-      if (imageFile) formData.append('imageFile', imageFile);
-      if (imageUrlInput) formData.append('image', imageUrlInput);
-
-      try {
-        const response = await fetch(`${BASE_URL}/api/noti/send-all`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${authToken}`
-          },
-          body: formData
-        });
-        const result = await response.json();
-
-        if (result.success) {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.remove('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thành công';
-
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${new Date().toLocaleString()}</td>
-            <td>Khẩn</td>
-            <td>Tất cả</td>
-            <td>${title}</td>
-            <td>${message}</td>
-            <td>${result.image ? `<img src="${result.image}" style="max-width: 50px;" />` : 'Không'}</td>
-            <td>Đã gửi</td>
-          `;
-          historyTable.prepend(row);
-
-          [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
-           document.getElementById('userId'), document.getElementById('userIds'), document.getElementById('orderId'),
-           document.getElementById('amount'), document.getElementById('discount'), document.getElementById('validUntil'),
-           document.getElementById('imageFile'), document.getElementById('imageUrl')]
-            .forEach(el => el.value = '');
-
-          setTimeout(() => statusDiv.style.display = 'none', 3000);
-        } else {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.add('error-message');
-          statusDiv.textContent = result.message || 'Gửi thông báo thất bại';
-        }
-      } catch (error) {
-        statusDiv.style.display = 'block';
-        statusDiv.classList.add('error-message');
-        statusDiv.textContent = `Lỗi khi gửi thông báo: ${error.message}`;
-      }
-      return;
-    }
-
-    const validationRules = {
-      'byUserId': () => !userId,
-      'multicast': () => !userIds,
-      'order': () => !userId || !orderId || !orderStatus,
-      'payment': () => !userId || !orderId || !paymentStatus || !paymentMethod,
-      'promotion': () => discount && !validUntil
-    };
 
     if (validationRules[type]?.()) {
       statusDiv.style.display = 'block';
@@ -307,77 +155,53 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Chuẩn bị form-data cho request
-    let endpoint = `${BASE_URL}/api/notifications/send`;
-    formData.append('title', title);
-    formData.append('message', message);
+    // Validate image file size (5MB limit)
+    if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+      statusDiv.style.display = 'block';
+      statusDiv.classList.add('error-message');
+      statusDiv.textContent = 'Hình ảnh không được vượt quá 5MB';
+      return;
+    }
 
-    // XÓA 2 DÒNG NÀY ĐỂ KHÔNG append file ở ngoài switch
-    // if (imageFile) formData.append('imageFile', imageFile);
-    // if (imageUrlInput) formData.append('image', imageUrlInput);
+    // Chuẩn bị payload hoặc form-data
+    let endpoint = `${BASE_URL}/api/noti/send`;
+    let isJsonPayload = false;
+    let payload = {};
 
     switch (type) {
-      case 'urgent':
-        endpoint = `${BASE_URL}/api/noti/send-all`;
-        formData.append('type', 'system');
-        break;
       case 'byUserId':
-        formData.append('userId', userId);
-        formData.append('type', 'immediate');
+        endpoint = `${BASE_URL}/api/noti/send`;
+        isJsonPayload = true;
+        payload = {
+          userId,
+          title,
+          message,
+          event: 'login_success',
+          type: 'immediate',
+          data: { foo: 'bar' }
+        };
         break;
       case 'multicast':
-        const userIds = document.getElementById('userIds').value.trim();
-        formData.append('userids', userIds); // chú ý: userids (chuỗi, phân cách bằng dấu phẩy)
+        endpoint = `${BASE_URL}/api/noti/send-multicast`;
+        formData.append('userids', userIds);
         formData.append('title', title);
         formData.append('message', message);
         formData.append('type', 'system');
+        formData.append('event', 'system_notification');
         formData.append('data', JSON.stringify({ foo: 'bar' }));
         if (imageFile) formData.append('imageFile', imageFile);
         if (imageUrlInput) formData.append('image', imageUrlInput);
-
-        try {
-          const response = await fetch(`${BASE_URL}/api/noti/send-multicast`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${authToken}`
-            },
-            body: formData
-          });
-          const result = await response.json();
-
-          if (result.success) {
-            statusDiv.style.display = 'block';
-            statusDiv.classList.remove('error-message');
-            statusDiv.textContent = result.message || 'Gửi thông báo thành công';
-
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${new Date().toLocaleString()}</td>
-              <td>Nhiều User</td>
-              <td>${userIds}</td>
-              <td>${title}</td>
-              <td>${message}</td>
-              <td>${result.image ? `<img src="${result.image}" style="max-width: 50px;" />` : 'Không'}</td>
-              <td>Đã gửi</td>
-            `;
-            historyTable.prepend(row);
-
-            [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
-             document.getElementById('userIds'), document.getElementById('imageFile'), document.getElementById('imageUrl')]
-              .forEach(el => el.value = '');
-
-            setTimeout(() => statusDiv.style.display = 'none', 3000);
-          } else {
-            statusDiv.style.display = 'block';
-            statusDiv.classList.add('error-message');
-            statusDiv.textContent = result.message || 'Gửi thông báo thất bại';
-          }
-        } catch (error) {
-          statusDiv.style.display = 'block';
-          statusDiv.classList.add('error-message');
-          statusDiv.textContent = `Lỗi khi gửi thông báo: ${error.message}`;
-        }
-        return;
+        break;
+      case 'system':
+        endpoint = `${BASE_URL}/api/noti/send-all`;
+        formData.append('title', title);
+        formData.append('message', message);
+        formData.append('type', 'system');
+        formData.append('event', 'system_notification');
+        formData.append('data', JSON.stringify({ foo: 'bar' }));
+        if (imageFile) formData.append('imageFile', imageFile);
+        if (imageUrlInput) formData.append('image', imageUrlInput);
+        break;
       case 'order':
         endpoint = `${BASE_URL}/api/noti/order`;
         formData.append('userId', userId);
@@ -386,35 +210,32 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('amount', amount);
         formData.append('title', title);
         formData.append('message', message);
-        if (imageFile && imageFile instanceof File) {
-          formData.append('imageFile', imageFile);
-        }
+        formData.append('event', 'order_success');
+        if (imageFile) formData.append('imageFile', imageFile);
+        if (imageUrlInput) formData.append('image', imageUrlInput);
         break;
       case 'payment':
         endpoint = `${BASE_URL}/api/noti/payment`;
         formData.append('userId', userId);
         formData.append('orderId', orderId);
         formData.append('paymentStatus', paymentStatus);
-        formData.append('amount', amount);
         formData.append('paymentMethod', paymentMethod);
+        formData.append('amount', amount);
         formData.append('title', title);
         formData.append('message', message);
-        if (imageFile && imageFile instanceof File) {
-          formData.append('imageFile', imageFile);
-        }
+        formData.append('event', 'payment_status');
+        if (imageFile) formData.append('imageFile', imageFile);
+        if (imageUrlInput) formData.append('image', imageUrlInput);
         break;
       case 'marketing':
         endpoint = `${BASE_URL}/api/noti/marketing`;
         if (userId) formData.append('userId', userId);
         formData.append('title', title);
         formData.append('message', message);
+        formData.append('event', 'marketing_notification');
         formData.append('data', JSON.stringify({ foo: 'bar' }));
-        if (imageFile && imageFile instanceof File) {
-          formData.append('imageFile', imageFile);
-        }
-        if (imageUrlInput) {
-          formData.append('image', imageUrlInput);
-        }
+        if (imageFile) formData.append('imageFile', imageFile);
+        if (imageUrlInput) formData.append('image', imageUrlInput);
         break;
       case 'promotion':
         endpoint = `${BASE_URL}/api/noti/promotion`;
@@ -422,11 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('title', title);
         formData.append('message', message.replace('{discount}', discount || '').replace('{validUntil}', validUntil || ''));
         formData.append('discount', discount);
-
-        // Xử lý validUntil: lấy đúng giá trị từ input type="date" hoặc "datetime-local"
+        formData.append('event', 'promotion_notification');
         let validUntilValue = '';
         if (validUntil) {
-          // Nếu là dạng yyyy-mm-dd thì dùng luôn, nếu là datetime-local thì cắt lấy yyyy-mm-dd
           if (/^\d{4}-\d{2}-\d{2}$/.test(validUntil)) {
             validUntilValue = validUntil;
           } else {
@@ -435,29 +254,26 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         }
         formData.append('validUntil', validUntilValue);
-
         formData.append('data', JSON.stringify({ foo: 'bar' }));
-
-        // Chỉ append file nếu thực sự có file
-        if (imageFile && imageFile instanceof File) {
-          formData.append('imageFile', imageFile);
-        }
-        if (imageUrlInput) {
-          formData.append('image', imageUrlInput);
-        }
+        if (imageFile) formData.append('imageFile', imageFile);
+        if (imageUrlInput) formData.append('image', imageUrlInput);
         break;
     }
 
     // Gửi yêu cầu đến API
     try {
-      const response = await fetch(endpoint, {
+      const headers = { 'Authorization': `Bearer ${authToken}` };
+      const options = {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`
-          // KHÔNG đặt Content-Type, để browser tự set multipart/form-data
-        },
-        body: formData
-      });
+        headers,
+        body: isJsonPayload ? JSON.stringify(payload) : formData
+      };
+
+      if (isJsonPayload) {
+        headers['Content-Type'] = 'application/json';
+      }
+
+      const response = await fetch(endpoint, options);
       const result = await response.json();
 
       if (result.success) {
@@ -468,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const row = document.createElement('tr');
         row.innerHTML = `
           <td>${new Date().toLocaleString()}</td>
-          <td>${type === 'urgent' ? 'Khẩn' : type === 'byUserId' ? 'Theo User ID' : type === 'multicast' ? 'Nhiều User' : type.charAt(0).toUpperCase() + type.slice(1)}</td>
+          <td>${type === 'system' ? 'Hệ thống' : type === 'byUserId' ? 'Theo User ID' : type === 'multicast' ? 'Nhiều User' : type.charAt(0).toUpperCase() + type.slice(1)}</td>
           <td>${userId || userIds || 'Tất cả'}</td>
           <td>${title}</td>
           <td>${message}</td>
@@ -478,11 +294,13 @@ document.addEventListener('DOMContentLoaded', () => {
         historyTable.prepend(row);
 
         // Xóa nội dung sau khi gửi
-        [document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
-         document.getElementById('userId'), document.getElementById('userIds'), document.getElementById('orderId'),
-         document.getElementById('amount'), document.getElementById('discount'), document.getElementById('validUntil'),
-         document.getElementById('imageFile'), document.getElementById('imageUrl')]
-          .forEach(el => el.value = '');
+        [
+          document.getElementById('notificationTitle'), document.getElementById('notificationMessage'),
+          document.getElementById('userId'), document.getElementById('userIds'), document.getElementById('orderId'),
+          document.getElementById('orderStatus'), document.getElementById('paymentStatus'), document.getElementById('paymentMethod'),
+          document.getElementById('amount'), document.getElementById('discount'), document.getElementById('validUntil'),
+          document.getElementById('imageFile'), document.getElementById('imageUrl')
+        ].forEach(el => el.value = '');
 
         setTimeout(() => statusDiv.style.display = 'none', 3000);
       } else {
@@ -498,9 +316,9 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Xử lý xem thống kê
-  document.getElementById('viewStats').addEventListener('click', async function() {
+  document.getElementById('viewStats').addEventListener('click', async function () {
     try {
-      const response = await fetch(`${BASE_URL}/api/notifications/stats`, {
+      const response = await fetch(`${BASE_URL}/api/noti/stats`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${authToken}`
@@ -523,4 +341,133 @@ document.addEventListener('DOMContentLoaded', () => {
       statusDiv.textContent = `Lỗi khi lấy thống kê: ${error.message}`;
     }
   });
+
+  // Xử lý upload avatar
+  const uploadDialog = document.getElementById('uploadDialog');
+  const uploadMessage = document.getElementById('uploadMessage');
+  const uploadButton = document.getElementById('uploadButton');
+  const cancelButton = document.getElementById('cancelButton');
+  const sidebarAvatar = document.getElementById('sidebarAvatar');
+  const headerAvatar = document.getElementById('headerAvatar');
+
+  // Load avatar from localStorage
+  const savedAvatar = localStorage.getItem('userAvatar');
+  if (savedAvatar) {
+    sidebarAvatar.src = savedAvatar;
+    headerAvatar.src = savedAvatar;
+  }
+
+  document.getElementById('settingsLink').onclick = () => {
+    document.getElementById('mainSidebar').classList.add('hidden');
+    document.getElementById('settingsSidebar').classList.remove('hidden');
+  };
+
+  document.getElementById('backButton').onclick = () => {
+    document.getElementById('settingsSidebar').classList.add('hidden');
+    document.getElementById('mainSidebar').classList.remove('hidden');
+  };
+
+  sidebarAvatar.onclick = () => {
+    uploadDialog.showModal();
+    resetUploadDialog();
+  };
+
+  cancelButton.onclick = () => {
+    uploadDialog.close();
+    resetUploadDialog();
+  };
+
+  uploadDialog.addEventListener('close', () => {
+    resetUploadDialog();
+  });
+
+  function resetUploadDialog() {
+    document.getElementById('avatarUpload').value = '';
+    uploadMessage.style.display = 'none';
+    uploadMessage.textContent = '';
+    uploadMessage.className = 'notification';
+    uploadButton.disabled = false;
+    uploadButton.textContent = 'Tải lên';
+  }
+
+  uploadButton.onclick = async () => {
+    const fileInput = document.getElementById('avatarUpload');
+    const file = fileInput.files[0];
+
+    if (!file) {
+      alert('Vui lòng chọn một ảnh.');
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn một file ảnh hợp lệ.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Hình ảnh không được vượt quá 5MB.');
+      return;
+    }
+
+    const token = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+
+    if (!token) {
+      alert('Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    if (!userId) {
+      alert('Thiếu userId. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    uploadButton.disabled = true;
+    uploadButton.textContent = 'Đang tải...';
+
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+      formData.append('userId', userId);
+
+      const response = await fetch(`${BASE_URL}/api/user-upload/avatar`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        let errorMsg = 'Lỗi khi tải ảnh lên';
+        try {
+          const errData = await response.json();
+          if (errData.message) errorMsg = errData.message;
+        } catch {}
+        throw new Error(errorMsg);
+      }
+
+      const data = await response.json();
+      const imageUrl = data.avatar || URL.createObjectURL(file);
+
+      sidebarAvatar.src = imageUrl;
+      headerAvatar.src = imageUrl;
+      localStorage.setItem('userAvatar', imageUrl);
+
+      uploadMessage.style.display = 'block';
+      uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+      uploadMessage.className = 'notification success-message';
+
+      setTimeout(() => {
+        uploadDialog.close();
+        resetUploadDialog();
+      }, 2000);
+    } catch (error) {
+      uploadMessage.style.display = 'block';
+      uploadMessage.textContent = 'Lỗi: ' + error.message;
+      uploadMessage.className = 'notification error-message';
+      uploadButton.disabled = false;
+      uploadButton.textContent = 'Tải lên';
+    }
+  };
 });
