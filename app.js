@@ -19,6 +19,10 @@ app.get('/voucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'vo
 app.get('/khoiphucvoucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'khoiphucvoucher.html')));
 app.get('/campaigns', (req, res) => res.sendFile(path.join(__dirname, 'views', 'campaigns.html')));
 app.get('/thongbao', (req, res) => res.sendFile(path.join(__dirname, 'views', 'thongbao.html')));
+app.get('/event-notifications', (req, res) => res.sendFile(path.join(__dirname, 'views', 'event-notifications.html')));
+app.get('/admin-email-verification', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin-email-verification.html')));
+app.get('/notification-admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notification-admin.html')));
+app.get('/test-notification', (req, res) => res.sendFile(path.join(__dirname, 'test-notification.html')));
 app.get('/category-products', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category-products.html')));
 
 // Chuyển hướng trang chủ về /login

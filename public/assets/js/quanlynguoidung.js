@@ -434,3 +434,14 @@ function filterAndRenderUsersByTab(type) {
   }
   filterAndRenderUsers();
 }
+
+// Email Verification button event listener
+document.addEventListener('DOMContentLoaded', function() {
+  const btnEmailVerification = document.getElementById('btnEmailVerification');
+  if (btnEmailVerification) {
+    btnEmailVerification.addEventListener('click', function() {
+      // Chuyển đến trang admin email verification
+      window.location.href = '/admin-email-verification';
+    });
+  }
+});
