@@ -756,13 +756,8 @@ addBookForm.addEventListener('submit', async function(e) {
       formData.append('cover_images', coverFiles[i]);
     }
   } else if (googleBookCoverUrl) {
-    // Tải ảnh Google Books về dạng file và append vào FormData
-    try {
-      const file = await fetchImageAsFile(googleBookCoverUrl, 'googlebook_cover');
-      formData.append('cover_images', file);
-    } catch (err) {
-      console.error('Không thể tải ảnh Google Books:', err);
-    }
+    // Append the Google Books cover image URL to be processed by the server
+    formData.append('cover_image_url', googleBookCoverUrl);
   }
 
   if (id && deletedImageIndices.length > 0) {
@@ -772,6 +767,9 @@ addBookForm.addEventListener('submit', async function(e) {
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
+  } else if (googleBookCoverUrl) {
+    // Use the same Google Books URL for thumbnail if no file is uploaded
+    formData.append('thumbnail_url', googleBookCoverUrl);
   }
 
   try {
@@ -821,7 +819,7 @@ addBookForm.addEventListener('submit', async function(e) {
   } catch (err) {
     showErrorDialog('Có lỗi khi lưu truyện!', err.message);
   }
-  googleBookCoverUrl = '';
+  googleBookCoverUrl = ''; // Reset after submission
 });
 
 async function fetchCategoriesForSelect() {
