@@ -1,5 +1,5 @@
 let filterCategoryChoices = null;
-let googleBookCoverUrl = ''; // Thêm biến này ở đầu file
+let googleBookCoverUrl = '';
 
 const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books/all';
 const apiPostURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
@@ -21,62 +21,48 @@ const googleBookSearchInput = document.getElementById('googleBookSearchInput');
 const googleBookSearchBtn = document.getElementById('googleBookSearchBtn');
 const googleBookResults = document.getElementById('googleBookResults');
 
-// Thiết lập CKEditor 5
 let bookDescEditor = null;
 let ckeditorPromise = null;
 
 function initCKEditorIfNeeded() {
   if (!window.ClassicEditor) {
-    console.error('ClassicEditor không được định nghĩa. Vui lòng kiểm tra việc tải file CKEditor.');
-    showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo. Vui lòng kiểm tra kết nối hoặc tải lại trang.');
-    return Promise.reject(new Error('CKEditor không được tải thành công.'));
+    console.error('ClassicEditor không được định nghĩa.');
+    showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo.');
+    return Promise.reject(new Error('CKEditor không được tải.'));
   }
   if (!ckeditorPromise) {
     ckeditorPromise = ClassicEditor
       .create(document.querySelector('#bookDesc'), {
-        toolbar: [
-          'heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
-          'outdent', 'indent', '|', 'imageUpload', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo'
-        ],
-        image: {
-          toolbar: ['imageTextAlternative', 'imageStyle:full', 'imageStyle:side']
-        }
+        toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'outdent', 'indent', '|', 'imageUpload', 'blockQuote', 'insertTable', 'mediaEmbed', 'undo', 'redo'],
+        image: { toolbar: ['imageTextAlternative', 'imageStyle:full', 'imageStyle:side'] }
       })
       .then(editor => {
-        console.log('CKEditor initialized successfully:', editor);
+        console.log('CKEditor khởi tạo thành công.');
         bookDescEditor = editor;
-        editor.plugins.get('FileRepository').createUploadAdapter = (loader) => {
-          return new CKEditorUploadAdapter(loader, editor);
-        };
+        editor.plugins.get('FileRepository').createUploadAdapter = loader => new CKEditorUploadAdapter(loader, editor);
         return editor;
       })
       .catch(error => {
         console.error('Lỗi khởi tạo CKEditor:', error);
-        showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo. Vui lòng thử lại.');
+        showErrorDialog('Lỗi CKEditor', 'Không thể khởi tạo trình soạn thảo.');
         return Promise.reject(error);
       });
   }
   return ckeditorPromise;
 }
 
-// Adapter upload tùy chỉnh cho CKEditor
 class CKEditorUploadAdapter {
   constructor(loader, editor) {
     this.loader = loader;
     this.editor = editor;
-    if (!this.editor) {
-      console.error('CKEditor instance not found in adapter constructor');
-    }
   }
 
   async upload() {
     try {
       const file = await this.loader.file;
       const token = localStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-      }
-
+      if (!token) throw new Error('Không tìm thấy token xác thực.');
+      
       const formData = new FormData();
       formData.append('imageFile', file);
       formData.append('folder', 'admin_ckeditor5_Uploads');
@@ -84,9 +70,7 @@ class CKEditorUploadAdapter {
 
       const response = await fetch(uploadURL, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
 
@@ -96,10 +80,7 @@ class CKEditorUploadAdapter {
       }
 
       const data = await response.json();
-      if (!data.success || !data.url) {
-        throw new Error(data.message || 'Phản hồi từ server không chứa URL ảnh.');
-      }
-
+      if (!data.success || !data.url) throw new Error(data.message || 'Không nhận được URL ảnh.');
       return { default: data.url };
     } catch (error) {
       console.error('Lỗi upload CKEditor:', error);
@@ -109,11 +90,10 @@ class CKEditorUploadAdapter {
   }
 
   abort() {
-    console.log('Đã hủy upload');
+    console.log('Đã hủy upload.');
   }
 }
 
-// Theo dõi ảnh đã xóa tạm thời
 let deletedImageIndices = [];
 let existingCoverImages = [];
 
@@ -121,17 +101,17 @@ function showTemporaryDeleteDialog(index) {
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.id = 'temp-delete-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
     overlay.innerHTML = `
       <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
           <img src="https://img.icons8.com/fluency/24/delete-sign.png" alt="delete-icon" />
-          <span style="font-size: 15px;">Bạn có chắc muốn xóa ảnh này tạm thời? (Sẽ không lưu cho đến khi bạn nhấn Lưu)</span>
+          <span style="font-size: 15px;">Bạn có chắc muốn xóa ảnh này tạm thời?</span>
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-delete-temp" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
-          <button id="btn-ok-delete-temp" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+          <button id="btn-cancel-delete-temp" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy</button>
+          <button id="btn-ok-delete-temp" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
         </div>
       </div>
     `;
@@ -148,7 +128,6 @@ function showTemporaryDeleteDialog(index) {
   });
 }
 
-// Hiện dialog khi bấm Thêm truyện
 addBookBtn.addEventListener('click', async () => {
   googleBookCoverUrl = '';
   dialogTitle.textContent = 'Thêm truyện mới';
@@ -168,11 +147,9 @@ addBookBtn.addEventListener('click', async () => {
 
   addBookForm.removeAttribute('data-edit-id');
   dialogOverlay.classList.add('active');
-
   await fetchCategoriesForSelect();
 });
 
-// Đóng dialog
 closeDialogBtn.addEventListener('click', () => {
   dialogOverlay.classList.remove('active');
   addBookForm.reset();
@@ -182,7 +159,6 @@ closeDialogBtn.addEventListener('click', () => {
   existingCoverImages = [];
 });
 
-// Đóng dialog khi bấm ra ngoài
 dialogOverlay.addEventListener('click', (e) => {
   if (e.target === dialogOverlay) {
     dialogOverlay.classList.remove('active');
@@ -212,16 +188,11 @@ function renderProducts(products) {
     let isLong = plainText.length > 270;
     let shortDesc = plainText.slice(0, 270) + '...';
 
-    let descHtml = '';
-    if (isLong) {
-      descHtml = `
-        <div class="desc-short" id="desc-short-${idx}">${shortDesc}</div>
-        <div class="desc-full" id="desc-full-${idx}" style="display:none">${desc}</div>
-        <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>
-      `;
-    } else {
-      descHtml = `<div>${desc}</div>`;
-    }
+    let descHtml = isLong
+      ? `<div class="desc-short" id="desc-short-${idx}">${shortDesc}</div>
+         <div class="desc-full" id="desc-full-${idx}" style="display:none">${desc}</div>
+         <a href="#" class="toggle-desc" data-idx="${idx}">Xem thêm</a>`
+      : `<div>${desc}</div>`;
 
     let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
     let fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
@@ -256,7 +227,7 @@ function renderProducts(products) {
   });
 
   document.querySelectorAll('.toggle-desc').forEach(btn => {
-    btn.addEventListener('click', function (e) {
+    btn.addEventListener('click', function(e) {
       e.preventDefault();
       const idx = this.getAttribute('data-idx');
       const shortSpan = document.getElementById(`desc-short-${idx}`);
@@ -274,39 +245,43 @@ function renderProducts(products) {
   });
 
   document.querySelectorAll('.delete-btn').forEach(btn => {
-    btn.addEventListener('click', async function () {
+    btn.addEventListener('click', async function() {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog()) {
         try {
           const token = localStorage.getItem('authToken');
           if (!token) {
-            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập lại.');
             return;
           }
 
           const res = await fetch(`${apiPostURL}/${id}`, {
             method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
           });
 
           if (!res.ok) {
-            const contentType = res.headers.get('content-type');
-            let errText = await (contentType && contentType.includes('application/json') ? res.json() : res.text()).then(data => data.message || data).catch(() => res.statusText);
-            showErrorDialog('Xóa thất bại!', errText);
+            const errorText = await res.text().then(text => {
+              try {
+                const json = JSON.parse(text);
+                return json.message || text;
+              } catch {
+                return text;
+              }
+            });
+            showErrorDialog('Xóa thất bại!', errorText);
             return;
           }
           showSuccessDeletebook();
         } catch (err) {
-          showErrorDialog('Có lỗi khi xóa truyện!', err.message);
+          showErrorDialog('Lỗi khi xóa truyện!', err.message);
         }
       }
     });
   });
 
   document.querySelectorAll('.edit-btn').forEach(btn => {
-    btn.addEventListener('click', function () {
+    btn.addEventListener('click', async function() {
       const id = this.getAttribute('data-id');
       const book = products.find(p => p._id === id);
       if (!book) return;
@@ -330,7 +305,6 @@ function renderProducts(products) {
         : `<div style="position: relative; display: inline-block;"><img src="${fallbackThumb}" style="max-width:100px; border:1px solid #ddd;"></div>`;
 
       existingCoverImages = book.cover_image || [];
-
       const coverPreview = document.getElementById('uploadedImagesPreview');
       coverPreview.innerHTML = existingCoverImages.map((url, index) => `
         <div style="position: relative; display: inline-block; margin: 2px;" data-existing="true" data-url="${url}">
@@ -340,7 +314,7 @@ function renderProducts(products) {
         </div>
       `).join('');
 
-      initCKEditorIfNeeded().then(() => {
+      await initCKEditorIfNeeded().then(() => {
         if (bookDescEditor) bookDescEditor.setData(book.description || '');
       }).catch(() => {});
 
@@ -348,7 +322,7 @@ function renderProducts(products) {
       dialogOverlay.classList.add('active');
       deletedImageIndices = [];
 
-      fetchCategoriesForSelect().then(() => {
+      await fetchCategoriesForSelect().then(() => {
         const select = document.getElementById('bookCategory');
         const ids = (book.categories || []).map(c => c._id || c);
         if (select.choicesInstance) {
@@ -364,21 +338,19 @@ function renderProducts(products) {
   });
 
   document.querySelectorAll('.toggle-featured-btn').forEach(btn => {
-    btn.addEventListener('click', async function () {
+    btn.addEventListener('click', async function() {
       const id = this.getAttribute('data-id');
       const book = products.find(p => p._id === id);
       if (!book) return;
 
       const newFeaturedStatus = !book.featured;
-      const message = newFeaturedStatus
-        ? 'Bạn có chắc muốn đặt truyện này làm nổi bật?'
-        : 'Bạn có chắc muốn bỏ trạng thái nổi bật của truyện này?';
+      const message = newFeaturedStatus ? 'Bạn có chắc muốn đặt truyện này làm nổi bật?' : 'Bạn có chắc muốn bỏ trạng thái nổi bật?';
 
       if (await showConfirmToggleFeaturedDialog(message)) {
         try {
           const token = localStorage.getItem('authToken');
           if (!token) {
-            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+            showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập lại.');
             return;
           }
 
@@ -392,15 +364,20 @@ function renderProducts(products) {
           });
 
           if (!res.ok) {
-            const contentType = res.headers.get('content-type');
-            let errText = await (contentType && contentType.includes('application/json') ? res.json() : res.text()).then(data => data.message || data).catch(() => res.statusText);
-            showErrorDialog('Cập nhật thất bại!', errText, res.url, res.status);
+            const errorText = await res.text().then(text => {
+              try {
+                const json = JSON.parse(text);
+                return json.message || text;
+              } catch {
+                return text;
+              }
+            });
+            showErrorDialog('Cập nhật thất bại!', errorText);
             return;
           }
-
           showSuccessToggleFeatured(newFeaturedStatus);
         } catch (err) {
-          showErrorDialog('Có lỗi khi cập nhật trạng thái nổi bật!', err.message);
+          showErrorDialog('Lỗi khi cập nhật trạng thái nổi bật!', err.message);
         }
       }
     });
@@ -410,14 +387,10 @@ function renderProducts(products) {
 async function fetchProducts() {
   try {
     const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-    }
-
+    if (!token) throw new Error('Không tìm thấy token xác thực.');
+    
     const response = await fetch(apiURL, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!response.ok) {
       const errorText = await response.text().then(text => {
@@ -430,11 +403,10 @@ async function fetchProducts() {
       });
       throw new Error(errorText || 'Lỗi kết nối API');
     }
-    const data = await response.json();
-    return data;
+    return await response.json();
   } catch (error) {
     console.error('Lỗi tải sản phẩm:', error);
-    productGrid.innerHTML = '<p>Không thể tải danh sách truyện tranh. Vui lòng kiểm tra kết nối hoặc đăng nhập lại.</p>';
+    productGrid.innerHTML = '<p>Không thể tải danh sách truyện. Vui lòng kiểm tra kết nối hoặc đăng nhập lại.</p>';
     showErrorDialog('Lỗi Tải Dữ Liệu', error.message);
     return [];
   }
@@ -442,13 +414,9 @@ async function fetchProducts() {
 
 function filterProducts(products, keyword, isFeaturedTab = false) {
   const lower = keyword.toLowerCase();
-  const selectedCats = filterCategoryChoices && typeof filterCategoryChoices.getValue === 'function'
-    ? filterCategoryChoices.getValue(true)
-    : [];
+  const selectedCats = filterCategoryChoices && typeof filterCategoryChoices.getValue === 'function' ? filterCategoryChoices.getValue(true) : [];
   const minPrice = parseFloat(document.getElementById('minPrice')?.value) || 0;
   const maxPrice = parseFloat(document.getElementById('maxPrice')?.value) || Infinity;
-
-  console.log('Filtering products with selected categories:', selectedCats);
 
   return products.filter(p => {
     if (isFeaturedTab && !p.featured) return false;
@@ -461,9 +429,7 @@ function filterProducts(products, keyword, isFeaturedTab = false) {
 
     let matchCategory = true;
     if (selectedCats.length > 0) {
-      const prodCatIds = (p.categories || []).map(c => {
-        return typeof c === 'object' && c._id ? c._id : c;
-      });
+      const prodCatIds = (p.categories || []).map(c => c._id || c);
       matchCategory = selectedCats.some(catId => prodCatIds.includes(catId));
     }
 
@@ -476,9 +442,7 @@ function sortByTitle(arr, order) {
   return [...arr].sort((a, b) => {
     const tA = (a.title || a.name || '').toLowerCase();
     const tB = (b.title || b.name || '').toLowerCase();
-    if (tA < tB) return order === 'asc' ? -1 : 1;
-    if (tA > tB) return order === 'asc' ? 1 : -1;
-    return 0;
+    return order === 'asc' ? tA.localeCompare(tB) : tB.localeCompare(tA);
   });
 }
 
@@ -525,7 +489,7 @@ function renderProductsWithPagination(productsArr, page = 1) {
     nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
 
     const pageInfo = document.createElement('span');
-    pageInfo.textContent = `Trang ${page} / ${totalPages}`;
+    pageInfo.textContent = ` Trang ${page} / ${totalPages}`;
     pageInfo.style = 'padding: 0 10px; font-weight:bold; font-size:16px; color:#007bff; display:flex; align-items:center;';
 
     pagination.appendChild(prevBtn);
@@ -540,9 +504,7 @@ function renderFilteredAndSorted(page = 1) {
 
   let filtered = filterProducts(products, keyword, activeTab === 'featured' && activeChildTab === 'featured');
 
-  if (sortTitleOrder) {
-    filtered = sortByTitle(filtered, sortTitleOrder);
-  }
+  if (sortTitleOrder) filtered = sortByTitle(filtered, sortTitleOrder);
 
   if (activeChildTab === 'popular') {
     filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
@@ -554,30 +516,21 @@ function renderFilteredAndSorted(page = 1) {
 }
 
 document.getElementById('btn-search').addEventListener('click', () => {
-  console.log('Search button clicked');
   renderFilteredAndSorted(1);
 });
 searchBox.addEventListener('input', () => {
-  console.log('Search input changed:', searchBox.value);
   renderFilteredAndSorted(1);
 });
 document.getElementById('sort-title').addEventListener('change', () => {
-  console.log('Sort order changed:', document.getElementById('sort-title').value);
   renderFilteredAndSorted(1);
 });
 document.getElementById('btn-filter-price').addEventListener('click', () => {
-  console.log('Price filter applied:', {
-    minPrice: document.getElementById('minPrice').value,
-    maxPrice: document.getElementById('maxPrice').value
-  });
   renderFilteredAndSorted(1);
 });
 document.getElementById('minPrice').addEventListener('input', () => {
-  console.log('Min price changed:', document.getElementById('minPrice').value);
   renderFilteredAndSorted(1);
 });
 document.getElementById('maxPrice').addEventListener('input', () => {
-  console.log('Max price changed:', document.getElementById('maxPrice').value);
   renderFilteredAndSorted(1);
 });
 
@@ -627,7 +580,7 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
   const isExisting = targetDiv.hasAttribute('data-existing');
 
   if (e.target.classList.contains('delete-image-btn') || e.target.closest('.delete-image-btn')) {
-    showTemporaryDeleteDialog(index).then(async (confirm) => {
+    showTemporaryDeleteDialog(index).then(async confirm => {
       if (confirm) {
         if (isExisting) {
           const url = targetDiv.getAttribute('data-url');
@@ -654,7 +607,6 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
       if (newFiles.length > 0) {
         const dataTransfer = new DataTransfer();
         const currentFiles = Array.from(input.files);
-
         if (isExisting) {
           const url = targetDiv.getAttribute('data-url');
           deletedImageIndices.push(url);
@@ -666,7 +618,6 @@ document.getElementById('uploadedImagesPreview').addEventListener('click', funct
         }
         Array.from(newFiles).forEach(file => dataTransfer.items.add(file));
         input.files = dataTransfer.files;
-
         renderImagePreviews(preview, input.files, existingCoverImages.filter(url => !deletedImageIndices.includes(url)));
       }
       input.removeEventListener('change', replaceImage);
@@ -701,9 +652,29 @@ document.getElementById('thumbnailPreview').addEventListener('click', function(e
   }
 });
 
+async function fetchImageAsFile(imageUrl, fileName) {
+  if (!imageUrl) return null;
+  try {
+    const cleanImageUrl = imageUrl.split('&imgtk')[0]; // Loại bỏ tham số imgtk và source
+    const proxyUrl = `/api/books/proxy/image?url=${encodeURIComponent(cleanImageUrl)}`;
+    const response = await fetch(proxyUrl, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+    });
+    if (!response.ok) {
+      throw new Error(`Không thể tải hình ảnh qua proxy: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const ext = blob.type.split('/')[1] || 'jpg';
+    return new File([blob], `${fileName}.${ext}`, { type: blob.type });
+  } catch (error) {
+    console.error('Lỗi tải hình ảnh:', error);
+    showErrorDialog('Lỗi Tải Hình Ảnh', `Không thể tải hình ảnh từ Google Books: ${error.message}`);
+    return null;
+  }
+}
+
 addBookForm.addEventListener('submit', async function(e) {
   e.preventDefault();
-
   await new Promise(resolve => setTimeout(resolve, 0));
 
   const price = parseFloat(document.getElementById('bookPrice').value);
@@ -711,10 +682,9 @@ addBookForm.addEventListener('submit', async function(e) {
   const title = document.getElementById('bookName').value.trim();
   const id = addBookForm.getAttribute('data-edit-id');
 
-  // Kiểm tra trùng tên truyện
   const existingBook = products.find(p => p.title.toLowerCase() === title.toLowerCase() && (!id || p._id !== id));
   if (existingBook && !id) {
-    showErrorDialog('Lỗi nhập liệu', 'Tên truyện đã tồn tại. Vui lòng chọn tên khác.');
+    showErrorDialog('Lỗi nhập liệu', 'Tên truyện đã tồn tại.');
     return;
   }
 
@@ -729,7 +699,6 @@ addBookForm.addEventListener('submit', async function(e) {
   }
 
   const formData = new FormData();
-
   formData.append('title', title);
   formData.append('author', document.getElementById('bookAuthor').value.trim());
   formData.append('price', price);
@@ -737,17 +706,10 @@ addBookForm.addEventListener('submit', async function(e) {
   formData.append('publication_date', document.getElementById('bookPubDate').value);
   formData.append('publisher', document.getElementById('bookPublisher').value.trim());
   formData.append('language', document.getElementById('bookLanguage').value.trim());
-
-  const description = bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value;
-  formData.append('description', description);
+  formData.append('description', bookDescEditor ? bookDescEditor.getData() : document.getElementById('bookDesc').value);
 
   const select = document.getElementById('bookCategory');
-  let categories = [];
-  if (select.choicesInstance) {
-    categories = select.choicesInstance.getValue(true);
-  } else {
-    categories = Array.from(select.selectedOptions).map(opt => opt.value);
-  }
+  let categories = select.choicesInstance ? select.choicesInstance.getValue(true) : Array.from(select.selectedOptions).map(opt => opt.value);
   categories.forEach(cat => formData.append('categories[]', cat));
 
   const coverFiles = document.getElementById('bookImageUpload').files;
@@ -756,47 +718,45 @@ addBookForm.addEventListener('submit', async function(e) {
       formData.append('cover_images', coverFiles[i]);
     }
   } else if (googleBookCoverUrl) {
-    // Append the Google Books cover image URL to be processed by the server
-    formData.append('cover_image_url', googleBookCoverUrl);
-  }
-
-  if (id && deletedImageIndices.length > 0) {
-    deletedImageIndices.forEach(url => formData.append('delete_images[]', url));
+    const coverFile = await fetchImageAsFile(googleBookCoverUrl, 'cover');
+    if (coverFile) formData.append('cover_images', coverFile);
   }
 
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
   } else if (googleBookCoverUrl) {
-    // Use the same Google Books URL for thumbnail if no file is uploaded
-    formData.append('thumbnail_url', googleBookCoverUrl);
+    const thumbnailFileFetched = await fetchImageAsFile(googleBookCoverUrl, 'thumbnail');
+    if (thumbnailFileFetched) formData.append('thumbnail', thumbnailFileFetched);
+  }
+
+  if (id && deletedImageIndices.length > 0) {
+    deletedImageIndices.forEach(url => formData.append('delete_images[]', url));
+  }
+
+  console.log('FormData gửi đi:');
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}:`, value instanceof File ? value.name : value);
   }
 
   try {
     const token = localStorage.getItem('authToken');
     if (!token) {
-      showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+      showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập lại.');
       return;
     }
 
-    let res;
-    if (id) {
-      res = await fetch(`${apiPostURL}/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-    } else {
-      res = await fetch(apiPostURL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-    }
+    let res = id
+      ? await fetch(`${apiPostURL}/${id}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        })
+      : await fetch(apiPostURL, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
 
     if (!res.ok) {
       const errorText = await res.text().then(text => {
@@ -814,25 +774,21 @@ addBookForm.addEventListener('submit', async function(e) {
     dialogOverlay.classList.remove('active');
     deletedImageIndices = [];
     existingCoverImages = [];
-    products = await fetchProducts(); // Cập nhật lại danh sách sản phẩm sau khi thêm/sửa
+    products = await fetchProducts();
     renderFilteredAndSorted(1);
   } catch (err) {
-    showErrorDialog('Có lỗi khi lưu truyện!', err.message);
+    showErrorDialog('Lỗi Lưu Truyện', err.message);
   }
-  googleBookCoverUrl = ''; // Reset after submission
+  googleBookCoverUrl = '';
 });
 
 async function fetchCategoriesForSelect() {
   try {
     const token = localStorage.getItem('authToken');
-    if (!token) {
-      throw new Error('Không tìm thấy token xác thực. Vui lòng đăng nhập lại.');
-    }
+    if (!token) throw new Error('Không tìm thấy token xác thực.');
 
     const res = await fetch(categoriesURL, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     if (!res.ok) {
       const errorText = await res.text().then(text => {
@@ -848,14 +804,7 @@ async function fetchCategoriesForSelect() {
     const data = await res.json();
 
     const select = document.getElementById('bookCategory');
-    select.innerHTML = '';
-
-    data.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat._id;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
+    select.innerHTML = data.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('');
 
     if (!select.choicesInstance && typeof Choices !== 'undefined') {
       select.choicesInstance = new Choices(select, {
@@ -920,7 +869,7 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.id = 'confirm-delete-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
     overlay.innerHTML = `
       <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -929,8 +878,8 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa truyệ
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
-          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Xác nhận</button>
+          <button id="btn-cancel-delete" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy</button>
+          <button id="btn-ok-delete" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Xác nhận</button>
         </div>
       </div>
     `;
@@ -951,7 +900,7 @@ function showConfirmToggleFeaturedDialog(message = 'Bạn có chắc muốn thay
   return new Promise(resolve => {
     const overlay = document.createElement('div');
     overlay.id = 'confirm-toggle-featured-overlay';
-    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+    overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
     overlay.innerHTML = `
       <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -960,8 +909,8 @@ function showConfirmToggleFeaturedDialog(message = 'Bạn có chắc muốn thay
         </div>
         <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
-          <button id="btn-cancel-toggle" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Hủy</button>
-          <button id="btn-ok-toggle" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">Xác nhận</button>
+          <button id="btn-cancel-toggle" style="padding: 6px 16px; background: #ffecec; color: #f44336; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Hủy</button>
+          <button id="btn-ok-toggle" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">Xác nhận</button>
         </div>
       </div>
     `;
@@ -981,7 +930,7 @@ function showConfirmToggleFeaturedDialog(message = 'Bạn có chắc muốn thay
 function showAddBookSuccessDialog(action, message = 'Dữ liệu đã được lưu thành công!') {
   const overlay = document.createElement('div');
   overlay.id = 'success-overlay';
-  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
   overlay.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -991,7 +940,7 @@ function showAddBookSuccessDialog(action, message = 'Dữ liệu đã được l
       <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
       <p style="font-size: 14px; color: #333;">${message}</p>
       <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button id="btn-ok-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        <button id="btn-ok-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
       </div>
     </div>
   `;
@@ -999,14 +948,14 @@ function showAddBookSuccessDialog(action, message = 'Dữ liệu đã được l
 
   overlay.querySelector('#btn-ok-success').onclick = () => {
     overlay.remove();
-    window.location.reload(); // Reload page after dialog is closed
+    window.location.reload();
   };
 }
 
 function showSuccessDeletebook() {
   const overlay = document.createElement('div');
   overlay.id = 'success-delete-overlay';
-  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
   overlay.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -1015,7 +964,7 @@ function showSuccessDeletebook() {
       </div>
       <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
       <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button id="btn-ok-delete-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        <button id="btn-ok-delete-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
       </div>
     </div>
   `;
@@ -1023,14 +972,14 @@ function showSuccessDeletebook() {
 
   overlay.querySelector('#btn-ok-delete-success').onclick = () => {
     overlay.remove();
-    window.location.reload(); // Reload page after dialog is closed
+    window.location.reload();
   };
 }
 
 function showSuccessToggleFeatured(isFeatured) {
   const overlay = document.createElement('div');
   overlay.id = 'success-toggle-overlay';
-  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9998; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
   overlay.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -1039,7 +988,7 @@ function showSuccessToggleFeatured(isFeatured) {
       </div>
       <div style="height: 2px; background-color: #00cfff; margin-bottom: 16px;"></div>
       <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button id="btn-ok-toggle-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        <button id="btn-ok-toggle-success" style="padding: 6px 16px; background: #00cfff; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
       </div>
     </div>
   `;
@@ -1047,14 +996,14 @@ function showSuccessToggleFeatured(isFeatured) {
 
   overlay.querySelector('#btn-ok-toggle-success').onclick = () => {
     overlay.remove();
-    window.location.reload(); // Reload page after dialog is closed
+    window.location.reload();
   };
 }
 
 function showErrorDialog(title, message, url = '', status = '') {
   const overlay = document.createElement('div');
   overlay.id = 'error-overlay';
-  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: \'Segoe UI\', sans-serif;';
+  overlay.style.cssText = 'position: fixed; inset: 0; z-index: 9999; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; font-family: "Segoe UI", sans-serif;';
   overlay.innerHTML = `
     <div style="background: #fff; border-radius: 12px; padding: 16px 20px; max-width: 360px; width: 100%; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); text-align: left;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
@@ -1064,7 +1013,7 @@ function showErrorDialog(title, message, url = '', status = '') {
       <div style="height: 2px; background-color: #ff4444; margin-bottom: 16px;"></div>
       <p style="font-size: 14px; color: #333;">${message}${url ? `<br>URL: ${url}` : ''}${status ? `<br>Mã lỗi: ${status}` : ''}</p>
       <div style="display: flex; justify-content: flex-end; gap: 12px;">
-        <button id="btn-ok-error" style="padding: 6px 16px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: background 0.3s;">OK</button>
+        <button id="btn-ok-error" style="padding: 6px 16px; background: #ff4444; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">OK</button>
       </div>
     </div>
   `;
@@ -1075,13 +1024,11 @@ function showErrorDialog(title, message, url = '', status = '') {
   };
 }
 
-// Khởi tạo tab
 document.querySelectorAll('.tab-parent').forEach(tab => {
-  tab.addEventListener('click', function () {
+  tab.addEventListener('click', function() {
     const parent = this.getAttribute('data-tab-parent');
     document.querySelectorAll('.tab-parent').forEach(t => t.classList.remove('active'));
     this.classList.add('active');
-
     activeTab = parent;
     activeChildTab = this.querySelector('.tab-child div') ? this.querySelector('.tab-child div').getAttribute('data-tab-child') : parent;
     renderFilteredAndSorted(1);
@@ -1089,19 +1036,17 @@ document.querySelectorAll('.tab-parent').forEach(tab => {
 });
 
 document.querySelectorAll('.tab-child div').forEach(child => {
-  child.addEventListener('click', function (e) {
+  child.addEventListener('click', function(e) {
     e.stopPropagation();
     const parent = this.parentElement.parentElement;
     const childTab = this.getAttribute('data-tab-child');
     parent.querySelectorAll('.tab-child div').forEach(c => c.classList.remove('active'));
     this.classList.add('active');
-
     activeChildTab = childTab;
     renderFilteredAndSorted(1);
   });
 });
 
-// Khởi tạo bộ lọc danh mục
 const categoryFilterWrap = document.getElementById('category-filter-choices-wrap');
 const toggleCategoryBtn = document.getElementById('toggle-category-btn');
 const filterCategory = document.getElementById('filter-category');
@@ -1111,14 +1056,10 @@ toggleCategoryBtn.addEventListener('click', () => {
 });
 
 fetch(categoriesURL, {
-  headers: {
-    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
-  }
+  headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
 })
   .then(res => {
-    if (!res.ok) {
-      throw new Error(`Lỗi tải danh mục: ${res.statusText}`);
-    }
+    if (!res.ok) throw new Error(`Lỗi tải danh mục: ${res.statusText}`);
     return res.json();
   })
   .then(data => {
@@ -1134,24 +1075,22 @@ fetch(categoriesURL, {
         shouldSort: false
       });
       filterCategoryChoices.passedElement.element.addEventListener('change', () => {
-        console.log('Category filter changed:', filterCategoryChoices.getValue(true));
         renderFilteredAndSorted(1);
       });
     } else {
       console.error('Choices.js không được tải.');
-      showErrorDialog('Lỗi Khởi Tạo', 'Không thể tải Choices.js để khởi tạo bộ lọc danh mục.');
+      showErrorDialog('Lỗi Khởi Tạo', 'Không thể tải Choices.js.');
     }
   })
   .catch(err => {
     console.error('Lỗi tải danh mục:', err);
-    showErrorDialog('Lỗi Lọc Danh Mục', 'Không thể tải danh mục để lọc: ' + err.message);
+    showErrorDialog('Lỗi Lọc Danh Mục', 'Không thể tải danh mục: ' + err.message);
   });
 
-// Xuất file Excel
 exportExcelBtn.addEventListener('click', async () => {
   const token = localStorage.getItem('authToken');
   if (!token) {
-    showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập để thực hiện thao tác này.');
+    showErrorDialog('Lỗi xác thực', 'Vui lòng đăng nhập lại.');
     return;
   }
 
@@ -1170,9 +1109,7 @@ exportExcelBtn.addEventListener('click', async () => {
     const data = await response.json();
     let filteredData = filterProducts(data, keyword, activeTab === 'featured' && activeChildTab === 'featured');
 
-    if (sortTitleOrder) {
-      filteredData = sortByTitle(filteredData, sortTitleOrder);
-    }
+    if (sortTitleOrder) filteredData = sortByTitle(filteredData, sortTitleOrder);
 
     const wsData = [
       ['Tên truyện', 'Tác giả', 'Giá (VND)', 'Số lượng', 'Ngày xuất bản', 'Nhà xuất bản', 'Ngôn ngữ', 'Danh mục', 'Nổi bật'],
@@ -1198,7 +1135,6 @@ exportExcelBtn.addEventListener('click', async () => {
   }
 });
 
-// Khởi động ứng dụng
 (async () => {
   products = await fetchProducts();
   renderFilteredAndSorted(1);
@@ -1215,7 +1151,6 @@ googleBookDialogOverlay.addEventListener('click', (e) => {
   }
 });
 
-// Tìm kiếm Google Books API
 googleBookSearchBtn.addEventListener('click', async () => {
   const query = googleBookSearchInput.value.trim();
   if (!query) {
@@ -1224,7 +1159,6 @@ googleBookSearchBtn.addEventListener('click', async () => {
   }
   googleBookResults.innerHTML = '<p>Đang tìm kiếm...</p>';
   try {
-    // KHÔNG dùng key
     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
     const data = await res.json();
     if (!data.items || data.items.length === 0) {
@@ -1246,19 +1180,17 @@ googleBookSearchBtn.addEventListener('click', async () => {
         </div>
       `;
     }).join('');
-    // Gắn sự kiện cho nút Thêm vào sản phẩm
+
     googleBookResults.querySelectorAll('button[data-bookid]').forEach(btn => {
       btn.onclick = async function() {
         const bookId = this.getAttribute('data-bookid');
         btn.disabled = true;
         btn.textContent = 'Đang lấy dữ liệu...';
         try {
-          // Lấy chi tiết sách từ Google Books API
           const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
           const data = await res.json();
           const info = data.volumeInfo || {};
 
-          // Map dữ liệu sang form thêm truyện
           dialogTitle.textContent = 'Thêm truyện từ Google Books';
           addBookForm.reset();
 
@@ -1273,25 +1205,18 @@ googleBookSearchBtn.addEventListener('click', async () => {
           await initCKEditorIfNeeded();
           if (bookDescEditor) bookDescEditor.setData(info.description || '');
 
-          // Ảnh bìa
           document.getElementById('uploadedImagesPreview').innerHTML = '';
-          googleBookCoverUrl = ''; // Reset trước khi gán
-          if (info.imageLinks && info.imageLinks.thumbnail) {
+          document.getElementById('thumbnailPreview').innerHTML = '';
+          googleBookCoverUrl = info.imageLinks?.thumbnail.split('&imgtk')[0] || '';
+          if (googleBookCoverUrl) {
             document.getElementById('uploadedImagesPreview').innerHTML = `
               <div style="position: relative; display: inline-block; margin: 2px;">
-                <img src="${info.imageLinks.thumbnail}" style="max-width:100px; border:1px solid #ddd;">
+                <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;">
               </div>
             `;
-            // Gán URL ảnh vào biến tạm để submit
-            googleBookCoverUrl = info.imageLinks.thumbnail;
-          }
-
-          // Thumbnail
-          document.getElementById('thumbnailPreview').innerHTML = '';
-          if (info.imageLinks && info.imageLinks.thumbnail) {
             document.getElementById('thumbnailPreview').innerHTML = `
               <div style="position: relative; display: inline-block;">
-                <img src="${info.imageLinks.thumbnail}" style="max-width:100px; border:1px solid #ddd;">
+                <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;">
               </div>
             `;
           }
@@ -1299,15 +1224,21 @@ googleBookSearchBtn.addEventListener('click', async () => {
           await fetchCategoriesForSelect();
           const select = document.getElementById('bookCategory');
           if (info.categories && info.categories.length > 0) {
-            Array.from(select.options).forEach(opt => {
-              opt.selected = info.categories.some(cat => opt.textContent === cat);
-            });
-            if (select.choicesInstance) {
+            const serverCategories = await fetch(categoriesURL, {
+              headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
+            }).then(res => res.json());
+            const matchedCategory = serverCategories.find(cat => 
+              info.categories.some(googleCat => googleCat.toLowerCase().includes(cat.name.toLowerCase()))
+            );
+            if (matchedCategory && select.choicesInstance) {
               select.choicesInstance.removeActiveItems();
-              info.categories.forEach(cat => {
-                const option = Array.from(select.options).find(opt => opt.textContent === cat);
-                if (option) select.choicesInstance.setChoiceByValue(option.value);
+              select.choicesInstance.setChoiceByValue(matchedCategory._id);
+            } else if (matchedCategory) {
+              Array.from(select.options).forEach(opt => {
+                opt.selected = opt.value === matchedCategory._id;
               });
+            } else {
+              console.warn('Không tìm thấy danh mục phù hợp trên server:', info.categories);
             }
           }
 
@@ -1319,99 +1250,11 @@ googleBookSearchBtn.addEventListener('click', async () => {
           btn.textContent = 'Lỗi!';
           btn.style.background = '#ff4d4f';
           btn.style.color = '#fff';
-          alert('Lỗi lấy dữ liệu sách: ' + err.message);
+          showErrorDialog('Lỗi Lấy Dữ Liệu', `Không thể lấy dữ liệu sách: ${err.message}`);
         }
       };
     });
   } catch (err) {
     googleBookResults.innerHTML = `<p>Lỗi khi tìm kiếm: ${err.message}</p>`;
-  }
-});
-
-async function fetchImageAsFile(imageUrl, fileName = 'cover.jpg') {
-  const response = await fetch(imageUrl);
-  const blob = await response.blob();
-  // Đoán loại file từ blob hoặc giữ là jpg
-  const ext = blob.type.split('/')[1] || 'jpg';
-  return new File([blob], `${fileName}.${ext}`, { type: blob.type });
-}
-
-router.post('/import/google', auth, async (req, res) => {
-  try {
-    const userRole = req.user.role || (Array.isArray(req.user.roles) ? req.user.roles[0] : undefined);
-    const isAdmin = userRole === 'admin' || (Array.isArray(req.user.roles) && req.user.roles.includes('admin'));
-    if (!isAdmin) {
-      return res.status(403).json({ msg: 'Forbidden: Admins only' });
-    }
-
-    const { googleBooksId, additionalData = {} } = req.body;
-    if (!googleBooksId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Google Books ID is required'
-      });
-    }
-
-    // Check if book already exists
-    const existingBook = await Book.findOne({ googleBooksId });
-    if (existingBook) {
-      return res.status(409).json({
-        success: false,
-        message: 'Book already exists in database',
-        book: existingBook
-      });
-    }
-
-    // Get book data from Google Books
-    let googleBookData;
-    try {
-      googleBookData = await googleBooksService.createCompleteBookFromGoogle(googleBooksId, additionalData);
-      // Kiểm tra dữ liệu trả về
-      if (!googleBookData || !googleBookData.title) {
-        return res.status(404).json({
-          success: false,
-          message: 'Không tìm thấy hoặc thiếu dữ liệu sách từ Google Books'
-        });
-      }
-      // Bổ sung dữ liệu mặc định nếu thiếu
-      googleBookData.price = googleBookData.price || 10000;
-      googleBookData.stock = googleBookData.stock || 10;
-      googleBookData.cover_image = googleBookData.cover_image && googleBookData.cover_image.length > 0 ? googleBookData.cover_image : ['https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'];
-      googleBookData.thumbnail = googleBookData.thumbnail || 'https://server-shelf-stacker-w1ds/onrender.com/assets/images/default-thumbnail.png';
-      googleBookData.categories = googleBookData.categories || [];
-    } catch (err) {
-      return res.status(500).json({
-        success: false,
-        message: 'Lỗi lấy dữ liệu từ Google Books',
-        error: err.message
-      });
-    }
-
-    // Create new book in database
-    const newBook = new Book({
-      ...googleBookData,
-      googleBooksId,
-      stock: additionalData.stock || googleBookData.stock,
-      featured: additionalData.featured || false,
-      createdBy: req.user.id
-    });
-
-    await newBook.save();
-
-    const savedBook = await Book.findById(newBook._id).populate('categories');
-
-    res.status(201).json({
-      success: true,
-      message: 'Book imported successfully from Google Books',
-      book: savedBook
-    });
-
-  } catch (error) {
-    console.error('Import book error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to import book from Google Books',
-      error: error.message
-    });
   }
 });
