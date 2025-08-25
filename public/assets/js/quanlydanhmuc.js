@@ -61,27 +61,51 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
   const paginationDiv = document.querySelector('.pagination');
   paginationDiv.innerHTML = '';
   if (totalPages > 1) {
-    const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    prevBtn.className = 'pagination-btn';
-    prevBtn.disabled = page === 1;
-    prevBtn.style.cssText = "background: #fff; border: 1px solid #007bff; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin: 0 6px;";
-    prevBtn.onclick = () => renderCategoriesWithPagination(categoriesArr, page - 1);
+    let buttons = `
+      <button id="prevCatPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    `;
+    // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
+    let pageNumbers = '';
+    const maxPages = 5;
+    let start = Math.max(1, page - 2);
+    let end = Math.min(totalPages, page + 2);
+    if (end - start < maxPages - 1) {
+      if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
+      else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
+    }
+    if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+    for (let i = start; i <= end; i++) {
+      pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+    buttons += pageNumbers;
+    buttons += `
+      <button id="nextCatPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    `;
+    paginationDiv.innerHTML = buttons;
 
-    const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    nextBtn.className = 'pagination-btn';
-    nextBtn.disabled = page === totalPages;
-    nextBtn.style.cssText = "background: #fff; border: 1px solid #007bff; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; margin: 0 6px;";
-    nextBtn.onclick = () => renderCategoriesWithPagination(categoriesArr, page + 1);
-
-    const pageInfo = document.createElement('span');
-    pageInfo.textContent = `Trang ${page} / ${totalPages}`;
-    pageInfo.style.cssText = 'padding: 0 10px; font-weight: bold; font-size: 16px; color: #007bff; display: flex; align-items: center;';
-
-    paginationDiv.appendChild(prevBtn);
-    paginationDiv.appendChild(pageInfo);
-    paginationDiv.appendChild(nextBtn);
+    document.getElementById('prevCatPage').onclick = () => {
+      if (page > 1) {
+        renderCategoriesWithPagination(categoriesArr, page - 1);
+      }
+    };
+    document.getElementById('nextCatPage').onclick = () => {
+      if (page < totalPages) {
+        renderCategoriesWithPagination(categoriesArr, page + 1);
+      }
+    };
+    document.querySelectorAll('.page-btn').forEach(btn => {
+      btn.onclick = function() {
+        const gotoPage = Number(this.dataset.page);
+        if (gotoPage !== page) {
+          renderCategoriesWithPagination(categoriesArr, gotoPage);
+        }
+      };
+    });
   }
 }
 
