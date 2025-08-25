@@ -499,31 +499,8 @@ function renderNotifications(orders) {
 let lastNotifiedOrderId = null;
 
 async function fetchStats() {
-  // Dữ liệu mặc định từ BE bạn gửi
-  const defaultData = {
-    totalOrders: 237,
-    totalRevenue: 32036686,
-    statusStats: {
-      Cancelled: 55,
-      Processing: 16,
-      Pending: 121,
-      Shipped: 8,
-      OutForDelivery: 15,
-      null: 5,
-      Delivered: 17
-    },
-    paymentStats: {
-      ZALOPAY: 96,
-      MOMO: 1,
-      COD: 130,
-      PAYOS: 10
-    },
-    successCount: 17,
-    failedCount: 55
-  };
-
   const token = localStorage.getItem('authToken');
-  let data = defaultData;
+  let data = null;
   let orders = [];
 
   if (token) {
@@ -546,19 +523,19 @@ async function fetchStats() {
       ]);
 
       if (!statsResponse.ok || !ordersResponse.ok) {
-        throw new Error('Failed to fetch stats or orders');
+        throw new Error('Không thể lấy dữ liệu thống kê hoặc đơn hàng');
       }
 
       data = await statsResponse.json();
       const ordersData = await ordersResponse.json();
       orders = ordersData.orders || [];
     } catch (error) {
-      console.error('Error fetching stats:', error.message);
       showNotification('error', 'Lỗi khi tải thống kê: ' + error.message);
+      return;
     }
   } else {
-    console.error('No auth token found. Using default data.');
     showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+    return;
   }
 
   // Hiển thị số liệu lên dashboard
@@ -572,25 +549,64 @@ async function fetchStats() {
   if (successCount) successCount.textContent = data.successCount || 0;
   if (failedCount) failedCount.textContent = data.failedCount || 0;
 
-  // Dịch trạng thái đơn hàng sang tiếng Việt
-  const statusLabels = Object.keys(data.statusStats).map(key => {
-    if (key === 'null') return 'Không xác định';
-    if (key === 'Cancelled') return 'Đã huỷ';
-    if (key === 'Delivered') return 'Đã giao';
-    if (key === 'Shipped') return 'Đang giao';
-    if (key === 'Processing') return 'Đang xử lý';
-    if (key === 'Pending') return 'Chờ xác nhận';
-    if (key === 'OutForDelivery') return 'Chờ giao hàng';
-    return key;
-  });
+  // Map trạng thái chuẩn và màu sắc
+  const STATUS_LABELS = {
+    null: 'Không xác định',
+    Pending: 'Chờ xác nhận',
+    Processing: 'Đang xử lý',
+    OutForDelivery: 'Chờ giao hàng',
+    Shipped: 'Đang giao',
+    Delivered: 'Đã giao',
+    Returned: 'Trả hàng',
+    Refunded: 'Đã hoàn tiền',
+    Cancelled: 'Đã huỷ'
+  };
+
+  const STATUS_COLORS = {
+    Pending: '#ffc107',
+    Processing: '#38bdf8',
+    OutForDelivery: '#0ea5e9',
+    Shipped: '#6c63ff',
+    Delivered: '#28a745',
+    Returned: '#a3e635',
+    Refunded: '#d9d9d9',
+    Cancelled: '#ff4d4f',
+    null: '#bdbdbd'
+  };
+
+  // Sắp xếp trạng thái theo thứ tự mong muốn
+  const statusOrder = [
+    'Pending',
+    'Processing',
+    'OutForDelivery',
+    'Shipped',
+    'Delivered',
+    'Returned',
+    'Refunded',
+    'Cancelled',
+    'null'
+  ];
+
+  // Lấy dữ liệu và dịch trạng thái
+  const statusLabels = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => STATUS_LABELS[key] || key);
+
+  const statusData = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => data.statusStats[key]);
+
+  const statusColors = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => STATUS_COLORS[key] || '#bdbdbd');
 
   const statusChart = {
     type: 'pie',
     data: {
       labels: statusLabels,
       datasets: [{
-        data: Object.values(data.statusStats || {}),
-        backgroundColor: ['#ff4d4f', '#28a745', '#38bdf8', '#ffc107', '#0ea5e9', '#d9d9d9', '#6c63ff'],
+        data: statusData,
+        backgroundColor: statusColors,
         borderColor: ['#fff'],
         borderWidth: 2
       }]
@@ -608,15 +624,15 @@ async function fetchStats() {
   };
 
   // Dịch phương thức thanh toán sang tiếng Việt
-  const paymentLabels = Object.keys(data.paymentStats).map(key => {
-    if (key === 'COD') return 'Thanh toán khi nhận hàng';
-    if (key === 'ZALOPAY') return 'ZaloPay';
-    if (key === 'MOMO') return 'Momo';
-    if (key === 'PAYOS') return 'PayOS';
-    if (key === 'null') return 'Không xác định';
-    return key;
-  });
+  const PAYMENT_LABELS = {
+    ZALOPAY: 'ZaloPay',
+    COD: 'Thanh toán khi nhận hàng',
+    PAYOS: 'PayOS',
+    MOMO: 'Momo',
+    null: 'Không xác định'
+  };
 
+  const paymentLabels = Object.keys(data.paymentStats).map(key => PAYMENT_LABELS[key] || key);
   const paymentChart = {
     type: 'doughnut',
     data: {
