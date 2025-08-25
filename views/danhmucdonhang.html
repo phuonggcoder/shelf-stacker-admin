@@ -313,6 +313,24 @@
       width: 500px;
     }
 
+    #shipperDetailsModal.modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #shipperDetailsModal .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
     dialog {
       border: none;
       border-radius: 12px;
@@ -695,11 +713,12 @@
             <th>Ngày Đặt</th>
             <th>Trạng Thái</th>
             <th>Tổng Tiền</th>
+            <th>Shipper nhận</th> <!-- Thêm cột này -->
             <th>Hành Động</th>
           </tr>
         </thead>
         <tbody id="orders-body">
-          <tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+          <tr><td colspan="8" style="text-align:center;">Đang tải dữ liệu...</td></tr>
         </tbody>
       </table>
     </div>
