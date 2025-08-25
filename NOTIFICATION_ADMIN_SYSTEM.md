@@ -224,3 +224,4 @@ GET    /api/users                                # Lấy danh sách người dù
 ## Kết luận
 
 Hệ thống Notification Admin cung cấp một giải pháp toàn diện cho việc quản lý và gửi thông báo trong admin panel. Với giao diện thân thiện, tính năng đầy đủ và tích hợp dễ dàng, hệ thống này sẽ giúp admin quản lý thông báo một cách hiệu quả và chuyên nghiệp.
+

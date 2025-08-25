@@ -558,3 +558,4 @@ window.exportUnverifiedUsers = function() {
 window.searchHistory = function() {
   adminEmailVerification.searchHistory();
 };
+

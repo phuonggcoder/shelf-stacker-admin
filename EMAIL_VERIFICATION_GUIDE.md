@@ -236,3 +236,4 @@ const customTemplate = {
 Xác thực email trong hệ thống Shelf Stacker được thực hiện thông qua Event Notifications, cung cấp tính linh hoạt và khả năng tùy chỉnh cao. Bạn có thể sử dụng cả giao diện admin panel và API để thực hiện việc này.
 
 File Postman collection đã được tạo để hỗ trợ testing và development. Hãy đảm bảo tuân thủ các best practices về bảo mật và performance khi sử dụng tính năng này.
+

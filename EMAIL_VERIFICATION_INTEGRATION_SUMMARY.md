@@ -256,3 +256,4 @@ class AdminEmailVerification {
 ✅ **Documentation chi tiết** cho development và usage  
 
 Hệ thống sẵn sàng để sử dụng và có thể mở rộng thêm tính năng trong tương lai.
+
