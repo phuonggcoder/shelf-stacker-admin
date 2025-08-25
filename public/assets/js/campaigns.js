@@ -551,7 +551,7 @@ function editCampaign(id) {
       document.getElementById('campaign-start').value = c.startDate?.split('T')[0] || '';
       document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
       document.getElementById('campaign-type').value = c.type;
-      document.getElementById('campaign-status').value = c.status.toString();
+      document.getElementById('campaign-status').value = (typeof c.status !== 'undefined' ? c.status.toString() : 'true');
       editorInstance.setData(c.description || '');
       const select = document.getElementById('campaign-books');
       const selectedBooks = Array.isArray(c.books) ? c.books.map(b => typeof b === 'object' ? b._id : b) : [];
