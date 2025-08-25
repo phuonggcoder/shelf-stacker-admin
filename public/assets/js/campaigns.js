@@ -1,6 +1,7 @@
 const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/campaigns';
 const bookAPI = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
 const bookAllAPI = `${bookAPI}/all`;
+const orderAPI = 'https://server-shelf-stacker-w1ds.onrender.com/api/orders';
 const tableBody = document.getElementById('campaign-table-body');
 
 const rawToken = localStorage.getItem('authToken');
@@ -16,6 +17,7 @@ window.allBooks = [];
 let existingImages = [];
 let newImageFiles = [];
 let deletedImageUrls = [];
+let lastNotifiedOrderId = null;
 
 function formatDate(dateStr) {
   const d = new Date(dateStr);
@@ -247,6 +249,215 @@ function attachEditButtonListeners() {
   });
 }
 
+function showNotification(type, message) {
+  const notification = document.createElement('div');
+  notification.id = `notification-${Date.now()}`;
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: ${type === 'success' ? '#28a745' : '#dc3545'};
+    color: white;
+    padding: 15px 25px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Segoe UI', sans-serif;
+    animation: slideIn 0.3s ease, fadeOut 0.5s ease 2.5s forwards;
+  `;
+
+  const icon = document.createElement('span');
+  icon.innerHTML = type === 'success' 
+    ? '<i class="fa fa-check-circle" style="font-size: 18px;"></i>' 
+    : '<i class="fa fa-exclamation-circle" style="font-size: 18px;"></i>';
+  notification.appendChild(icon);
+
+  const text = document.createElement('span');
+  text.innerHTML = message;
+  notification.appendChild(text);
+
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '×';
+  closeBtn.style.cssText = `
+    background: none;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 15px;
+    padding: 0 5px;
+  `;
+  closeBtn.onclick = () => {
+    notification.style.display = 'none';
+    document.body.removeChild(notification);
+  };
+  notification.appendChild(closeBtn);
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.style.opacity = '0';
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 500);
+  }, 2500);
+}
+
+function toggleNotificationDropdown() {
+  const dropdown = document.getElementById('notificationDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('active');
+  }
+}
+
+const notificationBell = document.querySelector('.notification-bell');
+if (notificationBell) {
+  notificationBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleNotificationDropdown();
+  });
+}
+
+document.addEventListener('click', function (event) {
+  const dropdown = document.getElementById('notificationDropdown');
+  if (dropdown && dropdown.classList.contains('active')) {
+    if (!event.target.closest('.notification-bell')) {
+      dropdown.classList.remove('active');
+    }
+  }
+});
+
+function goToOrderDetails(orderId) {
+  window.location.href = 'danhmucdonhang';
+}
+
+function renderNotifications(orders) {
+  const dropdown = document.getElementById('notificationDropdown');
+  const badge = document.getElementById('notificationBadge');
+  if (!dropdown || !badge) return;
+
+  const filteredOrders = orders.filter(order =>
+    order.order_status === 'Pending' || order.order_status === 'Processing'
+  );
+
+  badge.textContent = filteredOrders.length;
+  badge.style.display = filteredOrders.length > 0 ? 'inline-block' : 'none';
+
+  if (!filteredOrders.length) {
+    dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #888;">Không có đơn hàng mới cần xác nhận.</div>';
+  } else {
+    dropdown.innerHTML = filteredOrders.map(order => {
+      const code = order.order_id || order._id || 'Không rõ';
+      const statusKey = order.order_status;
+      const status = statusKey === 'Pending'
+        ? 'Đang chờ xác nhận'
+        : statusKey === 'Processing'
+          ? 'Đang xử lý'
+          : 'Chưa rõ';
+      const createdAt = order.order_date || order.createdAt || '';
+      const formattedDate = createdAt
+        ? new Date(createdAt).toLocaleString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+        : 'Chưa rõ';
+
+      return `
+        <div class="notification-item" data-id="${order._id}" data-status="${statusKey}">
+          <div>
+            <i class="fas fa-box-open" style="margin-right:6px;"></i>
+            Đơn hàng có mã <b>${code}</b>, thời gian <b>${formattedDate}</b>, trạng thái <b>${status}</b> cần được xác nhận!
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    setTimeout(() => {
+      document.querySelectorAll('.notification-item').forEach(item => {
+        item.onclick = function() {
+          const orderId = this.getAttribute('data-id');
+          goToOrderDetails(orderId);
+          dropdown.classList.remove('active');
+        };
+      });
+    }, 0);
+  }
+}
+
+async function fetchOrdersForNotifications() {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+    return;
+  }
+
+  try {
+    const response = await fetch(orderAPI, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Không thể lấy dữ liệu đơn hàng');
+    }
+
+    const ordersData = await response.json();
+    const orders = ordersData.orders || [];
+    renderNotifications(orders);
+
+    const pendingOrders = orders.filter(order =>
+      order.order_status === 'Pending' || order.order_status === 'Processing'
+    );
+    if (pendingOrders.length > 0) {
+      pendingOrders.sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
+      const newestOrder = pendingOrders[0];
+      if (lastNotifiedOrderId !== newestOrder._id) {
+        lastNotifiedOrderId = newestOrder._id;
+        const code = newestOrder.order_id || newestOrder._id || 'Không rõ';
+        const status = newestOrder.order_status === 'Pending'
+          ? 'Đang chờ xác nhận'
+          : newestOrder.order_status === 'Processing'
+            ? 'Đang xử lý'
+            : 'Chưa rõ';
+        const createdAt = newestOrder.order_date || newestOrder.createdAt || '';
+        const formattedDate = createdAt
+          ? new Date(createdAt).toLocaleString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })
+          : 'Chưa rõ';
+
+        showNotification(
+          'success',
+          `<span style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-box-open" style="font-size:22px;color:#fff;"></i>
+            <span>
+              Đơn hàng mới!<br>
+              Mã đơn <b>${code}</b>, thời gian <b>${formattedDate}</b>, trạng thái <b>${status}</b> cần được xác nhận!
+            </span>
+          </span>`
+        );
+      }
+    }
+  } catch (error) {
+    showNotification('error', 'Lỗi khi tải dữ liệu đơn hàng: ' + error.message);
+  }
+}
+
 document.getElementById('btn-add-campaign').addEventListener('click', () => {
   editingId = null;
   existingImages = [];
@@ -293,7 +504,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
   const books = getSelectedBooks();
 
   if (!name || !startDate || !endDate) {
-    alert('⚠️ Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
+    showNotification('error', 'Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
     return;
   }
 
@@ -327,7 +538,7 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
     })
     .catch(err => {
       console.error('❌ Lỗi khi thêm chiến dịch:', err);
-      alert(`❌ Lỗi khi thêm chiến dịch: ${err.message}`);
+      showNotification('error', `Lỗi khi thêm chiến dịch: ${err.message}`);
     });
 });
 
@@ -340,6 +551,7 @@ function editCampaign(id) {
       document.getElementById('campaign-start').value = c.startDate?.split('T')[0] || '';
       document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
       document.getElementById('campaign-type').value = c.type;
+      document.getElementById('campaign-status').value = c.status.toString();
       editorInstance.setData(c.description || '');
       const select = document.getElementById('campaign-books');
       const selectedBooks = Array.isArray(c.books) ? c.books.map(b => typeof b === 'object' ? b._id : b) : [];
@@ -355,7 +567,7 @@ function editCampaign(id) {
     })
     .catch(err => {
       console.error('❌ Không tải được dữ liệu chiến dịch:', err);
-      alert('❌ Không thể chỉnh sửa chiến dịch này: ' + err.message);
+      showNotification('error', 'Không thể chỉnh sửa chiến dịch này: ' + err.message);
     });
 }
 
@@ -370,7 +582,7 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   const books = getSelectedBooks();
 
   if (!name || !startDate || !endDate) {
-    alert('⚠️ Vui lòng nhập đầy đủ thông tin');
+    showNotification('error', 'Vui lòng nhập đầy đủ thông tin');
     return;
   }
 
@@ -383,7 +595,6 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   formData.append('type', type);
   books.forEach(book => formData.append('books[]', book));
 
-  // Only include images if there are changes (new images or deletions)
   if (newImageFiles.length > 0 || deletedImageUrls.length > 0) {
     newImageFiles.forEach(file => formData.append('imageFile', file));
     if (deletedImageUrls.length < existingImages.length) {
@@ -417,7 +628,7 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     })
     .catch(err => {
       console.error(err);
-      alert('❌ Lỗi khi cập nhật chiến dịch: ' + err.message);
+      showNotification('error', 'Lỗi khi cập nhật chiến dịch: ' + err.message);
     });
 });
 
@@ -451,7 +662,7 @@ function deleteCampaign(id) {
               })
               .catch(err => {
                 console.error('❌ Lỗi khi xóa chiến dịch:', err);
-                alert('❌ Lỗi khi xóa chiến dịch: ' + err.message);
+                showNotification('error', 'Lỗi khi xóa chiến dịch: ' + err.message);
               });
           });
         }
@@ -460,7 +671,7 @@ function deleteCampaign(id) {
     })
     .catch(err => {
       console.error('❌ Lỗi khi tải dữ liệu để xóa:', err);
-      alert('❌ Không thể xóa chiến dịch: ' + err.message);
+      showNotification('error', 'Không thể xóa chiến dịch: ' + err.message);
     });
 }
 
@@ -493,19 +704,20 @@ document.addEventListener('DOMContentLoaded', function() {
       editorInstance = editor;
       loadBooks();
       loadCampaigns();
+      fetchOrdersForNotifications();
     })
     .catch(error => console.error('CKEditor lỗi:', error));
-});
 
-const toggleBtn = document.getElementById('toggle-book-list');
-const bookSearchWrap = document.getElementById('book-search-wrap');
-let isBookListOpen = false;
+  const toggleBtn = document.getElementById('toggle-book-list');
+  const bookSearchWrap = document.getElementById('book-search-wrap');
+  let isBookListOpen = false;
 
-toggleBtn.addEventListener('click', function() {
-  isBookListOpen = !isBookListOpen;
-  bookSearchWrap.style.display = isBookListOpen ? 'block' : 'none';
-  toggleBtn.innerHTML = isBookListOpen ? '<i class="fa fa-chevron-up"></i>' : '<i class="fa fa-chevron-down"></i>';
-  if (isBookListOpen && (!window.allBooks || window.allBooks.length === 0)) loadBooksForSearch();
+  toggleBtn.addEventListener('click', function() {
+    isBookListOpen = !isBookListOpen;
+    bookSearchWrap.style.display = isBookListOpen ? 'block' : 'none';
+    toggleBtn.innerHTML = isBookListOpen ? '<i class="fa fa-chevron-up"></i>' : '<i class="fa fa-chevron-down"></i>';
+    if (isBookListOpen && (!window.allBooks || window.allBooks.length === 0)) loadBooksForSearch();
+  });
 });
 
 function showSuccessUpdateCampaignDialog() {

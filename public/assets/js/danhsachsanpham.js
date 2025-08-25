@@ -655,28 +655,20 @@ document.getElementById('thumbnailPreview').addEventListener('click', function(e
 async function fetchImageAsFile(imageUrl, fileName) {
   if (!imageUrl) return null;
   try {
-    const cleanImageUrl = imageUrl.split('&imgtk')[0];
+    const cleanImageUrl = imageUrl.split('&imgtk')[0]; // Loại bỏ tham số imgtk và source
     const proxyUrl = `/api/books/proxy/image?url=${encodeURIComponent(cleanImageUrl)}`;
     const response = await fetch(proxyUrl, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
     });
-    if (response.status === 404) {
-      // Proxy không tồn tại hoặc không tải được ảnh
-      showErrorDialog(
-        'Lỗi Tải Hình Ảnh',
-        'Không thể tải hình ảnh từ Google Books qua proxy. Ảnh sẽ chỉ hiển thị tạm thời, vui lòng upload ảnh thủ công khi lưu sản phẩm.'
-      );
-      return null;
-    }
     if (!response.ok) {
-      showErrorDialog('Lỗi Tải Hình Ảnh', `Không thể tải hình ảnh từ Google Books. Vui lòng chọn ảnh thủ công.`);
-      return null;
+      throw new Error(`Không thể tải hình ảnh qua proxy: ${response.statusText}`);
     }
     const blob = await response.blob();
     const ext = blob.type.split('/')[1] || 'jpg';
     return new File([blob], `${fileName}.${ext}`, { type: blob.type });
   } catch (error) {
-    showErrorDialog('Lỗi Tải Hình Ảnh', `Không thể tải hình ảnh từ Google Books. Vui lòng chọn ảnh thủ công.`);
+    console.error('Lỗi tải hình ảnh:', error);
+    showErrorDialog('Lỗi Tải Hình Ảnh', `Không thể tải hình ảnh từ Google Books: ${error.message}`);
     return null;
   }
 }
@@ -721,40 +713,21 @@ addBookForm.addEventListener('submit', async function(e) {
   categories.forEach(cat => formData.append('categories[]', cat));
 
   const coverFiles = document.getElementById('bookImageUpload').files;
-  let hasCoverImage = false;
   if (coverFiles.length > 0) {
-    hasCoverImage = true;
     for (let i = 0; i < coverFiles.length; i++) {
       formData.append('cover_images', coverFiles[i]);
     }
   } else if (googleBookCoverUrl) {
     const coverFile = await fetchImageAsFile(googleBookCoverUrl, 'cover');
-    if (coverFile) {
-      formData.append('cover_images', coverFile);
-      hasCoverImage = true;
-    }
+    if (coverFile) formData.append('cover_images', coverFile);
   }
 
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
-  let hasThumbnail = false;
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
-    hasThumbnail = true;
   } else if (googleBookCoverUrl) {
     const thumbnailFileFetched = await fetchImageAsFile(googleBookCoverUrl, 'thumbnail');
-    if (thumbnailFileFetched) {
-      formData.append('thumbnail', thumbnailFileFetched);
-      hasThumbnail = true;
-    }
-  }
-
-  // Nếu không có ảnh nào, báo lỗi rõ ràng
-  if (!hasCoverImage && !hasThumbnail) {
-    showErrorDialog(
-      'Lỗi Lưu Truyện',
-      'Không thể lấy ảnh từ Google Books. Vui lòng chọn ảnh bìa hoặc thumbnail thủ công.'
-    );
-    return;
+    if (thumbnailFileFetched) formData.append('thumbnail', thumbnailFileFetched);
   }
 
   if (id && deletedImageIndices.length > 0) {

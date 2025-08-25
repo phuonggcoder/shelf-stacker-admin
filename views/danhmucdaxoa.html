@@ -312,13 +312,108 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 20px;
     }
+
+    .notification-bell {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .notification-bell .fa-bell {
+      font-size: 18px;
+      color: #0ea5e9;
+    }
+
+    .notification-bell .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #ff4d4f;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0;
+      width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      padding: 10px;
+      color: #333;
+      max-height: 400px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .notification-dropdown.active {
+      display: block;
+    }
+
+    .notification-item {
+      padding: 14px 10px;
+      border-bottom: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .notification-item:hover {
+      background: #f0f9ff;
+    }
+
+    .notification-item div {
+      flex: 1;
+      font-size: 15px;
+      color: #0ea5e9;
+      font-weight: 500;
+    }
+
+    .notification-item div p {
+      margin: 0;
+      font-size: 14px;
+    }
+
+    .notification-item div p strong {
+      color: #0ea5e9;
+    }
+
+    .notification-item div p span {
+      color: #666;
+      font-size: 12px;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   </style>
 </head>
 <body>
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
       <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">PET SERVICE</h3>
+      <h3 style="margin-bottom:0;">WEN ADMIN</h3>
     </div>
     <nav>
       <ul>
@@ -339,7 +434,7 @@
           <ul class="menu-child" id="categoryMenu" style="display:none;">
             <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
             <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-                  <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>    
+            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>    
           </ul>
         </li>
         <li>
@@ -385,9 +480,14 @@
   </aside>
 
   <header class="header">
-    <h1 class="logo">SleekAdmin</h1>
+    <h1 class="logo"></h1>
     <div class="user">
       <img id="" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" class="badge">0</span>
+        <div id="notificationDropdown" class="notification-dropdown"></div>
+      </span>
     </div>
   </header>
 
@@ -395,7 +495,6 @@
     <section class="breadcrumb">
       <h2>Danh mục đã xóa gần đây</h2>
     </section>
-
     <section class="stats">
       <!-- Thêm các card nếu cần, hoặc giữ trống nếu không sử dụng stats -->
     </section>
@@ -421,160 +520,5 @@
   </dialog>
 
   <script src="/assets/js/danhmucdaxoa.js"></script>
-  <script>
-    // Load avatar from localStorage on page load
-    window.onload = () => {
-      const savedAvatar = localStorage.getItem('userAvatar');
-      if (savedAvatar) {
-        document.getElementById('sidebarAvatar').src = savedAvatar;
-        document.getElementById('headerAvatar').src = savedAvatar;
-      }
-    };
-
-    function toggleMenu(id) {
-      const el = document.getElementById(id);
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    const uploadDialog = document.getElementById('uploadDialog');
-    const uploadMessage = document.getElementById('uploadMessage');
-    const uploadButton = document.getElementById('uploadButton');
-    const cancelButton = document.getElementById('cancelButton');
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-    document.getElementById('settingsLink').onclick = () => {
-      document.getElementById('mainSidebar').classList.add('hidden');
-      document.getElementById('settingsSidebar').classList.remove('hidden');
-    };
-
-    document.getElementById('backButton').onclick = () => {
-      document.getElementById('settingsSidebar').classList.add('hidden');
-      document.getElementById('mainSidebar').classList.remove('hidden');
-    };
-
-    document.getElementById('logoutButton').onclick = () => {
-      fetch('login')
-        .then(res => {
-          if (res.ok) {
-            localStorage.removeItem('userAvatar');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userId');
-            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
-            window.location.href = 'login';
-          } else {
-            alert('Không tìm thấy file login.html, vui lòng tạo file này.');
-          }
-        })
-        .catch(() => {
-          alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
-        });
-    };
-
-    sidebarAvatar.onclick = () => {
-      uploadDialog.showModal();
-      resetUploadDialog();
-    };
-
-    cancelButton.onclick = () => {
-      uploadDialog.close();
-    };
-
-    uploadDialog.addEventListener('close', () => {
-      resetUploadDialog();
-    });
-
-    function resetUploadDialog() {
-      document.getElementById('avatarUpload').value = '';
-      uploadMessage.style.display = 'none';
-      uploadMessage.textContent = '';
-      uploadMessage.className = 'notification';
-      uploadButton.disabled = false;
-      uploadButton.textContent = 'Tải lên';
-    }
-
-    uploadButton.onclick = async () => {
-      const fileInput = document.getElementById('avatarUpload');
-      const file = fileInput.files[0];
-
-      if (!file) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      if (!file.type.startsWith('image/')) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
-
-      if (!token) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      if (!userId) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      uploadButton.disabled = true;
-      uploadButton.textContent = 'Đang tải...';
-
-      try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        formData.append('userId', userId);
-
-        const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-
-        if (!response.ok) {
-          let errorMsg = 'Lỗi khi tải ảnh lên';
-          try {
-            const errData = await response.json();
-            if (errData.message) errorMsg = errData.message;
-          } catch {}
-          throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        const imageUrl = data.avatar || URL.createObjectURL(file);
-
-        document.getElementById('sidebarAvatar').src = imageUrl;
-        document.getElementById('headerAvatar').src = imageUrl;
-
-        localStorage.setItem('userAvatar', imageUrl);
-
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-        uploadMessage.className = 'notification success-message';
-
-        setTimeout(() => {
-          uploadDialog.close();
-        }, 2000);
-      } catch (error) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Lỗi: ' + error.message;
-        uploadMessage.className = 'notification error-message';
-        uploadButton.disabled = false;
-        uploadButton.textContent = 'Tải lên';
-      }
-    };
-  </script>
 </body>
 </html>

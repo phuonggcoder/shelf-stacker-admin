@@ -147,6 +147,77 @@
       object-fit: cover;
     }
 
+    .notification-bell {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+    }
+
+    .notification-bell .fa-bell {
+      font-size: 18px;
+      color: #0ea5e9;
+    }
+
+    .notification-bell .badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background-color: #ff4d4f;
+      color: white;
+      border-radius: 50%;
+      padding: 2px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      min-width: 16px;
+      text-align: center;
+      display: none;
+    }
+
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      top: 40px;
+      right: 0;
+      width: 300px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      z-index: 10000;
+      padding: 10px;
+      color: #333;
+      max-height: 400px;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+
+    .notification-dropdown.active {
+      display: block;
+    }
+
+    .notification-item {
+      padding: 14px 10px;
+      border-bottom: 1px solid #eee;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      background: #f8f9fa;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .notification-item:hover {
+      background: #f0f9ff;
+    }
+
+    .notification-item div {
+      flex: 1;
+      font-size: 15px;
+      color: #0ea5e9;
+      font-weight: 500;
+    }
+
     .main {
       margin-left: 260px;
       padding: 100px 20px 40px;
@@ -307,11 +378,40 @@
       object-fit: contain;
       border: 1px solid #ddd;
       border-radius: 6px;
-      display: none;
+      display: block;
     }
 
     .image-preview.thumbnail {
       border: 2px solid #0ea5e9;
+    }
+
+    .image-preview-wrapper {
+      position: relative;
+      display: inline-block;
+    }
+
+    .image-actions {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .edit-image-btn,
+    .replace-image-btn {
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .edit-image-btn:hover,
+    .replace-image-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
     }
 
     dialog {
@@ -382,20 +482,36 @@
       padding-left: 18px;
       font-size: 13px;
     }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
   </style>
 </head>
 <body>
   <header class="header">
     <h1 class="logo">SleekAdmin</h1>
     <div class="user">
-      <img id="headerAvatar" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+
+      <img id="" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
+        <i class="fas fa-bell"></i>
+        <span id="notificationBadge" class="badge">0</span>
+        <div id="notificationDropdown" class="notification-dropdown"></div>
+      </span>
     </div>
   </header>
 
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
       <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">PET SERVICE</h3>
+      <h3 style="margin-bottom:0;">WEN ADMIN</h3>
     </div>
     <nav>
       <ul>
@@ -416,7 +532,7 @@
           <ul class="menu-child" id="categoryMenu" style="display:none;">
             <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
             <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-                  <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li> 
+            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>
           </ul>
         </li>
         <li>
@@ -561,24 +677,13 @@
         document.getElementById('sidebarAvatar').src = savedAvatar;
         document.getElementById('headerAvatar').src = savedAvatar;
       }
+      const uploadDialog = document.getElementById('uploadDialog');
+      uploadDialog.removeAttribute('open');
     };
 
     function toggleMenu(id) {
       const el = document.getElementById(id);
       el.style.display = el.style.display === 'none' ? 'block' : 'none';
-    }
-
-    function closeDialog(id) {
-      const dialog = document.getElementById(id);
-      if (dialog) dialog.remove();
-    }
-
-    function showSuccessAddCampaignDialog() {
-      fetch('/components/dialogs/success-add-campaign.html')
-        .then(res => res.text())
-        .then(html => {
-          document.body.insertAdjacentHTML('beforeend', html);
-        });
     }
 
     document.getElementById('settingsLink').onclick = () => {

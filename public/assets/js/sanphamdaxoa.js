@@ -1,4 +1,6 @@
+const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
 let pendingRestoreId = null;
+let lastNotifiedOrderId = null;
 
 // Hàm cắt mô tả dài và có nút Xem thêm
 function renderDesc(desc, idx) {
@@ -23,7 +25,7 @@ async function fetchTrashBooks() {
   const trashGrid = document.getElementById('trashGrid');
   trashGrid.innerHTML = '<p style="text-align: center; color: #666; font-size: 16px;">Đang tải...</p>';
   try {
-    const res = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/books/trash/all', {
+    const res = await fetch(`${BASE_URL}/api/books/trash/all`, {
       headers: {
         'Authorization': 'Bearer ' + getToken()
       }
@@ -120,7 +122,7 @@ function renderTrashBooks(books) {
       const id = this.getAttribute('data-id');
       if (await showConfirmDeleteDialog()) {
         try {
-          const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/books/${id}/force`, {
+          const res = await fetch(`${BASE_URL}/api/books/${id}/force`, {
             method: 'DELETE',
             headers: {
               'Authorization': 'Bearer ' + getToken()
@@ -159,7 +161,7 @@ async function loadConfirmRestoreDialog() {
       dialog.querySelector('.btn-ok').addEventListener('click', async () => {
         if (!pendingRestoreId) return;
         try {
-          const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/books/${pendingRestoreId}/restore`, {
+          const res = await fetch(`${BASE_URL}/api/books/${pendingRestoreId}/restore`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
@@ -215,7 +217,7 @@ function showNotification(type, message) {
   notification.appendChild(icon);
 
   const text = document.createElement('span');
-  text.textContent = message;
+  text.innerHTML = message;
   notification.appendChild(text);
 
   const closeBtn = document.createElement('button');
@@ -295,11 +297,163 @@ function showConfirmDeleteDialog(message = 'Bạn có chắc muốn xóa vĩnh v
   });
 }
 
-// Tải danh sách khi vào trang
-document.addEventListener('DOMContentLoaded', async () => {
-  await loadConfirmRestoreDialog();
-  fetchTrashBooks();
+// Toggle notification dropdown
+function toggleNotificationDropdown() {
+  const dropdown = document.getElementById('notificationDropdown');
+  if (dropdown) {
+    dropdown.classList.toggle('active');
+  }
+}
+
+// Handle click on notification bell
+const notificationBell = document.querySelector('.notification-bell');
+if (notificationBell) {
+  notificationBell.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleNotificationDropdown();
+  });
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function (event) {
+  const dropdown = document.getElementById('notificationDropdown');
+  if (dropdown && dropdown.classList.contains('active')) {
+    if (!event.target.closest('.notification-bell')) {
+      dropdown.classList.remove('active');
+    }
+  }
 });
+
+// Go to order details page
+function goToOrderDetails(orderId) {
+  window.location.href = 'danhmucdonhang';
+}
+
+// Render notifications
+function renderNotifications(orders) {
+  const dropdown = document.getElementById('notificationDropdown');
+  const badge = document.getElementById('notificationBadge');
+  if (!dropdown || !badge) return;
+
+  const filteredOrders = orders.filter(order =>
+    order.order_status === 'Pending' || order.order_status === 'Processing'
+  );
+
+  badge.textContent = filteredOrders.length;
+  badge.style.display = filteredOrders.length > 0 ? 'inline-block' : 'none';
+
+  if (!filteredOrders.length) {
+    dropdown.innerHTML = '<div style="padding: 16px; text-align: center; color: #888;">Không có đơn hàng mới cần xác nhận.</div>';
+  } else {
+    dropdown.innerHTML = filteredOrders.map(order => {
+      const code = order.order_id || order._id || 'Không rõ';
+      const statusKey = order.order_status;
+      const status = statusKey === 'Pending'
+        ? 'Đang chờ xác nhận'
+        : statusKey === 'Processing'
+          ? 'Đang xử lý'
+          : 'Chưa rõ';
+      const createdAt = order.order_date || order.createdAt || '';
+      const formattedDate = createdAt
+        ? new Date(createdAt).toLocaleString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          })
+        : 'Chưa rõ';
+
+      return `
+        <div class="notification-item" data-id="${order._id}" data-status="${statusKey}">
+          <div>
+            <i class="fas fa-box-open" style="margin-right:6px;"></i>
+            Đơn hàng có mã <b>${code}</b>, thời gian <b>${formattedDate}</b>, trạng thái <b>${status}</b> cần được xác nhận!
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Add click event for notification items
+    setTimeout(() => {
+      document.querySelectorAll('.notification-item').forEach(item => {
+        item.onclick = function() {
+          const orderId = this.getAttribute('data-id');
+          goToOrderDetails(orderId);
+          dropdown.classList.remove('active');
+        };
+      });
+    }, 0);
+  }
+}
+
+// Fetch orders for notifications
+async function fetchOrdersForNotifications() {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/orders`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Không thể lấy dữ liệu đơn hàng');
+    }
+
+    const ordersData = await response.json();
+    const orders = ordersData.orders || [];
+    renderNotifications(orders);
+
+    // Notify for new pending/processing orders
+    const pendingOrders = orders.filter(order =>
+      order.order_status === 'Pending' || order.order_status === 'Processing'
+    );
+    if (pendingOrders.length > 0) {
+      pendingOrders.sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
+      const newestOrder = pendingOrders[0];
+      if (lastNotifiedOrderId !== newestOrder._id) {
+        lastNotifiedOrderId = newestOrder._id;
+        const code = newestOrder.order_id || newestOrder._id || 'Không rõ';
+        const status = newestOrder.order_status === 'Pending'
+          ? 'Đang chờ xác nhận'
+          : newestOrder.order_status === 'Processing'
+            ? 'Đang xử lý'
+            : 'Chưa rõ';
+        const createdAt = newestOrder.order_date || newestOrder.createdAt || '';
+        const formattedDate = createdAt
+          ? new Date(createdAt).toLocaleString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            })
+          : 'Chưa rõ';
+
+        showNotification(
+          'success',
+          `<span style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-box-open" style="font-size:22px;color:#fff;"></i>
+            <span>
+              Đơn hàng mới!<br>
+              Mã đơn <b>${code}</b>, thời gian <b>${formattedDate}</b>, trạng thái <b>${status}</b> cần được xác nhận!
+            </span>
+          </span>`
+        );
+      }
+    }
+  } catch (error) {
+    showNotification('error', 'Lỗi khi tải dữ liệu đơn hàng: ' + error.message);
+  }
+}
 
 // CSS cơ bản cho layout
 const style = document.createElement('style');
@@ -385,3 +539,10 @@ style.textContent = `
   }
 `;
 document.head.appendChild(style);
+
+// Tải danh sách khi vào trang
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadConfirmRestoreDialog();
+  fetchTrashBooks();
+  fetchOrdersForNotifications();
+});
