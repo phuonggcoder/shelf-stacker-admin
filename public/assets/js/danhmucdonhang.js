@@ -196,10 +196,18 @@ function renderOrders(orders) {
 
   if (!orders || orders.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không có đơn hàng</td></tr>';
+    renderOrderPagination(1, 1);
     return;
   }
 
-  tbody.innerHTML = orders.map(order => {
+  const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
+  if (currentOrderPage > totalPages) currentOrderPage = totalPages;
+  if (currentOrderPage < 1) currentOrderPage = 1;
+  const startIdx = (currentOrderPage - 1) * ORDERS_PER_PAGE;
+  const endIdx = startIdx + ORDERS_PER_PAGE;
+  const ordersToShow = orders.slice(startIdx, endIdx);
+
+  tbody.innerHTML = ordersToShow.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
     const rawImage = book.thumbnail?.trim() || book.main_image?.[0];
     const image = getFullImageURL(rawImage);
@@ -243,6 +251,7 @@ function renderOrders(orders) {
   }).join('');
 
   addOrderEventListeners();
+  renderOrderPagination(currentOrderPage, totalPages);
 }
 
 function addOrderEventListeners() {
@@ -1004,3 +1013,69 @@ async function showShipperDetails(orderId) {
     showNotification('error', err.message);
   }
 }
+
+function renderOrderPagination(page, totalPages) {
+  const pagination = document.getElementById('order-pagination');
+  if (!pagination) return;
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+  let buttons = `
+    <button id="prevOrderPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  `;
+  // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
+  let pageNumbers = '';
+  const maxPages = 5;
+  let start = Math.max(1, page - 2);
+  let end = Math.min(totalPages, page + 2);
+  if (end - start < maxPages - 1) {
+    if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
+    else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
+  }
+  if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  for (let i = start; i <= end; i++) {
+    pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+  }
+  if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  buttons += pageNumbers;
+  buttons += `
+    <button id="nextOrderPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  `;
+  pagination.innerHTML = buttons;
+
+  document.getElementById('prevOrderPage').onclick = () => {
+    if (page > 1) {
+      currentOrderPage--;
+      const activeTab = document.querySelector('.tab-button.active');
+      const status = activeTab ? activeTab.dataset.status : 'all';
+      filterOrdersByStatus(status);
+    }
+  };
+  document.getElementById('nextOrderPage').onclick = () => {
+    if (page < totalPages) {
+      currentOrderPage++;
+      const activeTab = document.querySelector('.tab-button.active');
+      const status = activeTab ? activeTab.dataset.status : 'all';
+      filterOrdersByStatus(status);
+    }
+  };
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.onclick = function() {
+      const gotoPage = Number(this.dataset.page);
+      if (gotoPage !== page) {
+        currentOrderPage = gotoPage;
+        const activeTab = document.querySelector('.tab-button.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        filterOrdersByStatus(status);
+      }
+    };
+  });
+}
+
+let currentOrderPage = 1;
+const ORDERS_PER_PAGE = 15;
