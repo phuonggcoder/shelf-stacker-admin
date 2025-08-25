@@ -183,65 +183,69 @@ function renderUsers(users) {
   renderPagination(currentPage, totalPages);
 }
 
+// Render phân trang
 function renderPagination(page, totalPages) {
   const pagination = document.getElementById('pagination');
+  if (!pagination) return;
   if (totalPages <= 1) {
     pagination.innerHTML = '';
     return;
   }
-  pagination.innerHTML = `
+
+  let buttons = `
     <button id="prevPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
-      <span style="font-size:18px;">&#60;</span>
-    </button>
-    <span style="font-weight:600;color:#0ea5e9;font-size:18px;margin:0 18px;">Trang ${page} / ${totalPages}</span>
-    <button id="nextPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
-      <span style="font-size:18px;">&#62;</span>
+      <i class="fas fa-chevron-left"></i>
     </button>
   `;
 
-  if (!document.getElementById('page-circle-btn-style')) {
-    const style = document.createElement('style');
-    style.id = 'page-circle-btn-style';
-    style.innerHTML = `
-      .page-circle-btn {
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        border: 1.5px solid #0ea5e9;
-        background: #fff;
-        color: #0ea5e9;
-        font-size: 18px;
-        cursor: pointer;
-        transition: background 0.2s, border-color 0.2s;
-        outline: none;
-      }
-      .page-circle-btn:disabled {
-        border-color: #e0e0e0;
-        color: #bdbdbd;
-        background: #f5f5f5;
-        cursor: not-allowed;
-      }
-      .page-circle-btn:not(:disabled):hover {
-        background: #e0f2fe;
-        border-color: #007bff;
-        color: #007bff;
-      }
-    `;
-    document.head.appendChild(style);
+  // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
+  let pageNumbers = '';
+  const maxPages = 5;
+  let start = Math.max(1, page - 2);
+  let end = Math.min(totalPages, page + 2);
+  if (end - start < maxPages - 1) {
+    if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
+    else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
   }
+  if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  for (let i = start; i <= end; i++) {
+    pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+  }
+  if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  buttons += pageNumbers;
+  buttons += `
+    <button id="nextPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  `;
+  pagination.innerHTML = buttons;
 
+  // Thêm sự kiện cho nút Previous
   document.getElementById('prevPage').onclick = () => {
     if (page > 1) {
       currentPage--;
       filterAndRenderUsers();
     }
   };
+
+  // Thêm sự kiện cho nút Next
   document.getElementById('nextPage').onclick = () => {
     if (page < totalPages) {
       currentPage++;
       filterAndRenderUsers();
     }
   };
+
+  // Thêm sự kiện cho các nút số trang
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.onclick = function() {
+      const gotoPage = Number(this.dataset.page);
+      if (gotoPage !== page) {
+        currentPage = gotoPage;
+        filterAndRenderUsers();
+      }
+    };
+  });
 }
 
 // Tìm kiếm và lọc người dùng
