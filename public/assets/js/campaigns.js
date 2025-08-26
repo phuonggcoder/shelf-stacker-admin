@@ -179,8 +179,12 @@ function renderImagePreviews() {
       wrapper.innerHTML = `
         <img src="${url}" class="image-preview" style="display: block;" />
         <div class="image-actions">
-          <button type="button" class="edit-image-btn" data-url="${url}" title="Xóa hình ảnh">🗑️</button>
-          <button type="button" class="replace-image-btn" data-url="${url}" title="Sửa hình ảnh">✏️</button>
+          <button type="button" class="edit-image-btn" data-url="${url}" title="Xóa hình ảnh">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button type="button" class="replace-image-btn" data-url="${url}" title="Sửa hình ảnh">
+            <i class="fas fa-pen"></i>
+          </button>
         </div>
       `;
       if (index === 0 && newImageFiles.length === 0) {
@@ -199,8 +203,12 @@ function renderImagePreviews() {
       wrapper.innerHTML = `
         <img src="${e.target.result}" class="image-preview" style="display: block;" />
         <div class="image-actions">
-          <button type="button" class="edit-image-btn" data-index="${index}" title="Xóa hình ảnh">🗑️</button>
-          <button type="button" class="replace-image-btn" data-index="${index}" title="Sửa hình ảnh">✏️</button>
+          <button type="button" class="edit-image-btn" data-index="${index}" title="Xóa hình ảnh">
+            <i class="fas fa-trash"></i>
+          </button>
+          <button type="button" class="replace-image-btn" data-index="${index}" title="Sửa hình ảnh">
+            <i class="fas fa-pen"></i>
+          </button>
         </div>
       `;
       if (index === 0 && existingImages.filter(url => !deletedImageUrls.includes(url)).length === 0) {
