@@ -687,7 +687,7 @@ async function fetchStats() {
     null: '#bdbdbd'
   };
 
-  // Sắp xếp trạng thái theo thứ tự mong muốn
+  // Sắp xếp trạng thái theo thứ tự mong muốn, bỏ 'null'
   const statusOrder = [
     'Pending',
     'Processing',
@@ -696,11 +696,10 @@ async function fetchStats() {
     'Delivered',
     'Returned',
     'Refunded',
-    'Cancelled',
-    'null'
+    'Cancelled'
   ];
 
-  // Lấy dữ liệu và dịch trạng thái
+  // Lấy dữ liệu và dịch trạng thái, bỏ 'null'
   const statusLabels = statusOrder
     .filter(key => key in data.statusStats)
     .map(key => STATUS_LABELS[key] || key);
@@ -736,28 +735,34 @@ async function fetchStats() {
     }
   };
 
-  // Dịch phương thức thanh toán sang tiếng Việt
+  // Dịch phương thức thanh toán sang tiếng Việt, bỏ 'null'
   const PAYMENT_LABELS = {
     ZALOPAY: 'ZaloPay',
     COD: 'Thanh toán khi nhận hàng',
     PAYOS: 'PayOS',
-    MOMO: 'Momo',
-    null: 'Không xác định'
+    MOMO: 'Momo'
   };
 
-  const paymentLabels = Object.keys(data.paymentStats).map(key => PAYMENT_LABELS[key] || key);
+  const paymentLabels = Object.keys(data.paymentStats)
+    .filter(key => key !== 'null')
+    .map(key => PAYMENT_LABELS[key] || key);
+
+  const paymentData = Object.entries(data.paymentStats)
+    .filter(([key]) => key !== 'null')
+    .map(([, value]) => value);
+
   const paymentChart = {
     type: 'doughnut',
     data: {
       labels: paymentLabels,
       datasets: [{
-        data: Object.values(data.paymentStats || {}),
+        data: paymentData,
         backgroundColor: [
           '#0ea5e9', // COD
           '#ff4d4f', // ZALOPAY
           '#ffc107', // MOMO
           '#d9d9d9', // PAYOS
-          '#6c63ff', // Không xác định
+          '#6c63ff', // khác
         ],
         borderColor: ['#fff'],
         borderWidth: 2
