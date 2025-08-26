@@ -464,6 +464,12 @@ const pageSize = 6;
 let activeTab = 'all';
 let activeChildTab = 'all';
 
+// --- Thêm đoạn này để lấy page từ localStorage ---
+const PAGE_KEY = 'bookListCurrentPage';
+if (localStorage.getItem(PAGE_KEY)) {
+  currentPage = parseInt(localStorage.getItem(PAGE_KEY), 10) || 1;
+}
+
 const pagination = document.createElement('div');
 pagination.id = 'pagination';
 pagination.style = 'display:flex;justify-content:center;gap:10px;margin:20px 0;';
@@ -479,6 +485,9 @@ function renderProductsWithPagination(productsArr, page = 1) {
   if (page > totalPages && totalPages > 0) page = totalPages;
   if (page < 1) page = 1;
   currentPage = page;
+
+  // --- Lưu lại page hiện tại vào localStorage ---
+  localStorage.setItem(PAGE_KEY, currentPage);
 
   const start = (page - 1) * pageSize;
   const end = start + pageSize;
@@ -533,7 +542,7 @@ function renderProductsWithPagination(productsArr, page = 1) {
   }
 }
 
-function renderFilteredAndSorted(page = 1) {
+function renderFilteredAndSorted(page = currentPage) {
   const keyword = searchBox.value.trim();
   const sortTitleOrder = document.getElementById('sort-title').value;
 
@@ -1263,7 +1272,8 @@ exportExcelBtn.addEventListener('click', async () => {
 
 (async () => {
   products = await fetchProducts();
-  renderFilteredAndSorted(1);
+  // --- Khi load lại trang, dùng currentPage đã lưu ---
+  renderFilteredAndSorted(currentPage);
   await fetchCategoriesForSelect();
 })();
 

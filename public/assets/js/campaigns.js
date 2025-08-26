@@ -171,6 +171,7 @@ function renderImagePreviews() {
   }
   container.innerHTML = '';
 
+  // Hiển thị các ảnh đã tồn tại (từ Cloudinary)
   existingImages.forEach((url, index) => {
     if (!deletedImageUrls.includes(url)) {
       const wrapper = document.createElement('div');
@@ -178,8 +179,8 @@ function renderImagePreviews() {
       wrapper.innerHTML = `
         <img src="${url}" class="image-preview" style="display: block;" />
         <div class="image-actions">
-          <button class="edit-image-btn" data-url="${url}" title="Xóa hình ảnh">🗑️</button>
-          <button class="replace-image-btn" data-url="${url}" title="Sửa hình ảnh">✏️</button>
+          <button type="button" class="edit-image-btn" data-url="${url}" title="Xóa hình ảnh">🗑️</button>
+          <button type="button" class="replace-image-btn" data-url="${url}" title="Sửa hình ảnh">✏️</button>
         </div>
       `;
       if (index === 0 && newImageFiles.length === 0) {
@@ -189,6 +190,7 @@ function renderImagePreviews() {
     }
   });
 
+  // Hiển thị các ảnh mới (chưa upload)
   newImageFiles.forEach((file, index) => {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -197,15 +199,15 @@ function renderImagePreviews() {
       wrapper.innerHTML = `
         <img src="${e.target.result}" class="image-preview" style="display: block;" />
         <div class="image-actions">
-          <button class="edit-image-btn" data-index="${index}" title="Xóa hình ảnh">🗑️</button>
-          <button class="replace-image-btn" data-index="${index}" title="Sửa hình ảnh">✏️</button>
+          <button type="button" class="edit-image-btn" data-index="${index}" title="Xóa hình ảnh">🗑️</button>
+          <button type="button" class="replace-image-btn" data-index="${index}" title="Sửa hình ảnh">✏️</button>
         </div>
       `;
       if (index === 0 && existingImages.filter(url => !deletedImageUrls.includes(url)).length === 0) {
         wrapper.querySelector('.image-preview').classList.add('thumbnail');
       }
       container.appendChild(wrapper);
-      attachEditButtonListeners();
+      // Removed attachEditButtonListeners() here to prevent multiple calls
     };
     reader.readAsDataURL(file);
   });
@@ -214,38 +216,112 @@ function renderImagePreviews() {
 }
 
 function attachEditButtonListeners() {
+  // Xóa các sự kiện cũ để tránh trùng lặp
   document.querySelectorAll('.edit-image-btn').forEach(btn => {
-    btn.onclick = function() {
-      const url = this.getAttribute('data-url');
-      const index = this.getAttribute('data-index');
-      if (url) deletedImageUrls.push(url);
-      else if (index !== null) newImageFiles.splice(parseInt(index), 1);
-      renderImagePreviews();
-    };
+    btn.removeEventListener('click', btn._clickHandler); // Xóa handler cũ nếu có
+  });
+  document.querySelectorAll('.replace-image-btn').forEach(btn => {
+    btn.removeEventListener('click', btn._clickHandler); // Xóa handler cũ nếu có
   });
 
+  // Gắn sự kiện cho nút xóa ảnh
+  document.querySelectorAll('.edit-image-btn').forEach(btn => {
+    const handler = async function() {
+      const url = this.getAttribute('data-url');
+      const index = this.getAttribute('data-index');
+
+      if (url) {
+        // Xóa ảnh trên Cloudinary
+        const campaignId = editingId;
+        if (!campaignId) {
+          showNotification('error', 'Không tìm thấy campaignId để xóa ảnh!');
+          return;
+        }
+        try {
+          const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/campaigns/clear-single-image/${campaignId}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ imageUrl: url })
+          });
+          const data = await res.json();
+          if (data.success) {
+            // Cập nhật mảng existingImages
+            existingImages = existingImages.filter(img => img !== url);
+            deletedImageUrls.push(url); // Thêm vào danh sách đã xóa
+            showNotification('success', 'Đã xóa ảnh thành công trên Cloudinary!');
+            renderImagePreviews(); // Làm mới giao diện
+          } else {
+            showNotification('error', data.message || 'Xóa ảnh thất bại!');
+          }
+        } catch (err) {
+          showNotification('error', 'Lỗi khi xóa ảnh: ' + err.message);
+        }
+      } else if (index !== null) {
+        // Xóa ảnh mới (chưa upload)
+        newImageFiles.splice(parseInt(index), 1);
+        showNotification('success', 'Đã xóa ảnh mới thành công!');
+        renderImagePreviews(); // Làm mới giao diện
+      }
+    };
+    btn._clickHandler = handler; // Lưu handler để có thể xóa sau này
+    btn.addEventListener('click', handler, { once: true });
+  });
+
+  // Gắn sự kiện cho nút thay thế ảnh
   document.querySelectorAll('.replace-image-btn').forEach(btn => {
-    btn.onclick = function() {
+    const handler = function() {
       const url = this.getAttribute('data-url');
       const index = this.getAttribute('data-index');
       const input = document.createElement('input');
       input.type = 'file';
       input.accept = 'image/*';
-      input.onchange = function(e) {
+      input.onchange = async function(e) {
         const file = e.target.files[0];
         if (file) {
           if (url) {
-            const existingIndex = existingImages.indexOf(url);
-            if (existingIndex > -1 && !deletedImageUrls.includes(url)) {
-              deletedImageUrls.push(url);
-              newImageFiles.push(file);
+            const campaignId = editingId;
+            if (!campaignId) {
+              showNotification('error', 'Không tìm thấy campaignId để thay thế ảnh!');
+              return;
             }
-          } else if (index !== null) newImageFiles[parseInt(index)] = file;
-          renderImagePreviews();
-        } else alert('Vui lòng chọn một hình ảnh để thay thế!');
+            try {
+              const res = await fetch(`https://server-shelf-stacker-w1ds.onrender.com/api/campaigns/clear-single-image/${campaignId}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': token,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ imageUrl: url })
+              });
+              const data = await res.json();
+              if (data.success) {
+                existingImages = existingImages.filter(img => img !== url);
+                deletedImageUrls.push(url);
+                newImageFiles.push(file);
+                showNotification('success', 'Đã thay thế ảnh thành công!');
+                renderImagePreviews();
+              } else {
+                showNotification('error', data.message || 'Thay thế ảnh thất bại!');
+              }
+            } catch (err) {
+              showNotification('error', 'Lỗi khi thay thế ảnh: ' + err.message);
+            }
+          } else if (index !== null) {
+            newImageFiles[parseInt(index)] = file;
+            showNotification('success', 'Đã thay thế ảnh mới thành công!');
+            renderImagePreviews();
+          }
+        } else {
+          showNotification('error', 'Vui lòng chọn một hình ảnh để thay thế!');
+        }
       };
       input.click();
     };
+    btn._clickHandler = handler; // Lưu handler để có thể xóa sau này
+    btn.addEventListener('click', handler, { once: true });
   });
 }
 
@@ -420,7 +496,7 @@ async function fetchOrdersForNotifications() {
       order.order_status === 'Pending' || order.order_status === 'Processing'
     );
     if (pendingOrders.length > 0) {
-      pendingOrders.sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.createdAt));
+      pendingOrders.sort((a, b) => new Date(b.order_date || b.createdAt) - new Date(a.order_date || a.order_date));
       const newestOrder = pendingOrders[0];
       if (lastNotifiedOrderId !== newestOrder._id) {
         lastNotifiedOrderId = newestOrder._id;
@@ -514,7 +590,8 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
   formData.append('startDate', startDate);
   formData.append('endDate', endDate);
   formData.append('type', type);
-  books.forEach(book => formData.append('books[]', book));
+  // Sửa lại books gửi lên BE
+  formData.append('bookIds', JSON.stringify(books));
   newImageFiles.forEach(file => formData.append('imageFile', file));
 
   fetch(apiURL, {
@@ -593,17 +670,9 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
   formData.append('startDate', startDate);
   formData.append('endDate', endDate);
   formData.append('type', type);
-  books.forEach(book => formData.append('books[]', book));
-
-  if (newImageFiles.length > 0 || deletedImageUrls.length > 0) {
-    newImageFiles.forEach(file => formData.append('imageFile', file));
-    if (deletedImageUrls.length < existingImages.length) {
-      existingImages
-        .filter(url => !deletedImageUrls.includes(url))
-        .forEach(url => formData.append('imageUrl', url));
-    }
-    deletedImageUrls.forEach(url => formData.append('deletedImageUrls[]', url));
-  }
+  // Sửa lại books gửi lên BE
+  formData.append('books', JSON.stringify(books));
+  newImageFiles.forEach(file => formData.append('imageFile', file));
 
   fetch(`${apiURL}/${editingId}`, {
     method: 'PUT',
@@ -632,47 +701,78 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     });
 });
 
-function deleteCampaign(id) {
-  fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } })
-    .then(res => res.ok ? res.json() : Promise.reject(new Error('Không thể tải dữ liệu chiến dịch để xóa')))
-    .then(campaign => {
-      showConfirmDeleteCampaignDialog();
-      const observer = new MutationObserver((mutations, obs) => {
-        const dialog = document.getElementById('dialog-confirm-delete-campaign');
-        const cancelBtn = document.getElementById('cancel-delete-campaign-btn');
-        const confirmBtn = document.getElementById('confirm-delete-campaign-btn');
-        if (dialog && cancelBtn && confirmBtn) {
-          obs.disconnect();
-          cancelBtn.addEventListener('click', () => dialog.remove());
-          confirmBtn.addEventListener('click', () => {
-            dialog.remove();
-            const formData = new FormData();
-            if (Array.isArray(campaign.image)) {
-              campaign.image.forEach(url => formData.append('deletedImageUrls[]', url));
-            }
-            fetch(`${apiURL}/${id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': token },
-              body: formData
-            })
-              .then(res => res.ok ? res.json() : Promise.reject(new Error('Xóa chiến dịch thất bại')))
-              .then(() => {
-                showSuccessDeleteCampaignDialog();
-                loadCampaigns();
-              })
-              .catch(err => {
-                console.error('❌ Lỗi khi xóa chiến dịch:', err);
-                showNotification('error', 'Lỗi khi xóa chiến dịch: ' + err.message);
+async function deleteCampaign(id) {
+  try {
+    const res = await fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } });
+    if (!res.ok) {
+      throw new Error('Không thể tải dữ liệu chiến dịch để xóa');
+    }
+    const campaign = await res.json();
+
+    showConfirmDeleteCampaignDialog();
+
+    const observer = new MutationObserver((mutations, obs) => {
+      const dialog = document.getElementById('dialog-confirm-delete-campaign');
+      const cancelBtn = document.getElementById('cancel-delete-campaign-btn');
+      const confirmBtn = document.getElementById('confirm-delete-campaign-btn');
+      if (dialog && cancelBtn && confirmBtn) {
+        obs.disconnect();
+        cancelBtn.addEventListener('click', () => dialog.remove());
+        confirmBtn.addEventListener('click', async () => {
+          dialog.remove();
+          try {
+            if (Array.isArray(campaign.image) && campaign.image.length > 0) {
+              const deleteImagesRes = await fetch(`${apiURL}/clear-images/${id}`, {
+                method: 'DELETE',
+                headers: {
+                  'Authorization': token,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ imageUrls: campaign.image })
               });
-          });
-        }
-      });
-      observer.observe(document.body, { childList: true, subtree: true });
-    })
-    .catch(err => {
-      console.error('❌ Lỗi khi tải dữ liệu để xóa:', err);
-      showNotification('error', 'Không thể xóa chiến dịch: ' + err.message);
+              const deleteImagesData = await deleteImagesRes.json();
+              if (!deleteImagesData.success) {
+                throw new Error(deleteImagesData.message || 'Xóa ảnh thất bại');
+              }
+            }
+
+            const deleteCampaignRes = await fetch(`${apiURL}/${id}`, {
+              method: 'DELETE',
+              headers: { 'Authorization': token }
+            });
+            if (!deleteCampaignRes.ok) {
+              throw new Error('Xóa chiến dịch thất bại');
+            }
+
+            if (Array.isArray(campaign.books) && campaign.books.length > 0) {
+              await Promise.all(campaign.books.map(book => {
+                const bookId = typeof book === 'object' ? book._id : book;
+                return fetch(`${bookAPI}/${bookId}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ campaigns: [] })
+                });
+              }));
+            }
+
+            showSuccessDeleteCampaignDialog();
+            loadCampaigns();
+          } catch (err) {
+            console.error('❌ Lỗi khi xóa chiến dịch:', err);
+            showNotification('error', 'Lỗi khi xóa chiến dịch: ' + err.message);
+          }
+        }, { once: true });
+      }
     });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+  } catch (err) {
+    console.error('❌ Lỗi khi tải dữ liệu để xóa:', err);
+    showNotification('error', 'Không thể xóa chiến dịch: ' + err.message);
+  }
 }
 
 document.getElementById('btn-search').addEventListener('click', function() {
@@ -749,3 +849,162 @@ function showSuccessAddCampaignDialog() {
     .then(res => res.text())
     .then(html => document.body.insertAdjacentHTML('beforeend', html));
 }
+
+window.onload = () => {
+  const savedAvatar = localStorage.getItem('userAvatar');
+  if (savedAvatar) {
+    document.getElementById('sidebarAvatar').src = savedAvatar;
+    document.getElementById('headerAvatar').src = savedAvatar;
+  }
+  const uploadDialog = document.getElementById('uploadDialog');
+  uploadDialog.removeAttribute('open');
+};
+
+function toggleMenu(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+document.getElementById('settingsLink').onclick = () => {
+  document.getElementById('mainSidebar').classList.add('hidden');
+  document.getElementById('settingsSidebar').classList.remove('hidden');
+};
+
+document.getElementById('backButton').onclick = () => {
+  document.getElementById('settingsSidebar').classList.add('hidden');
+  document.getElementById('mainSidebar').classList.remove('hidden');
+};
+
+document.getElementById('logoutButton').onclick = () => {
+  fetch('login')
+    .then(res => {
+      if (res.ok) {
+        localStorage.removeItem('userAvatar');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userId');
+        alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
+        window.location.href = 'login';
+      } else {
+        alert('Không tìm thấy file login.html, vui lòng tạo file này.');
+      }
+    })
+    .catch(() => {
+      alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
+    });
+};
+
+const uploadDialog = document.getElementById('uploadDialog');
+const uploadMessage = document.getElementById('uploadMessage');
+const uploadButton = document.getElementById('uploadButton');
+const cancelButton = document.getElementById('cancelButton');
+const sidebarAvatar = document.getElementById('sidebarAvatar');
+
+sidebarAvatar.onclick = () => {
+  uploadDialog.showModal();
+  resetUploadDialog();
+};
+
+cancelButton.onclick = () => {
+  uploadDialog.close();
+};
+
+uploadDialog.addEventListener('close', () => {
+  resetUploadDialog();
+});
+
+function resetUploadDialog() {
+  document.getElementById('avatarUpload').value = '';
+  uploadMessage.style.display = 'none';
+  uploadMessage.textContent = '';
+  uploadMessage.className = 'notification';
+  uploadButton.disabled = false;
+  uploadButton.textContent = 'Tải lên';
+}
+
+uploadButton.onclick = async () => {
+  const fileInput = document.getElementById('avatarUpload');
+  const file = fileInput.files[0];
+
+  if (!file) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
+    uploadMessage.className = 'notification error-message';
+    return;
+  }
+
+  if (!file.type.startsWith('image/')) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
+    uploadMessage.className = 'notification error-message';
+    return;
+  }
+
+  const token = localStorage.getItem('authToken');
+  const userId = localStorage.getItem('userId');
+
+  if (!token) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
+    uploadMessage.className = 'notification error-message';
+    return;
+  }
+
+  if (!userId) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
+    uploadMessage.className = 'notification error-message';
+    return;
+  }
+
+  uploadButton.disabled = true;
+  uploadButton.textContent = 'Đang tải...';
+
+  try {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    formData.append('userId', userId);
+
+    const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      let errorMsg = 'Lỗi khi tải ảnh lên';
+      try {
+        const errData = await response.json();
+        if (errData.message) errorMsg = errData.message;
+      } catch {}
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    const imageUrl = data.avatar || URL.createObjectURL(file);
+
+    document.getElementById('sidebarAvatar').src = imageUrl;
+    document.getElementById('headerAvatar').src = imageUrl;
+
+    localStorage.setItem('userAvatar', imageUrl);
+
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
+    uploadMessage.className = 'notification success-message';
+
+    setTimeout(() => {
+      uploadDialog.close();
+    }, 2000);
+  } catch (error) {
+    uploadMessage.style.display = 'block';
+    uploadMessage.textContent = 'Lỗi: ' + error.message;
+    uploadMessage.className = 'notification error-message';
+    uploadButton.disabled = false;
+    uploadButton.textContent = 'Tải lên';
+  }
+};
+
+document.getElementById('campaign-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+});
