@@ -307,10 +307,10 @@ function renderProducts(products) {
       thumbnailPreview.innerHTML = thumb
         ? `<div style="position: relative; display: inline-block;">
             <img src="${thumb}" style="max-width:100px; border:1px solid #ddd;" onerror="this.onerror=null;this.src='${fallbackThumb}'">
-            <button class="edit-thumbnail-btn" title="Sửa ảnh" style="position:absolute;top:4px;left:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
+            <button type="button" class="edit-thumbnail-btn" title="Sửa ảnh" style="position:absolute;top:4px;left:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
               <i class="fas fa-pen"></i>
             </button>
-            <button class="delete-thumbnail-btn" title="Xóa ảnh" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
+            <button type="button" class="delete-thumbnail-btn" title="Xóa ảnh" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
               <i class="fas fa-trash"></i>
             </button>
           </div>`
@@ -599,7 +599,7 @@ document.getElementById('bookThumbnailUpload').addEventListener('change', functi
       div.style.cssText = 'position: relative; display: inline-block;';
       div.innerHTML = `
         <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
-        <button class="delete-thumbnail-btn" title="Xóa ảnh" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
+        <button type="button" class="delete-thumbnail-btn" title="Xóa ảnh" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
           <i class="fas fa-trash"></i>
         </button>
       `;
@@ -641,12 +641,9 @@ document.getElementById('thumbnailPreview').addEventListener('click', function(e
 document.getElementById('uploadedImagesPreview').replaceWith(
   document.getElementById('uploadedImagesPreview').cloneNode(true)
 );
-// Không cần addEventListener click cho uploadedImagesPreview nữa
-
 document.getElementById('thumbnailPreview').replaceWith(
   document.getElementById('thumbnailPreview').cloneNode(true)
 );
-// Không cần addEventListener click cho thumbnailPreview nữa
 
 async function fetchImageAsFile(imageUrl, fileName) {
   if (!imageUrl) return null;
@@ -842,16 +839,60 @@ function renderImagePreviews(preview, files, existingImages) {
     preview.appendChild(div);
   });
 
-  // Render ảnh mới upload (KHÔNG có nút xóa/sửa)
-  Array.from(files).forEach((file) => {
+  // Render ảnh mới upload (CÓ nút xóa/sửa)
+  Array.from(files).forEach((file, fileIdx) => {
     const reader = new FileReader();
     reader.onload = function(e) {
       const div = document.createElement('div');
       div.style.cssText = 'position: relative; display: inline-block; margin: 2px;';
       div.innerHTML = `
-        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd;">
+        <img src="${e.target.result}" style="max-width:100px; border:1px solid #ddd; border-radius: 4px;">
+        <button class="edit-image-btn" title="Sửa ảnh" style="position:absolute;top:4px;left:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
+          <i class="fas fa-pen"></i>
+        </button>
+        <button class="delete-image-btn" title="Xóa ảnh" style="position:absolute;top:4px;right:4px;background:#fff;border:none;border-radius:50%;padding:2px 6px;cursor:pointer;font-size:14px;z-index:2;">
+          <i class="fas fa-trash"></i>
+        </button>
       `;
+      // Gán data-index để biết vị trí file
+      div.setAttribute('data-file-idx', fileIdx);
       preview.appendChild(div);
+
+      // Sự kiện xóa ảnh mới upload
+      div.querySelector('.delete-image-btn').onclick = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        // Xóa file khỏi input
+        const input = document.getElementById('bookImageUpload');
+        const dt = new DataTransfer();
+        Array.from(input.files).forEach((f, idx) => {
+          if (idx !== fileIdx) dt.items.add(f);
+        });
+        input.files = dt.files;
+        renderImagePreviews(preview, input.files, existingImages);
+      };
+
+      // Sự kiện sửa ảnh mới upload
+      div.querySelector('.edit-image-btn').onclick = function(event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function(e) {
+          const newFile = input.files[0];
+          if (!newFile) return;
+          // Thay thế file tại vị trí fileIdx
+          const fileInput = document.getElementById('bookImageUpload');
+          const dt = new DataTransfer();
+          Array.from(fileInput.files).forEach((f, idx) => {
+            dt.items.add(idx === fileIdx ? newFile : f);
+          });
+          fileInput.files = dt.files;
+          renderImagePreviews(preview, fileInput.files, existingImages);
+        };
+        input.click();
+      };
     };
     reader.readAsDataURL(file);
   });
