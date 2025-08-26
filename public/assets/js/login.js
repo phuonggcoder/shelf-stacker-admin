@@ -2,6 +2,7 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
   const email = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
   const errorMsg = document.getElementById('errorMsg');
+  const toast = document.getElementById('toast');
 
   errorMsg.textContent = '';
 
@@ -22,10 +23,20 @@ document.getElementById('loginBtn').addEventListener('click', async function () 
     const data = await response.json();
 
     if (response.ok) {
+      // Hiển thị thông báo thành công
+      toast.textContent = 'Đăng nhập thành công!';
+      toast.classList.add('show');
+      
+      // Lưu dữ liệu vào localStorage
       localStorage.setItem('authToken', data.access_token);
-      localStorage.setItem('userId', data.user.id); // Đúng là id, không phải _id
+      localStorage.setItem('userId', data.user.id);
       localStorage.setItem('userData', JSON.stringify(data.user));
-      window.location.href = 'home';
+
+      // Ẩn thông báo sau 2 giây và chuyển hướng
+      setTimeout(() => {
+        toast.classList.remove('show');
+        window.location.href = 'home';
+      }, 2000);
     } else {
       errorMsg.textContent = data.message || 'Email hoặc mật khẩu không đúng.';
     }

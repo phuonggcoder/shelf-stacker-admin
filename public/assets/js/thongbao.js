@@ -328,10 +328,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const statusDiv = document.getElementById('notificationStatus');
       if (result.success && result.stats) {
-        // Hiển thị thống kê đẹp hơn
+        // Map tiếng Anh sang tiếng Việt
+        const viMap = {
+          waiting: 'Đang chờ',
+          active: 'Đang hoạt động',
+          completed: 'Hoàn thành',
+          failed: 'Thất bại',
+          totalJobs: 'Tổng số thông báo',
+          rateLimitSize: 'Giới hạn tốc độ',
+          status: 'Trạng thái'
+        };
         let html = `<b>Thống kê thông báo:</b><br>`;
         for (const [key, value] of Object.entries(result.stats)) {
-          html += `<div><b>${key}:</b> ${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>`;
+          const viKey = viMap[key] || key;
+          html += `<div><b>${viKey}:</b> ${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>`;
         }
         statusDiv.style.display = 'block';
         statusDiv.classList.remove('error-message');
@@ -476,5 +486,11 @@ document.addEventListener('DOMContentLoaded', () => {
       uploadButton.disabled = false;
       uploadButton.textContent = 'Tải lên';
     }
+  };
+
+  window.toggleMenu = function(menuId) {
+    const menu = document.getElementById(menuId);
+    if (!menu) return;
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
   };
 });

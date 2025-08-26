@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sleek Admin - Dashboard</title>
+  <title>Sleek Admin - [Full Name]</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <style>
     :root {
@@ -359,7 +360,8 @@
       background: rgba(0, 0, 0, 0.3);
     }
 
-    #editProfileDialog {
+    #editProfileDialog,
+    #changePasswordDialog {
       background: #fff;
       padding: 20px;
       border-radius: 8px;
@@ -367,7 +369,8 @@
       z-index: 1003;
     }
 
-    #editProfileDialog::backdrop {
+    #editProfileDialog::backdrop,
+    #changePasswordDialog::backdrop {
       background: rgba(0, 0, 0, 0.3);
     }
 
@@ -462,7 +465,7 @@
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
       <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">PET SERVICE</h3>
+      <h3 style="margin-bottom:0;">WEB ADMIN</h3>
     </div>
     <nav>
       <ul>
@@ -505,10 +508,7 @@
           </ul>
         </li>
         <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
-                        <li><a href="event-notifications"><i class="fas fa-calendar-alt"></i> Event Notifications</a></li>
-                                <li><a href="admin-email-verification"><i class="fas fa-envelope-open-text"></i> Email Verification</a></li>
-                <li><a href="notification-admin"><i class="fas fa-bell"></i> Notification Admin</a></li>
-                <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
+        <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
         <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
       </ul>
     </nav>
@@ -527,6 +527,7 @@
     <nav>
       <ul>
         <li><button id="editProfileButton" class="btn-primary">Chỉnh sửa thông tin cá nhân</button></li>
+        <li><button id="changePasswordButton" class="btn-primary">Đổi mật khẩu</button></li>
         <li><button id="logoutButton" class="btn-danger">Đăng xuất</button></li>
       </ul>
     </nav>
@@ -536,7 +537,7 @@
   <header class="header">
     <h1 class="logo">Sleek Admin</h1>
     <div class="user">
-      <img id="headerAvatar" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <img id="" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
       <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
         <i class="fas fa-bell"></i>
         <span id="notificationBadge" class="badge">0</span>
@@ -548,7 +549,7 @@
   <!-- Main Content -->
   <main class="main-content">
     <section class="breadcrumb">
-      <h2>Dashboard</h2>
+      <h2 id="dashboardTitle">[Full Name]</h2>
       <p>Chào mừng trở lại!</p>
     </section>
 
@@ -629,7 +630,24 @@
     </div>
   </dialog>
 
+  <!-- Change Password Dialog -->
+  <dialog id="changePasswordDialog">
+    <div class="settings-form">
+      <h4>Đổi mật khẩu</h4>
+      <label for="currentPassword">Mật khẩu hiện tại:</label>
+      <input type="password" id="currentPassword" />
+      <label for="newPassword">Mật khẩu mới:</label>
+      <input type="password" id="newPassword" />
+      <label for="confirmNewPassword">Xác nhận mật khẩu mới:</label>
+      <input type="password" id="confirmNewPassword" />
+      <button id="savePasswordButton" class="btn-primary">Lưu mật khẩu</button>
+      <div id="changePasswordMessage" class="notification"></div>
+      <button id="cancelPasswordButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
+    </div>
+  </dialog>
+
   <script src="/assets/js/home.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </body>
 </html>
+

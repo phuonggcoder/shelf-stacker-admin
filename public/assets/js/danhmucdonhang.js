@@ -192,25 +192,22 @@ function toggleNotificationDropdown() {
 
 function renderOrders(orders) {
   const tbody = document.getElementById('orders-body');
-  if (!tbody) {
-    console.error('Không tìm thấy phần tử orders-body');
-    return;
-  }
+  if (!tbody) return;
 
   if (!orders || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Không có đơn hàng</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không có đơn hàng</td></tr>';
+    renderOrderPagination(1, 1);
     return;
   }
 
-  const invalidOrderIds = ['ORD1752049496563O9ZR9', 'ORD1752050362983MPP15'];
-  const filteredOrders = orders.filter(order => !invalidOrderIds.includes(order.order_id || order._id));
+  const totalPages = Math.ceil(orders.length / ORDERS_PER_PAGE);
+  if (currentOrderPage > totalPages) currentOrderPage = totalPages;
+  if (currentOrderPage < 1) currentOrderPage = 1;
+  const startIdx = (currentOrderPage - 1) * ORDERS_PER_PAGE;
+  const endIdx = startIdx + ORDERS_PER_PAGE;
+  const ordersToShow = orders.slice(startIdx, endIdx);
 
-  if (!filteredOrders || filteredOrders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">Không có đơn hàng</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = filteredOrders.map(order => {
+  tbody.innerHTML = ordersToShow.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
     const rawImage = book.thumbnail?.trim() || book.main_image?.[0];
     const image = getFullImageURL(rawImage);
@@ -231,6 +228,11 @@ function renderOrders(orders) {
         })
       : 'Chưa rõ';
 
+    const shipper = order.assigned_shipper_id;
+    const shipperName = shipper
+      ? `<span class="shipper-link" data-order-id="${order._id}" style="color:#0ea5e9;cursor:pointer;text-decoration:underline;">${shipper.full_name || shipper.username || shipper.phone_number || 'Chưa nhận'}</span>`
+      : 'Chưa nhận';
+
     return `
       <tr data-id="${order._id}">
         <td><img src="${image}" alt="Ảnh bìa" class="thumb" /></td>
@@ -239,6 +241,7 @@ function renderOrders(orders) {
         <td>${formattedDate}</td>
         <td>${status}</td>
         <td>${total}₫</td>
+        <td>${shipperName}</td> <!-- Hiển thị shipper nhận -->
         <td class="actions">
           <button class="btn-detail">Chi tiết</button>
           <button class="btn-update">Cập nhật</button>
@@ -248,6 +251,7 @@ function renderOrders(orders) {
   }).join('');
 
   addOrderEventListeners();
+  renderOrderPagination(currentOrderPage, totalPages);
 }
 
 function addOrderEventListeners() {
@@ -259,6 +263,13 @@ function addOrderEventListeners() {
   document.querySelectorAll('.btn-update').forEach(btn => {
     btn.removeEventListener('click', handleUpdateClick);
     btn.addEventListener('click', handleUpdateClick);
+  });
+
+  document.querySelectorAll('.shipper-link').forEach(link => {
+    link.onclick = function() {
+      const orderId = this.dataset.orderId;
+      if (orderId) showShipperDetails(orderId);
+    };
   });
 }
 
@@ -929,3 +940,142 @@ document.getElementById('sortOrder').addEventListener('change', function() {
   const status = activeTab ? activeTab.dataset.status : 'all';
   filterOrdersByStatus(status);
 });
+
+async function showShipperDetails(orderId) {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    showNotification('error', 'Bạn chưa đăng nhập.');
+    return;
+  }
+  try {
+    const response = await fetch(`${BASE_URL}/api/orders/${orderId}/shipper-details`, {
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    if (!response.ok) throw new Error('Không lấy được dữ liệu shipper');
+    const data = await response.json();
+    const shipper = data.shipper_info;
+    if (!shipper) {
+      showNotification('error', 'Đơn hàng chưa được gán shipper.');
+      return;
+    }
+
+    // Thống kê trạng thái đơn hàng
+    let statsHtml = '<ul>';
+    Object.entries(shipper.statistics.order_counts || {}).forEach(([status, count]) => {
+      statsHtml += `<li>${STATUS_MAP[status] || status}: ${count}</li>`;
+    });
+    statsHtml += '</ul>';
+
+    // Hiển thị thông tin shipper
+    let html = `
+      <div style="display:flex;gap:12px;align-items:center;">
+        <img src="${shipper.avatar || '/assets/images/image.png'}" style="width:60px;height:60px;border-radius:50%;border:2px solid #0ea5e9;">
+        <div>
+          <b>${shipper.full_name || shipper.username}</b><br>
+          SĐT: ${shipper.phone_number || ''}<br>
+          Email: ${shipper.email || ''}<br>
+          Ngày tạo: ${shipper.created_at ? new Date(shipper.created_at).toLocaleDateString('vi-VN') : ''}
+        </div>
+      </div>
+      <hr>
+      <h4>Thống kê:</h4>
+      ${statsHtml}
+      <p><strong>Đánh giá trung bình:</strong> ${shipper.statistics.average_rating ? shipper.statistics.average_rating.toFixed(2) : 'Chưa có'} (${shipper.statistics.total_ratings} lượt đánh giá)</p>
+      <hr>
+      <h4>Đơn hàng hiện tại:</h4>
+      <ul>
+        <li><b>Mã đơn:</b> ${data.order.order_id}</li>
+        <li><b>Trạng thái:</b> ${STATUS_MAP[data.order.order_status] || data.order.order_status}</li>
+        <li><b>Khách hàng:</b> ${data.order.customer.name || ''} (${data.order.customer.phone || ''})</li>
+        <li><b>Địa chỉ giao hàng:</b> ${data.order.delivery_address || ''}</li>
+        <li><b>Ghi chú shipper:</b> ${shipper.current_order.note || ''}</li>
+        <li><b>Đánh giá shipper:</b> ${shipper.current_order.rating || 'Chưa có'} (${shipper.current_order.comment || ''})</li>
+      </ul>
+    `;
+
+    // Hiển thị modal
+    let modal = document.getElementById('shipperDetailsModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'shipperDetailsModal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal-content" style="width:400px;">
+          <span style="float:right;cursor:pointer;font-size:20px;" onclick="document.getElementById('shipperDetailsModal').style.display='none'">&times;</span>
+          <div id="shipperDetailsContent"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+    }
+    document.getElementById('shipperDetailsContent').innerHTML = html;
+    modal.style.display = 'flex';
+  } catch (err) {
+    showNotification('error', err.message);
+  }
+}
+
+function renderOrderPagination(page, totalPages) {
+  const pagination = document.getElementById('order-pagination');
+  if (!pagination) return;
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
+  }
+  let buttons = `
+    <button id="prevOrderPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  `;
+  // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
+  let pageNumbers = '';
+  const maxPages = 5;
+  let start = Math.max(1, page - 2);
+  let end = Math.min(totalPages, page + 2);
+  if (end - start < maxPages - 1) {
+    if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
+    else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
+  }
+  if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  for (let i = start; i <= end; i++) {
+    pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+  }
+  if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  buttons += pageNumbers;
+  buttons += `
+    <button id="nextOrderPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  `;
+  pagination.innerHTML = buttons;
+
+  document.getElementById('prevOrderPage').onclick = () => {
+    if (page > 1) {
+      currentOrderPage--;
+      const activeTab = document.querySelector('.tab-button.active');
+      const status = activeTab ? activeTab.dataset.status : 'all';
+      filterOrdersByStatus(status);
+    }
+  };
+  document.getElementById('nextOrderPage').onclick = () => {
+    if (page < totalPages) {
+      currentOrderPage++;
+      const activeTab = document.querySelector('.tab-button.active');
+      const status = activeTab ? activeTab.dataset.status : 'all';
+      filterOrdersByStatus(status);
+    }
+  };
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.onclick = function() {
+      const gotoPage = Number(this.dataset.page);
+      if (gotoPage !== page) {
+        currentOrderPage = gotoPage;
+        const activeTab = document.querySelector('.tab-button.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        filterOrdersByStatus(status);
+      }
+    };
+  });
+}
+
+let currentOrderPage = 1;
+const ORDERS_PER_PAGE = 15;

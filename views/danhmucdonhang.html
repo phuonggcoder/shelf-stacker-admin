@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -313,6 +314,24 @@
       width: 500px;
     }
 
+    #shipperDetailsModal.modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    #shipperDetailsModal .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      width: 400px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
     dialog {
       border: none;
       border-radius: 12px;
@@ -569,13 +588,70 @@
       color: #666;
       font-size: 12px;
     }
+
+    #order-pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 18px;
+      align-items: center;
+    }
+    .page-circle-btn {
+      background: #0ea5e9;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #bae6fd33;
+    }
+    .page-circle-btn:disabled {
+      background: #bde0fe;
+      color: #888;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .page-btn {
+      background: #f0f9ff;
+      color: #0ea5e9;
+      border: none;
+      border-radius: 8px;
+      padding: 0 12px;
+      height: 36px;
+      font-size: 16px;
+      margin: 0 2px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .page-btn.active {
+      background: #0ea5e9;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #bae6fd33;
+    }
+    .page-btn:hover:not(.active) {
+      background: #bae6fd;
+      color: #007bff;
+    }
+    .page-ellipsis {
+      color: #888;
+      font-size: 18px;
+      margin: 0 4px;
+      user-select: none;
+    }
   </style>
 </head>
 <body>
   <header class="header">
     <h1 class="logo">Sleek Admin</h1>
     <div class="user">
-      <img id="headerAvatar" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
+      <img id="" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
       <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
         <i class="fas fa-bell"></i>
         <span id="notificationBadge" class="badge">0</span>
@@ -587,7 +663,7 @@
   <aside class="sidebar" id="mainSidebar">
     <div class="profile">
       <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">PET SERVICE</h3>
+      <h3 style="margin-bottom:0;">WEB ADMIN</h3>
     </div>
     <nav>
       <ul>
@@ -630,10 +706,7 @@
           </ul>
         </li>
                 <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
-                        <li><a href="event-notifications"><i class="fas fa-calendar-alt"></i> Event Notifications</a></li>
-                                <li><a href="admin-email-verification"><i class="fas fa-envelope-open-text"></i> Email Verification</a></li>
-                <li><a href="notification-admin"><i class="fas fa-bell"></i> Notification Admin</a></li>
-                <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
+        <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
         <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
       </ul>
     </nav>
@@ -698,13 +771,15 @@
             <th>Ngày Đặt</th>
             <th>Trạng Thái</th>
             <th>Tổng Tiền</th>
+            <th>Shipper nhận</th> <!-- Thêm cột này -->
             <th>Hành Động</th>
           </tr>
         </thead>
         <tbody id="orders-body">
-          <tr><td colspan="7" style="text-align:center;">Đang tải dữ liệu...</td></tr>
+          <tr><td colspan="8" style="text-align:center;">Đang tải dữ liệu...</td></tr>
         </tbody>
       </table>
+      <div id="order-pagination" style="display:flex; gap:8px; justify-content:center; margin-top:18px;"></div>
     </div>
   </main>
 
@@ -759,3 +834,4 @@
   </script>
 </body>
 </html>
+

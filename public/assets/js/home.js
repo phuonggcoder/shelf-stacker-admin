@@ -46,7 +46,7 @@ const editProfileButton = document.getElementById('editProfileButton');
 if (editProfileButton) {
   editProfileButton.addEventListener('click', async () => {
     const token = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId'); // Đúng là id
+    const userId = localStorage.getItem('userId');
 
     if (!token || !userId) {
       showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
@@ -80,12 +80,38 @@ if (editProfileButton) {
   });
 }
 
+// Show change password dialog
+const changePasswordButton = document.getElementById('changePasswordButton');
+if (changePasswordButton) {
+  changePasswordButton.addEventListener('click', () => {
+    document.getElementById('changePasswordDialog').showModal();
+    document.getElementById('currentPassword').value = '';
+    document.getElementById('newPassword').value = '';
+    document.getElementById('confirmNewPassword').value = '';
+    const changePasswordMessage = document.getElementById('changePasswordMessage');
+    if (changePasswordMessage) {
+      changePasswordMessage.style.display = 'none';
+      changePasswordMessage.textContent = '';
+      changePasswordMessage.className = 'notification';
+    }
+  });
+}
+
 // Cancel edit profile
 const cancelProfileButton = document.getElementById('cancelProfileButton');
 if (cancelProfileButton) {
   cancelProfileButton.addEventListener('click', () => {
     const editProfileDialog = document.getElementById('editProfileDialog');
     if (editProfileDialog) editProfileDialog.close();
+  });
+}
+
+// Cancel change password
+const cancelPasswordButton = document.getElementById('cancelPasswordButton');
+if (cancelPasswordButton) {
+  cancelPasswordButton.addEventListener('click', () => {
+    const changePasswordDialog = document.getElementById('changePasswordDialog');
+    if (changePasswordDialog) changePasswordDialog.close();
   });
 }
 
@@ -118,7 +144,6 @@ if (saveProfileButton) {
     }
 
     try {
-      // SỬA ĐÚNG ĐƯỜNG DẪN API
       const response = await fetch(`${BASE_URL}/auth/update`, {
         method: 'PUT',
         headers: {
@@ -131,6 +156,10 @@ if (saveProfileButton) {
       if (editProfileMessage) {
         if (result.success) {
           localStorage.setItem('userData', JSON.stringify(result.user));
+          // Cập nhật title và dashboard title khi lưu thông tin thành công
+          document.title = `Sleek Admin - ${fullName}`;
+          const dashboardTitle = document.getElementById('dashboardTitle');
+          if (dashboardTitle) dashboardTitle.textContent = fullName;
           editProfileMessage.textContent = 'Cập nhật thông tin thành công';
           editProfileMessage.className = 'notification';
           setTimeout(() => {
@@ -158,6 +187,89 @@ if (saveProfileButton) {
   });
 }
 
+// Save password changes
+const savePasswordButton = document.getElementById('savePasswordButton');
+if (savePasswordButton) {
+  savePasswordButton.addEventListener('click', async () => {
+    const currentPassword = document.getElementById('currentPassword')?.value;
+    const newPassword = document.getElementById('newPassword')?.value;
+    const confirmNewPassword = document.getElementById('confirmNewPassword')?.value;
+    const changePasswordMessage = document.getElementById('changePasswordMessage');
+    const changePasswordDialog = document.getElementById('changePasswordDialog');
+    const token = localStorage.getItem('authToken');
+
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      if (changePasswordMessage) {
+        changePasswordMessage.textContent = 'Vui lòng điền đầy đủ các trường';
+        changePasswordMessage.className = 'notification error-message';
+        changePasswordMessage.style.display = 'block';
+      }
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      if (changePasswordMessage) {
+        changePasswordMessage.textContent = 'Mật khẩu mới không khớp';
+        changePasswordMessage.className = 'notification error-message';
+        changePasswordMessage.style.display = 'block';
+      }
+      return;
+    }
+
+    if (!token) {
+      showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+      return;
+    }
+
+    if (changePasswordMessage) {
+      changePasswordMessage.style.display = 'none'; // Clear previous message
+    }
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/users/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+
+      const result = await response.json();
+
+      if (changePasswordMessage) {
+        if (response.ok) {
+          changePasswordMessage.textContent = result.message || 'Đổi mật khẩu thành công';
+          changePasswordMessage.className = 'notification';
+          changePasswordMessage.style.display = 'block';
+          setTimeout(() => {
+            if (changePasswordDialog) changePasswordDialog.close();
+            document.getElementById('currentPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmNewPassword').value = '';
+          }, 2000);
+        } else {
+          changePasswordMessage.textContent = result.message || 'Đổi mật khẩu thất bại';
+          changePasswordMessage.className = 'notification error-message';
+          changePasswordMessage.style.display = 'block';
+        }
+        setTimeout(() => {
+          if (changePasswordMessage) changePasswordMessage.style.display = 'none';
+        }, 3000);
+      }
+    } catch (error) {
+      if (changePasswordMessage) {
+        changePasswordMessage.textContent = `Lỗi: ${error.message || 'Không thể kết nối đến máy chủ'}`;
+        changePasswordMessage.className = 'notification error-message';
+        changePasswordMessage.style.display = 'block';
+        setTimeout(() => {
+          if (changePasswordMessage) changePasswordMessage.style.display = 'none';
+        }, 3000);
+      }
+    }
+  });
+}
+
 // Login functionality
 const logoutButton = document.getElementById('logoutButton');
 if (logoutButton) {
@@ -166,9 +278,7 @@ if (logoutButton) {
     localStorage.removeItem('userAvatar');
     localStorage.removeItem('userId');
     localStorage.removeItem('userData');
-    window.location.href = '/login'; // Chuyển về trang đăng nhập
-    // Nếu không có trang login, dùng location.reload();
-    // location.reload();
+    window.location.href = '/login';
   });
 }
 
@@ -194,10 +304,14 @@ if (loginButton) {
       .then(data => {
         if (loginMessage) {
           if (data.access_token && data.user && data.user._id) {
-            // Sửa lại điều kiện này cho chắc chắn
             localStorage.setItem('authToken', data.access_token);
             localStorage.setItem('userId', data.user._id);
             localStorage.setItem('userData', JSON.stringify(data.user));
+            // Cập nhật title và dashboard title sau khi đăng nhập thành công
+            const fullName = data.user.full_name || 'WEB ADMIN';
+            document.title = `Sleek Admin - ${fullName}`;
+            const dashboardTitle = document.getElementById('dashboardTitle');
+            if (dashboardTitle) dashboardTitle.textContent = fullName;
             loginMessage.textContent = 'Đăng nhập thành công';
             loginMessage.className = 'notification';
             if (loginDialog) loginDialog.close();
@@ -482,7 +596,6 @@ function renderNotifications(orders) {
       `;
     }).join('');
 
-    // Add click event for notification items
     setTimeout(() => {
       document.querySelectorAll('.notification-item').forEach(item => {
         item.onclick = function() {
@@ -499,6 +612,7 @@ function renderNotifications(orders) {
 let lastNotifiedOrderId = null;
 
 async function fetchStats() {
+
   // Dữ liệu mặc định từ BE bạn gửi
   const defaultData = {
     totalOrders: 237,
@@ -521,8 +635,9 @@ async function fetchStats() {
     failedCount: 55
   };
 
+
   const token = localStorage.getItem('authToken');
-  let data = defaultData;
+  let data = null;
   let orders = [];
 
   if (token) {
@@ -545,19 +660,19 @@ async function fetchStats() {
       ]);
 
       if (!statsResponse.ok || !ordersResponse.ok) {
-        throw new Error('Failed to fetch stats or orders');
+        throw new Error('Không thể lấy dữ liệu thống kê hoặc đơn hàng');
       }
 
       data = await statsResponse.json();
       const ordersData = await ordersResponse.json();
       orders = ordersData.orders || [];
     } catch (error) {
-      console.error('Error fetching stats:', error.message);
       showNotification('error', 'Lỗi khi tải thống kê: ' + error.message);
+      return;
     }
   } else {
-    console.error('No auth token found. Using default data.');
     showNotification('error', 'Bạn chưa đăng nhập. Vui lòng đăng nhập lại.');
+    return;
   }
 
   // Hiển thị số liệu lên dashboard
@@ -571,25 +686,63 @@ async function fetchStats() {
   if (successCount) successCount.textContent = data.successCount || 0;
   if (failedCount) failedCount.textContent = data.failedCount || 0;
 
-  // Dịch trạng thái đơn hàng sang tiếng Việt
-  const statusLabels = Object.keys(data.statusStats).map(key => {
-    if (key === 'null') return 'Không xác định';
-    if (key === 'Cancelled') return 'Đã huỷ';
-    if (key === 'Delivered') return 'Đã giao';
-    if (key === 'Shipped') return 'Đang giao';
-    if (key === 'Processing') return 'Đang xử lý';
-    if (key === 'Pending') return 'Chờ xác nhận';
-    if (key === 'OutForDelivery') return 'Chờ giao hàng';
-    return key;
-  });
+  // Map trạng thái chuẩn và màu sắc
+  const STATUS_LABELS = {
+    null: 'Không xác định',
+    Pending: 'Chờ xác nhận',
+    Processing: 'Đang xử lý',
+    OutForDelivery: 'Chờ giao hàng',
+    Shipped: 'Đang giao',
+    Delivered: 'Đã giao',
+    Returned: 'Trả hàng',
+    Refunded: 'Đã hoàn tiền',
+    Cancelled: 'Đã huỷ'
+  };
+
+  const STATUS_COLORS = {
+    Pending: '#ffc107',
+    Processing: '#38bdf8',
+    OutForDelivery: '#0ea5e9',
+    Shipped: '#6c63ff',
+    Delivered: '#28a745',
+    Returned: '#a3e635',
+    Refunded: '#d9d9d9',
+    Cancelled: '#ff4d4f',
+    null: '#bdbdbd'
+  };
+
+  // Sắp xếp trạng thái theo thứ tự mong muốn, bỏ 'null'
+  const statusOrder = [
+    'Pending',
+    'Processing',
+    'OutForDelivery',
+    'Shipped',
+    'Delivered',
+    'Returned',
+    'Refunded',
+    'Cancelled'
+  ];
+
+  // Lấy dữ liệu và dịch trạng thái, bỏ 'null'
+  const statusLabels = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => STATUS_LABELS[key] || key);
+
+  const statusData = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => data.statusStats[key]);
+
+  const statusColors = statusOrder
+    .filter(key => key in data.statusStats)
+    .map(key => STATUS_COLORS[key] || '#bdbdbd');
 
   const statusChart = {
     type: 'pie',
     data: {
       labels: statusLabels,
       datasets: [{
-        data: Object.values(data.statusStats || {}),
-        backgroundColor: ['#ff4d4f', '#28a745', '#38bdf8', '#ffc107', '#0ea5e9', '#d9d9d9', '#6c63ff'],
+        data: statusData,
+        backgroundColor: statusColors,
         borderColor: ['#fff'],
         borderWidth: 2
       }]
@@ -606,26 +759,34 @@ async function fetchStats() {
     }
   };
 
-  // Dịch phương thức thanh toán sang tiếng Việt
-  const paymentLabels = Object.keys(data.paymentStats).map(key => {
-    if (key === 'COD') return 'Thanh toán khi nhận hàng';
-    if (key === 'ZALOPAY') return 'ZaloPay';
-    if (key === 'PAYOS') return 'PayOS';
-    if (key === 'null') return 'Không xác định';
-    return key;
-  });
+
+  // Dịch phương thức thanh toán sang tiếng Việt, bỏ 'null'
+  const PAYMENT_LABELS = {
+    ZALOPAY: 'ZaloPay',
+    COD: 'Thanh toán khi nhận hàng',
+    PAYOS: 'PayOS',
+    MOMO: 'Momo'
+  };
+
+  const paymentLabels = Object.keys(data.paymentStats)
+    .filter(key => key !== 'null')
+    .map(key => PAYMENT_LABELS[key] || key);
+
+  const paymentData = Object.entries(data.paymentStats)
+    .filter(([key]) => key !== 'null')
+    .map(([, value]) => value);
 
   const paymentChart = {
     type: 'doughnut',
     data: {
       labels: paymentLabels,
       datasets: [{
-        data: Object.values(data.paymentStats || {}),
+        data: paymentData,
         backgroundColor: [
           '#0ea5e9', // COD
           '#ff4d4f', // ZALOPAY
           '#d9d9d9', // PAYOS
-          '#6c63ff', // Không xác định
+          '#6c63ff', // khác
         ],
         borderColor: ['#fff'],
         borderWidth: 2
@@ -700,6 +861,14 @@ window.onload = () => {
   const savedAvatar = localStorage.getItem('userAvatar');
   const sidebarAvatar = document.getElementById('sidebarAvatar');
   const headerAvatar = document.getElementById('headerAvatar');
+  const dashboardTitle = document.getElementById('dashboardTitle');
+
+  // Cập nhật dashboard title từ userData nếu có
+  if (dashboardTitle) {
+    const fullName = userData.full_name || 'WEB ADMIN';
+    dashboardTitle.textContent = fullName;
+    document.title = `Sleek Admin - ${fullName}`;
+  }
 
   if (sidebarAvatar && savedAvatar) {
     sidebarAvatar.src = savedAvatar.replace('https://server-shelf-stacker.onrender.com', 'https://server-shelf-stacker-w1ds.onrender.com');
