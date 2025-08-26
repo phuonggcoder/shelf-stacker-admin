@@ -422,10 +422,9 @@ function filterProducts(products, keyword, isFeaturedTab = false) {
     if (isFeaturedTab && !p.featured) return false;
     const price = parseFloat(p.price) || 0;
     const matchPrice = price >= minPrice && price <= maxPrice;
+    // Chỉ tìm theo tên truyện
     const matchText =
-      (p.title || '').toLowerCase().includes(lower) ||
-      (p.author || '').toLowerCase().includes(lower) ||
-      (p.description || '').toLowerCase().includes(lower);
+      (p.title || '').toLowerCase().includes(lower);
 
     let matchCategory = true;
     if (selectedCats.length > 0) {
@@ -474,27 +473,50 @@ function renderProductsWithPagination(productsArr, page = 1) {
 
   renderProducts(pageProducts);
 
+  // --- Phân trang kiểu số giống đơn hàng ---
   pagination.innerHTML = '';
   if (totalPages > 1) {
-    const prevBtn = document.createElement('button');
-    prevBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 18l-6-6 6-6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    prevBtn.className = 'pagination-btn';
-    prevBtn.disabled = page === 1;
-    prevBtn.onclick = () => renderFilteredAndSorted(page - 1);
+    let buttons = `
+      <button id="prevPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+    `;
 
-    const nextBtn = document.createElement('button');
-    nextBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="#007bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-    nextBtn.className = 'pagination-btn';
-    nextBtn.disabled = page === totalPages;
-    nextBtn.onclick = () => renderFilteredAndSorted(page + 1);
+    // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
+    let pageNumbers = '';
+    const maxPages = 5;
+    let startPage = Math.max(1, page - 2);
+    let endPage = Math.min(totalPages, page + 2);
+    if (endPage - startPage < maxPages - 1) {
+      if (startPage === 1) endPage = Math.min(totalPages, startPage + maxPages - 1);
+      else if (endPage === totalPages) startPage = Math.max(1, endPage - maxPages + 1);
+    }
+    if (startPage > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+    }
+    if (endPage < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+    buttons += pageNumbers;
+    buttons += `
+      <button id="nextPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    `;
+    pagination.innerHTML = buttons;
 
-    const pageInfo = document.createElement('span');
-    pageInfo.textContent = ` Trang ${page} / ${totalPages}`;
-    pageInfo.style = 'padding: 0 10px; font-weight:bold; font-size:16px; color:#007bff; display:flex; align-items:center;';
-
-    pagination.appendChild(prevBtn);
-    pagination.appendChild(pageInfo);
-    pagination.appendChild(nextBtn);
+    // Sự kiện chuyển trang
+    document.getElementById('prevPage').onclick = () => {
+      if (page > 1) renderFilteredAndSorted(page - 1);
+    };
+    document.getElementById('nextPage').onclick = () => {
+      if (page < totalPages) renderFilteredAndSorted(page + 1);
+    };
+    document.querySelectorAll('.page-btn').forEach(btn => {
+      btn.onclick = function() {
+        const gotoPage = Number(this.dataset.page);
+        if (gotoPage !== page) renderFilteredAndSorted(gotoPage);
+      };
+    });
   }
 }
 

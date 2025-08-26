@@ -639,14 +639,62 @@
       font-size: 12px;
     }
 
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
+    /* Phân trang giống đơn hàng */
+    #pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 18px;
+      align-items: center;
     }
-
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
+    .page-circle-btn {
+      background: #0ea5e9;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, transform 0.2s;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #bae6fd33;
+    }
+    .page-circle-btn:disabled {
+      background: #bde0fe;
+      color: #888;
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .page-btn {
+      background: #f0f9ff;
+      color: #0ea5e9;
+      border: none;
+      border-radius: 8px;
+      padding: 0 12px;
+      height: 36px;
+      font-size: 16px;
+      margin: 0 2px;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .page-btn.active {
+      background: #0ea5e9;
+      color: #fff;
+      font-weight: bold;
+      box-shadow: 0 2px 8px #bae6fd33;
+    }
+    .page-btn:hover:not(.active) {
+      background: #bae6fd;
+      color: #007bff;
+    }
+    .page-ellipsis {
+      color: #888;
+      font-size: 18px;
+      margin: 0 4px;
+      user-select: none;
     }
   </style>
 </head>
@@ -768,6 +816,15 @@
       </div>
       <div class="product-grid" id="productGrid">
         <!-- Các sản phẩm sẽ được render ở đây từ API -->
+      </div>
+      <div id="pagination" style="display:none; margin-top:20px;">
+        <button class="pagination-btn" id="prevPageBtn" disabled aria-label="Trang trước">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="page-ellipsis">...</span>
+        <button class="pagination-btn" id="nextPageBtn" disabled aria-label="Trang tiếp theo">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </section>
   </main>
@@ -1040,8 +1097,8 @@
     window.onload = () => {
       const savedAvatar = localStorage.getItem('userAvatar');
       if (savedAvatar) {
-        document.getElementById('sidebarAvatar').src = savedAvatar;
-        document.getElementById('headerAvatar').src = savedAvatar;
+        if (sidebarAvatar) sidebarAvatar.src = savedAvatar;
+        if (headerAvatar) headerAvatar.src = savedAvatar;
       }
 
       const tabParents = document.querySelectorAll('.tab-parent');
@@ -1080,142 +1137,114 @@
       el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
 
+    // --- Avatar upload logic giống trang home ---
     const uploadDialog = document.getElementById('uploadDialog');
-    const uploadMessage = document.getElementById('uploadMessage');
     const uploadButton = document.getElementById('uploadButton');
     const cancelButton = document.getElementById('cancelButton');
     const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-    document.getElementById('settingsLink').onclick = () => {
-      document.getElementById('mainSidebar').classList.add('hidden');
-      document.getElementById('settingsSidebar').classList.remove('hidden');
-    };
-
-    document.getElementById('backButton').onclick = () => {
-      document.getElementById('settingsSidebar').classList.add('hidden');
-      document.getElementById('mainSidebar').classList.remove('hidden');
-    };
-
-    document.getElementById('logoutButton').onclick = () => {
-      fetch('login')
-        .then(res => {
-          if (res.ok) {
-            localStorage.removeItem('userAvatar');
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userId');
-            alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
-            window.location.href = 'login';
-          } else {
-            alert('Không tìm thấy trang đăng nhập. Vui lòng kiểm tra server.');
-          }
-        })
-        .catch(() => {
-          alert('Lỗi kết nối server. Vui lòng kiểm tra lại.');
-        });
-    };
-
-    sidebarAvatar.onclick = () => {
-      uploadDialog.showModal();
-      resetUploadDialog();
-    };
-
-    cancelButton.onclick = () => {
-      uploadDialog.close();
-    };
-
-    uploadDialog.addEventListener('close', () => {
-      resetUploadDialog();
-    });
+    const headerAvatar = document.getElementById('headerAvatar');
 
     function resetUploadDialog() {
       document.getElementById('avatarUpload').value = '';
-      uploadMessage.style.display = 'none';
-      uploadMessage.textContent = '';
-      uploadMessage.className = 'notification';
       uploadButton.disabled = false;
       uploadButton.textContent = 'Tải lên';
+      document.getElementById('uploadMessage').style.display = 'none';
+      document.getElementById('uploadMessage').textContent = '';
+      document.getElementById('uploadMessage').className = 'notification';
     }
 
-    uploadButton.onclick = async () => {
-      const fileInput = document.getElementById('avatarUpload');
-      const file = fileInput.files[0];
+    if (sidebarAvatar) {
+      sidebarAvatar.onclick = () => {
+        uploadDialog.showModal();
+        resetUploadDialog();
+      };
+    }
 
-      if (!file) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
+    if (cancelButton) {
+      cancelButton.onclick = () => {
+        uploadDialog.close();
+      };
+    }
 
-      if (!file.type.startsWith('image/')) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
+    if (uploadDialog) {
+      uploadDialog.addEventListener('close', () => {
+        resetUploadDialog();
+      });
+    }
 
-      const token = localStorage.getItem('authToken');
-      const userId = localStorage.getItem('userId');
+    if (uploadButton) {
+      uploadButton.onclick = async (event) => {
+        event.preventDefault();
+        const fileInput = document.getElementById('avatarUpload');
+        const file = fileInput?.files[0];
 
-      if (!token) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      if (!userId) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
-        uploadMessage.className = 'notification error-message';
-        return;
-      }
-
-      uploadButton.disabled = true;
-      uploadButton.textContent = 'Đang tải...';
-
-      try {
-        const formData = new FormData();
-        formData.append('avatar', file);
-        formData.append('userId', userId);
-
-        const response = await fetch(`${base_url}/api/user-upload/avatar`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
-          body: formData
-        });
-
-        if (!response.ok) {
-          let errorMsg = 'Lỗi khi tải ảnh lên';
-          try {
-            const errData = await response.json();
-            errorMsg = errData.message || errorMsg;
-          } catch {}
-          throw new Error(errorMsg);
+        if (!file) {
+          showNotification('error', 'Vui lòng chọn một ảnh.');
+          return;
         }
 
-        const data = await response.json();
-        const imageUrl = data.avatar || URL.createObjectURL(file);
+        if (!file.type.startsWith('image/')) {
+          showNotification('error', 'Vui lòng chọn một file ảnh hợp lệ.');
+          return;
+        }
 
-        document.getElementById('sidebarAvatar').src = imageUrl;
-        document.getElementById('headerAvatar').src = imageUrl;
-        localStorage.setItem('userAvatar', imageUrl);
+        const token = localStorage.getItem('authToken');
+        const userId = localStorage.getItem('userId');
 
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-        uploadMessage.className = 'notification success-message';
+        if (!token) {
+          showNotification('error', 'Bạn chưa đăng nhập hoặc token không hợp lệ. Vui lòng đăng nhập lại.');
+          return;
+        }
 
-        setTimeout(() => {
-          uploadDialog.close();
-        }, 2000);
-      } catch (error) {
-        uploadMessage.style.display = 'block';
-        uploadMessage.textContent = 'Lỗi: ' + error.message;
-        uploadMessage.className = 'notification error-message';
-        uploadButton.disabled = false;
-        uploadButton.textContent = 'Tải lên';
-      }
-    };
+        if (!userId) {
+          showNotification('error', 'Thiếu userId. Vui lòng đăng nhập lại.');
+          return;
+        }
+
+        uploadButton.disabled = true;
+        uploadButton.textContent = 'Đang tải...';
+
+        try {
+          const formData = new FormData();
+          formData.append('userId', userId);
+          formData.append('avatar', file);
+
+          const response = await fetch(`${base_url}/api/user-upload/avatar`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          if (!response.ok) {
+            let errorMsg = 'Lỗi khi tải ảnh lên';
+            try {
+              const errData = await response.json();
+              if (errData.message) errorMsg = errData.message;
+            } catch {}
+            throw new Error(errorMsg);
+          }
+
+          const data = await response.json();
+          const imageUrl = data.avatar || URL.createObjectURL(file);
+
+          if (sidebarAvatar) sidebarAvatar.src = imageUrl;
+          if (headerAvatar) headerAvatar.src = imageUrl;
+          localStorage.setItem('userAvatar', imageUrl);
+
+          showNotification('success', 'Đã cập nhật ảnh đại diện thành công!');
+
+          setTimeout(() => {
+            if (uploadDialog) uploadDialog.close();
+          }, 2000);
+        } catch (error) {
+          showNotification('error', 'Lỗi: ' + error.message);
+          uploadButton.disabled = false;
+          uploadButton.textContent = 'Tải lên';
+        }
+      };
+    }
 
     document.getElementById('importGoogleBookBtn').onclick = () => {
       document.getElementById('googleBookDialogOverlay').style.display = 'flex';
@@ -1224,6 +1253,28 @@
     document.getElementById('closeGoogleBookDialogBtn').onclick = () => {
       document.getElementById('googleBookDialogOverlay').style.display = 'none';
     };
+
+    // Xử lý mở/đóng sidebar cài đặt
+    const settingsLink = document.getElementById('settingsLink');
+    if (settingsLink) {
+      settingsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        const mainSidebar = document.getElementById('mainSidebar');
+        const settingsSidebar = document.getElementById('settingsSidebar');
+        if (mainSidebar) mainSidebar.classList.add('hidden');
+        if (settingsSidebar) settingsSidebar.classList.remove('hidden');
+      });
+    }
+
+    const backButton = document.getElementById('backButton');
+    if (backButton) {
+      backButton.addEventListener('click', () => {
+        const settingsSidebar = document.getElementById('settingsSidebar');
+        const mainSidebar = document.getElementById('mainSidebar');
+        if (settingsSidebar) settingsSidebar.classList.add('hidden');
+        if (mainSidebar) mainSidebar.classList.remove('hidden');
+      });
+    }
   </script>
 </body>
 </html>
