@@ -20,6 +20,7 @@ app.get('/khoiphucvoucher', (req, res) => res.sendFile(path.join(__dirname, 'vie
 app.get('/campaigns', (req, res) => res.sendFile(path.join(__dirname, 'views', 'campaigns.html')));
 app.get('/thongbao', (req, res) => res.sendFile(path.join(__dirname, 'views', 'thongbao.html')));
 app.get('/notification-admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notification-admin.html')));
+app.get('/order-stats', (req, res) => res.sendFile(path.join(__dirname, 'views', 'order-stats.html')));
 app.get('/category-products', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category-products.html')));
 app.get('/admin-email-verification', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin-email-verification.html')));
 

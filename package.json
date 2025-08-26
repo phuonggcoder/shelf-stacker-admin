@@ -1,6 +1,7 @@
 {
   "name": "web_admin",
   "version": "1.0.0",
+  "description": "A simple Node.js web server",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
@@ -9,7 +10,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "A simple Node.js web server",
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
     "express": "^5.1.0"

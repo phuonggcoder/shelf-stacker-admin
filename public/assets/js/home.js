@@ -514,7 +514,6 @@ async function fetchStats() {
     },
     paymentStats: {
       ZALOPAY: 96,
-      MOMO: 1,
       COD: 130,
       PAYOS: 10
     },
@@ -611,7 +610,6 @@ async function fetchStats() {
   const paymentLabels = Object.keys(data.paymentStats).map(key => {
     if (key === 'COD') return 'Thanh toán khi nhận hàng';
     if (key === 'ZALOPAY') return 'ZaloPay';
-    if (key === 'MOMO') return 'Momo';
     if (key === 'PAYOS') return 'PayOS';
     if (key === 'null') return 'Không xác định';
     return key;
@@ -626,7 +624,6 @@ async function fetchStats() {
         backgroundColor: [
           '#0ea5e9', // COD
           '#ff4d4f', // ZALOPAY
-          '#ffc107', // MOMO
           '#d9d9d9', // PAYOS
           '#6c63ff', // Không xác định
         ],
