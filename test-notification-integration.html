@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Notification Integration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button.success {
+            background: #28a745;
+        }
+        .test-button.error {
+            background: #dc3545;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .api-test {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .api-test h4 {
+            margin-top: 0;
+            color: #333;
+        }
+        .response {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .config-section {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .config-section input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Notification Integration</h1>
+    
+    <div class="config-section">
+        <h3>⚙️ Configuration</h3>
+        <label>API Base URL:</label>
+        <input type="text" id="apiBaseUrl" value="https://server-shelf-stacker-w1ds.onrender.com" placeholder="Enter API base URL">
+        <label>Auth Token:</label>
+        <input type="text" id="authToken" placeholder="Enter your auth token">
+        <button class="test-button" onclick="updateConfig()">Update Config</button>
+    </div>
+
+    <div class="test-section">
+        <h2>🔌 API Connectivity Tests</h2>
+        <p>Test the connection to backend notification APIs:</p>
+        
+        <div class="api-test">
+            <h4>1. Template Management</h4>
+            <button class="test-button" onclick="testTemplateAPIs()">Test Template APIs</button>
+            <div id="template-test-result"></div>
+        </div>
+        
+        <div class="api-test">
+            <h4>2. Send Notifications</h4>
+            <button class="test-button" onclick="testSendNotificationAPIs()">Test Send APIs</button>
+            <div id="send-test-result"></div>
+        </div>
+        
+        <div class="api-test">
+            <h4>3. Scheduled Notifications</h4>
+            <button class="test-button" onclick="testScheduledAPIs()">Test Scheduled APIs</button>
+            <div id="scheduled-test-result"></div>
+        </div>
+        
+        <div class="api-test">
+            <h4>4. History & Analytics</h4>
+            <button class="test-button" onclick="testHistoryAPIs()">Test History APIs</button>
+            <div id="history-test-result"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎯 Frontend Integration Tests</h2>
+        <p>Test the frontend admin panel integration:</p>
+        
+        <button class="test-button" onclick="openAdminPanel()">
+            🏠 Open Admin Panel
+        </button>
+        
+        <button class="test-button" onclick="testFrontendFunctions()">
+            🔧 Test Frontend Functions
+        </button>
+        
+        <div id="frontend-test-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Test Results Summary</h2>
+        <div id="test-summary">
+            <div class="status info">Ready to run tests. Click any test button above to start.</div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        let API_BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
+        let AUTH_TOKEN = '';
+
+        function updateConfig() {
+            API_BASE_URL = document.getElementById('apiBaseUrl').value;
+            AUTH_TOKEN = document.getElementById('authToken').value;
+            
+            if (!API_BASE_URL.endsWith('/')) {
+                API_BASE_URL = API_BASE_URL + '/';
+            }
+            
+            showResult('test-summary', 'Configuration updated successfully!', 'success');
+        }
+
+        function getAuthToken() {
+            return AUTH_TOKEN || localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+        }
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function showApiResult(elementId, title, success, data = null, error = null) {
+            const element = document.getElementById(elementId);
+            const statusClass = success ? 'success' : 'error';
+            const statusIcon = success ? '✅' : '❌';
+            
+            let content = `<div class="status ${statusClass}">${statusIcon} ${title}</div>`;
+            
+            if (data) {
+                content += `<div class="response">${JSON.stringify(data, null, 2)}</div>`;
+            }
+            
+            if (error) {
+                content += `<div class="response">Error: ${error}</div>`;
+            }
+            
+            element.innerHTML = content;
+        }
+
+        // API Tests
+        async function testTemplateAPIs() {
+            const resultDiv = document.getElementById('template-test-result');
+            resultDiv.innerHTML = '<div class="status info">Testing template APIs...</div>';
+            
+            try {
+                // Test GET templates
+                const response = await fetch(`${API_BASE_URL}api/notification-templates`, {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showApiResult('template-test-result', 'Template APIs working!', true, {
+                        status: response.status,
+                        templatesCount: data.templates ? data.templates.length : data.length,
+                        sampleTemplate: data.templates ? data.templates[0] : data[0]
+                    });
+                } else {
+                    showApiResult('template-test-result', 'Template APIs failed!', false, null, `Status: ${response.status}`);
+                }
+            } catch (error) {
+                showApiResult('template-test-result', 'Template APIs error!', false, null, error.message);
+            }
+        }
+
+        async function testSendNotificationAPIs() {
+            const resultDiv = document.getElementById('send-test-result');
+            resultDiv.innerHTML = '<div class="status info">Testing send notification APIs...</div>';
+            
+            try {
+                // Test send notification endpoint (just check if it exists)
+                const response = await fetch(`${API_BASE_URL}api/noti/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: 'test',
+                        title: 'Test',
+                        message: 'Test message'
+                    })
+                });
+                
+                // We expect either 400 (validation error) or 200 (success)
+                if (response.status === 400 || response.status === 200) {
+                    showApiResult('send-test-result', 'Send notification APIs working!', true, {
+                        status: response.status,
+                        endpoint: 'Available'
+                    });
+                } else {
+                    showApiResult('send-test-result', 'Send notification APIs failed!', false, null, `Status: ${response.status}`);
+                }
+            } catch (error) {
+                showApiResult('send-test-result', 'Send notification APIs error!', false, null, error.message);
+            }
+        }
+
+        async function testScheduledAPIs() {
+            const resultDiv = document.getElementById('scheduled-test-result');
+            resultDiv.innerHTML = '<div class="status info">Testing scheduled notification APIs...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}api/noti/scheduled`, {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    showApiResult('scheduled-test-result', 'Scheduled notification APIs working!', true, {
+                        status: response.status,
+                        scheduledCount: data.scheduledNotifications ? data.scheduledNotifications.length : data.length
+                    });
+                } else {
+                    showApiResult('scheduled-test-result', 'Scheduled notification APIs failed!', false, null, `Status: ${response.status}`);
+                }
+            } catch (error) {
+                showApiResult('scheduled-test-result', 'Scheduled notification APIs error!', false, null, error.message);
+            }
+        }
+
+        async function testHistoryAPIs() {
+            const resultDiv = document.getElementById('history-test-result');
+            resultDiv.innerHTML = '<div class="status info">Testing history & analytics APIs...</div>';
+            
+            try {
+                // Test stats endpoint
+                const statsResponse = await fetch(`${API_BASE_URL}api/noti/stats`, {
+                    headers: {
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    }
+                });
+                
+                if (statsResponse.ok) {
+                    const statsData = await statsResponse.json();
+                    showApiResult('history-test-result', 'History & Analytics APIs working!', true, {
+                        status: statsResponse.status,
+                        stats: statsData
+                    });
+                } else {
+                    showApiResult('history-test-result', 'History & Analytics APIs failed!', false, null, `Status: ${statsResponse.status}`);
+                }
+            } catch (error) {
+                showApiResult('history-test-result', 'History & Analytics APIs error!', false, null, error.message);
+            }
+        }
+
+        // Frontend Tests
+        function openAdminPanel() {
+            window.open('/notification-admin', '_blank');
+        }
+
+        function testFrontendFunctions() {
+            const resultDiv = document.getElementById('frontend-test-result');
+            resultDiv.innerHTML = '<div class="status info">Testing frontend functions...</div>';
+            
+            try {
+                // Test if notification-admin.js is loaded
+                if (typeof loadTemplates === 'function') {
+                    showResult('frontend-test-result', '✅ Frontend functions are available!', 'success');
+                } else {
+                    showResult('frontend-test-result', '❌ Frontend functions not loaded!', 'error');
+                }
+            } catch (error) {
+                showResult('frontend-test-result', `❌ Frontend test error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run basic connectivity test
+        window.addEventListener('load', function() {
+            showResult('test-summary', `
+                ✅ Notification Integration Test Page Loaded!
+                <br><br>
+                <strong>Next Steps:</strong>
+                <ul>
+                    <li>1. Enter your API Base URL and Auth Token</li>
+                    <li>2. Click "Update Config"</li>
+                    <li>3. Run API connectivity tests</li>
+                    <li>4. Test frontend integration</li>
+                    <li>5. Open admin panel to verify full functionality</li>
+                </ul>
+            `, 'success');
+        });
+    </script>
+</body>
+</html>

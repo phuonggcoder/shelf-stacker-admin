@@ -1,6 +1,120 @@
 let filterCategoryChoices = null;
 let googleBookCoverUrl = '';
 
+// Hàm xử lý encoding cho dữ liệu từ Google Books API
+function fixVietnameseEncoding(text) {
+  if (!text) return text;
+  
+  // Thử decode UTF-8 trước
+  let decoded = decodeUTF8(text);
+  
+  // Decode HTML entities
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = decoded;
+  decoded = textarea.value;
+  
+  // Xử lý các ký tự đặc biệt bị lỗi encoding
+  const encodingMap = {
+    'H??ng d?n': 'Hướng dẫn',
+    'b?nh d?ch t?': 'bệnh dịch tả',
+    'l?n châu Phi': 'lợn châu Phi',
+    'ch?n nuôi l?n': 'chăn nuôi lợn',
+    'quy mô nh? ? châu Á': 'quy mô nhỏ ở châu Á',
+    'Phòng ng?a': 'Phòng ngừa',
+    'ki?m soát': 'kiểm soát',
+    'd?ch t?': 'dịch tả',
+    'châu Phi': 'châu Phi',
+    'ch?n nuôi': 'chăn nuôi',
+    'quy mô': 'quy mô',
+    'nh? ?': 'nhỏ ở',
+    'châu Á': 'châu Á',
+    // Thêm các pattern khác có thể gặp
+    '??ng': 'ương',
+    '??c': 'ức',
+    '??i': 'ời',
+    '??n': 'ần',
+    '??t': 'ất',
+    '??y': 'ấy',
+    '??u': 'ầu',
+    '??a': 'ả',
+    '??e': 'ế',
+    '??o': 'ố',
+    '??i': 'ị',
+    '??u': 'ự',
+    '??a': 'ạ',
+    '??e': 'ệ',
+    '??o': 'ộ',
+    '??i': 'ì',
+    '??u': 'ừ',
+    '??a': 'à',
+    '??e': 'ề',
+    '??o': 'ồ',
+    '??i': 'ỉ',
+    '??u': 'ử',
+    '??a': 'ã',
+    '??e': 'ễ',
+    '??o': 'ỗ',
+    '??i': 'ĩ',
+    '??u': 'ữ'
+  };
+  
+  // Thay thế các pattern bị lỗi
+  Object.keys(encodingMap).forEach(wrong => {
+    decoded = decoded.replace(new RegExp(wrong, 'gi'), encodingMap[wrong]);
+  });
+  
+  // Xử lý các ký tự Unicode bị lỗi
+  decoded = decoded.replace(/\?/g, '');
+  decoded = decoded.replace(/\u00A0/g, ' '); // Non-breaking space
+  decoded = decoded.replace(/\u2019/g, "'"); // Right single quotation mark
+  decoded = decoded.replace(/\u201C/g, '"'); // Left double quotation mark
+  decoded = decoded.replace(/\u201D/g, '"'); // Right double quotation mark
+  decoded = decoded.replace(/\u2013/g, '-'); // En dash
+  decoded = decoded.replace(/\u2014/g, '-'); // Em dash
+  
+  // Loại bỏ các ký tự không hợp lệ
+  decoded = decoded.replace(/[^\x00-\x7F\u00A0-\uFFFF]/g, '');
+  
+  return decoded.trim();
+}
+
+// Hàm backup để xử lý encoding UTF-8
+function decodeUTF8(text) {
+  if (!text) return text;
+  
+  try {
+    // Thử decode URI component
+    return decodeURIComponent(escape(text));
+  } catch (e) {
+    // Nếu không được, thử cách khác
+    try {
+      return unescape(encodeURIComponent(text));
+    } catch (e2) {
+      // Thử với TextDecoder nếu có
+      try {
+        if (typeof TextDecoder !== 'undefined') {
+          const encoder = new TextEncoder();
+          const decoder = new TextDecoder('utf-8');
+          const bytes = encoder.encode(text);
+          return decoder.decode(bytes);
+        }
+      } catch (e3) {
+        // Thử với Blob và FileReader
+        try {
+          const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+          const reader = new FileReader();
+          reader.readAsText(blob, 'utf-8');
+          return reader.result || text;
+        } catch (e4) {
+          // Cuối cùng trả về text gốc
+          return text;
+        }
+      }
+      return text;
+    }
+  }
+}
+
 const apiURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books/all';
 const apiPostURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/books';
 const uploadURL = 'https://server-shelf-stacker-w1ds.onrender.com/api/upload/smart';
@@ -449,12 +563,23 @@ function filterProducts(products, keyword, isFeaturedTab = false) {
   });
 }
 
-function sortByTitle(arr, order) {
+// Hàm sắp xếp theo ngày xuất bản (mới/cũ)
+function sortByDate(arr, order) {
   if (!order) return arr;
   return [...arr].sort((a, b) => {
-    const tA = (a.title || a.name || '').toLowerCase();
-    const tB = (b.title || b.name || '').toLowerCase();
-    return order === 'asc' ? tA.localeCompare(tB) : tB.localeCompare(tA);
+    const dateA = new Date(a.publication_date || 0);
+    const dateB = new Date(b.publication_date || 0);
+    return order === 'new' ? dateB - dateA : dateA - dateB;
+  });
+}
+
+// Hàm sắp xếp theo giá
+function sortByPrice(arr, order) {
+  if (!order) return arr;
+  return [...arr].sort((a, b) => {
+    const priceA = parseFloat(a.price) || 0;
+    const priceB = parseFloat(b.price) || 0;
+    return order === 'high' ? priceB - priceA : priceA - priceB;
   });
 }
 
@@ -544,12 +669,22 @@ function renderProductsWithPagination(productsArr, page = 1) {
 
 function renderFilteredAndSorted(page = currentPage) {
   const keyword = searchBox.value.trim();
-  const sortTitleOrder = document.getElementById('sort-title').value;
+  const sortUnified = document.getElementById('sort-unified').value;
 
   let filtered = filterProducts(products, keyword, activeTab === 'featured' && activeChildTab === 'featured');
 
-  if (sortTitleOrder) filtered = sortByTitle(filtered, sortTitleOrder);
+  // Sắp xếp theo lựa chọn thống nhất
+  if (sortUnified) {
+    if (sortUnified.startsWith('date-')) {
+      const order = sortUnified.split('-')[1];
+      filtered = sortByDate(filtered, order);
+    } else if (sortUnified.startsWith('price-')) {
+      const order = sortUnified.split('-')[1];
+      filtered = sortByPrice(filtered, order);
+    }
+  }
 
+  // Sắp xếp theo tab con
   if (activeChildTab === 'popular') {
     filtered.sort((a, b) => (b.views || 0) - (a.views || 0));
   } else if (activeChildTab === 'new') {
@@ -565,7 +700,7 @@ document.getElementById('btn-search').addEventListener('click', () => {
 searchBox.addEventListener('input', () => {
   renderFilteredAndSorted(1);
 });
-document.getElementById('sort-title').addEventListener('change', () => {
+document.getElementById('sort-unified').addEventListener('change', () => {
   renderFilteredAndSorted(1);
 });
 document.getElementById('btn-filter-price').addEventListener('click', () => {
@@ -657,22 +792,135 @@ document.getElementById('thumbnailPreview').replaceWith(
 async function fetchImageAsFile(imageUrl, fileName) {
   if (!imageUrl) return null;
   try {
-    const cleanImageUrl = imageUrl.split('&imgtk')[0]; // Loại bỏ tham số imgtk và source
-    const proxyUrl = `/api/books/proxy/image?url=${encodeURIComponent(cleanImageUrl)}`;
-    const response = await fetch(proxyUrl, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
-    });
-    if (!response.ok) {
-      throw new Error(`Không thể tải hình ảnh qua proxy: ${response.statusText}`);
+    // Cải thiện URL ảnh Google Books
+    const improvedUrl = getBestImageUrl(imageUrl);
+    if (!improvedUrl) {
+      throw new Error('URL ảnh không hợp lệ');
     }
-    const blob = await response.blob();
-    const ext = blob.type.split('/')[1] || 'jpg';
-    return new File([blob], `${fileName}.${ext}`, { type: blob.type });
+
+    // Thử tải ảnh trực tiếp trước
+    try {
+      const response = await fetch(improvedUrl, {
+        mode: 'no-cors' // Thử với no-cors mode
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const ext = blob.type.split('/')[1] || 'jpg';
+        return new File([blob], `${fileName}.${ext}`, { type: blob.type });
+      }
+    } catch (directError) {
+      console.warn('Không thể tải trực tiếp:', directError.message);
+    }
+
+    // Fallback: Sử dụng base64 encoding qua img element
+    return await fetchImageViaBase64(improvedUrl, fileName);
+    
   } catch (error) {
     console.error('Lỗi tải hình ảnh:', error);
-    showErrorDialog('Lỗi Tải Hình Ảnh', `Không thể tải hình ảnh từ Google Books: ${error.message}`);
-    return null;
+    
+    // Fallback: Tạo ảnh placeholder nếu không tải được
+    console.warn('Không thể tải ảnh từ Google Books, sử dụng placeholder');
+    return createPlaceholderImage(fileName);
   }
+}
+
+// Tải ảnh qua base64 encoding để tránh CORS
+async function fetchImageViaBase64(imageUrl, fileName) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = function() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        
+        canvas.toBlob(blob => {
+          if (blob) {
+            const ext = 'png'; // Luôn dùng PNG cho base64
+            const file = new File([blob], `${fileName}.${ext}`, { type: 'image/png' });
+            resolve(file);
+          } else {
+            reject(new Error('Không thể tạo blob từ canvas'));
+          }
+        }, 'image/png');
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    img.onerror = function() {
+      reject(new Error('Không thể tải ảnh qua base64'));
+    };
+    
+    // Thêm timestamp để tránh cache
+    const timestamp = new Date().getTime();
+    const urlWithTimestamp = imageUrl + (imageUrl.includes('?') ? '&' : '?') + `t=${timestamp}`;
+    img.src = urlWithTimestamp;
+  });
+}
+
+// Tạo ảnh placeholder khi không tải được ảnh Google Books
+function createPlaceholderImage(fileName) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 300;
+  canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+  
+  // Vẽ background
+  ctx.fillStyle = '#f0f0f0';
+  ctx.fillRect(0, 0, 300, 400);
+  
+  // Vẽ border
+  ctx.strokeStyle = '#ddd';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(10, 10, 280, 380);
+  
+  // Vẽ text
+  ctx.fillStyle = '#999';
+  ctx.font = '16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('No Image Available', 150, 200);
+  
+  // Convert to blob
+  return new Promise(resolve => {
+    canvas.toBlob(blob => {
+      resolve(new File([blob], `${fileName}.png`, { type: 'image/png' }));
+    }, 'image/png');
+  });
+}
+
+// Hàm cải thiện URL ảnh Google Books
+function getBestImageUrl(url) {
+  // 1. Kiểm tra URL có tồn tại và hợp lệ
+  if (!url || typeof url !== 'string') return '';
+  
+  // 2. Validate URL format
+  try {
+    new URL(url);
+  } catch (error) {
+    return '';
+  }
+  
+  // 3. Kiểm tra tham số cần thiết
+  const hasRequiredParams = url.includes('id=') && 
+                           url.includes('printsec=frontcover') && 
+                           url.includes('img=');
+  
+  if (!hasRequiredParams) return '';
+  
+  // 4. Thêm imgtk parameter nếu thiếu
+  if (!url.includes('imgtk=')) {
+    const separator = url.includes('?') ? '&' : '?';
+    url += `${separator}imgtk=AFLRE72`;
+  }
+  
+  return url;
 }
 
 addBookForm.addEventListener('submit', async function(e) {
@@ -714,22 +962,38 @@ addBookForm.addEventListener('submit', async function(e) {
   let categories = select.choicesInstance ? select.choicesInstance.getValue(true) : Array.from(select.selectedOptions).map(opt => opt.value);
   categories.forEach(cat => formData.append('categories[]', cat));
 
+  // Xử lý ảnh cover
   const coverFiles = document.getElementById('bookImageUpload').files;
   if (coverFiles.length > 0) {
     for (let i = 0; i < coverFiles.length; i++) {
       formData.append('cover_images', coverFiles[i]);
     }
   } else if (googleBookCoverUrl) {
-    const coverFile = await fetchImageAsFile(googleBookCoverUrl, 'cover');
-    if (coverFile) formData.append('cover_images', coverFile);
+    try {
+      const coverFile = await fetchImageAsFile(googleBookCoverUrl, 'cover');
+      if (coverFile) {
+        formData.append('cover_images', coverFile);
+        console.log('Đã thêm ảnh cover từ Google Books:', coverFile.name);
+      }
+    } catch (error) {
+      console.warn('Không thể tải ảnh cover từ Google Books:', error.message);
+    }
   }
 
+  // Xử lý ảnh thumbnail
   const thumbnailFile = document.getElementById('bookThumbnailUpload').files[0];
   if (thumbnailFile) {
     formData.append('thumbnail', thumbnailFile);
   } else if (googleBookCoverUrl) {
-    const thumbnailFileFetched = await fetchImageAsFile(googleBookCoverUrl, 'thumbnail');
-    if (thumbnailFileFetched) formData.append('thumbnail', thumbnailFileFetched);
+    try {
+      const thumbnailFileFetched = await fetchImageAsFile(googleBookCoverUrl, 'thumbnail');
+      if (thumbnailFileFetched) {
+        formData.append('thumbnail', thumbnailFileFetched);
+        console.log('Đã thêm ảnh thumbnail từ Google Books:', thumbnailFileFetched.name);
+      }
+    } catch (error) {
+      console.warn('Không thể tải ảnh thumbnail từ Google Books:', error.message);
+    }
   }
 
   // Nếu là sửa và đã xóa thumbnail, gửi cờ xóa thumbnail
@@ -1234,7 +1498,7 @@ exportExcelBtn.addEventListener('click', async () => {
     const selectedCats = filterCategoryChoices ? filterCategoryChoices.getValue(true) : [];
     const minPrice = parseFloat(document.getElementById('minPrice').value) || 0;
     const maxPrice = parseFloat(document.getElementById('maxPrice').value) || Infinity;
-    const sortTitleOrder = document.getElementById('sort-title').value;
+    const sortUnified = document.getElementById('sort-unified').value;
 
     const response = await fetch(apiURL, {
       headers: { 'Authorization': `Bearer ${token}` }
@@ -1244,7 +1508,16 @@ exportExcelBtn.addEventListener('click', async () => {
     const data = await response.json();
     let filteredData = filterProducts(data, keyword, activeTab === 'featured' && activeChildTab === 'featured');
 
-    if (sortTitleOrder) filteredData = sortByTitle(filteredData, sortTitleOrder);
+    // Sắp xếp theo lựa chọn thống nhất
+    if (sortUnified) {
+      if (sortUnified.startsWith('date-')) {
+        const order = sortUnified.split('-')[1];
+        filteredData = sortByDate(filteredData, order);
+      } else if (sortUnified.startsWith('price-')) {
+        const order = sortUnified.split('-')[1];
+        filteredData = sortByPrice(filteredData, order);
+      }
+    }
 
     const wsData = [
       ['Tên truyện', 'Tác giả', 'Giá (VND)', 'Số lượng', 'Ngày xuất bản', 'Nhà xuất bản', 'Ngôn ngữ', 'Danh mục', 'Nổi bật'],
@@ -1295,7 +1568,12 @@ googleBookSearchBtn.addEventListener('click', async () => {
   }
   googleBookResults.innerHTML = '<p>Đang tìm kiếm...</p>';
   try {
-    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}`, {
+      headers: {
+        'Accept': 'application/json',
+        'Accept-Charset': 'utf-8'
+      }
+    });
     const data = await res.json();
     if (!data.items || data.items.length === 0) {
       googleBookResults.innerHTML = '<p>Không tìm thấy sách phù hợp.</p>';
@@ -1307,9 +1585,9 @@ googleBookSearchBtn.addEventListener('click', async () => {
         <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;border-bottom:1px solid #eee;padding-bottom:10px;">
           <img src="${info.imageLinks?.thumbnail || ''}" style="width:60px;height:80px;object-fit:cover;border-radius:4px;" alt="cover"/>
           <div style="flex:1;">
-            <b>${info.title}</b><br>
-            <span>Tác giả: ${info.authors ? info.authors.join(', ') : 'Không rõ'}</span><br>
-            <span>Nhà xuất bản: ${info.publisher || 'Không rõ'}</span><br>
+            <b>${fixVietnameseEncoding(info.title)}</b><br>
+            <span>Tác giả: ${info.authors ? fixVietnameseEncoding(info.authors.join(', ')) : 'Không rõ'}</span><br>
+            <span>Nhà xuất bản: ${fixVietnameseEncoding(info.publisher) || 'Không rõ'}</span><br>
             <span>Ngày xuất bản: ${info.publishedDate || ''}</span><br>
             <button class="btn-primary" data-bookid="${item.id}" style="margin-top:6px;">Thêm vào sản phẩm</button>
           </div>
@@ -1323,38 +1601,95 @@ googleBookSearchBtn.addEventListener('click', async () => {
         btn.disabled = true;
         btn.textContent = 'Đang lấy dữ liệu...';
         try {
-          const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`);
+          const res = await fetch(`https://www.googleapis.com/books/v1/volumes/${bookId}`, {
+            headers: {
+              'Accept': 'application/json',
+              'Accept-Charset': 'utf-8'
+            }
+          });
           const data = await res.json();
           const info = data.volumeInfo || {};
 
           dialogTitle.textContent = 'Thêm truyện từ Google Books';
           addBookForm.reset();
 
-          document.getElementById('bookName').value = info.title || '';
-          document.getElementById('bookAuthor').value = info.authors ? info.authors.join(', ') : '';
+          // Fill đầy đủ thông tin từ Google Books với xử lý encoding
+          document.getElementById('bookName').value = fixVietnameseEncoding(info.title) || '';
+          document.getElementById('bookAuthor').value = info.authors ? fixVietnameseEncoding(info.authors.join(', ')) : '';
+          
+          // Giá và số lượng mặc định
           document.getElementById('bookPrice').value = 10000;
           document.getElementById('bookStock').value = 10;
-          document.getElementById('bookPubDate').value = info.publishedDate ? info.publishedDate.substr(0, 10) : '';
-          document.getElementById('bookPublisher').value = info.publisher || '';
+          
+          // Ngày xuất bản - xử lý format
+          if (info.publishedDate) {
+            const date = new Date(info.publishedDate);
+            if (!isNaN(date.getTime())) {
+              document.getElementById('bookPubDate').value = date.toISOString().split('T')[0];
+            }
+          }
+          
+          document.getElementById('bookPublisher').value = fixVietnameseEncoding(info.publisher) || '';
           document.getElementById('bookLanguage').value = info.language || 'vi';
+          
+          // Mô tả chi tiết với xử lý encoding
+          let description = '';
+          if (info.description) {
+            description = fixVietnameseEncoding(info.description);
+          }
+          if (info.pageCount) {
+            description += `\n\nSố trang: ${info.pageCount}`;
+          }
+          if (info.averageRating) {
+            description += `\nĐánh giá: ${info.averageRating}/5 (${info.ratingsCount || 0} lượt đánh giá)`;
+          }
+          if (info.categories && info.categories.length > 0) {
+            description += `\nThể loại: ${info.categories.map(cat => fixVietnameseEncoding(cat)).join(', ')}`;
+          }
+          if (info.isbn && info.isbn.length > 0) {
+            description += `\nISBN: ${info.isbn[0]}`;
+          }
 
           await initCKEditorIfNeeded();
-          if (bookDescEditor) bookDescEditor.setData(info.description || '');
+          if (bookDescEditor) bookDescEditor.setData(description);
 
           document.getElementById('uploadedImagesPreview').innerHTML = '';
           document.getElementById('thumbnailPreview').innerHTML = '';
-          googleBookCoverUrl = info.imageLinks?.thumbnail.split('&imgtk')[0] || '';
-          if (googleBookCoverUrl) {
-            document.getElementById('uploadedImagesPreview').innerHTML = `
-              <div style="position: relative; display: inline-block; margin: 2px;">
-                <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;">
-              </div>
-            `;
-            document.getElementById('thumbnailPreview').innerHTML = `
-              <div style="position: relative; display: inline-block; margin: 2px;">
-                <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;">
-              </div>
-            `;
+          
+          // Xử lý ảnh Google Books với fallback
+          googleBookCoverUrl = '';
+          if (info.imageLinks) {
+            // Ưu tiên ảnh có chất lượng cao hơn
+            googleBookCoverUrl = info.imageLinks.large || 
+                                info.imageLinks.medium || 
+                                info.imageLinks.thumbnail || 
+                                info.imageLinks.smallThumbnail || '';
+            
+            if (googleBookCoverUrl) {
+              // Loại bỏ tham số không cần thiết
+              googleBookCoverUrl = googleBookCoverUrl.split('&imgtk')[0];
+              
+              // Hiển thị ảnh với fallback
+              const fallbackImage = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
+              document.getElementById('uploadedImagesPreview').innerHTML = `
+                <div style="position: relative; display: inline-block; margin: 2px;">
+                  <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;" 
+                       onerror="this.onerror=null;this.src='${fallbackImage}';" alt="Cover Image">
+                  <div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:white;padding:2px 4px;font-size:10px;border-radius:2px;">
+                    Google Books
+                  </div>
+                </div>
+              `;
+              document.getElementById('thumbnailPreview').innerHTML = `
+                <div style="position: relative; display: inline-block; margin: 2px;">
+                  <img src="${googleBookCoverUrl}" style="max-width:100px; border:1px solid #ddd;" 
+                       onerror="this.onerror=null;this.src='${fallbackImage}';" alt="Thumbnail">
+                  <div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.7);color:white;padding:2px 4px;font-size:10px;border-radius:2px;">
+                    Google Books
+                  </div>
+                </div>
+              `;
+            }
           }
 
           await fetchCategoriesForSelect();
@@ -1364,7 +1699,9 @@ googleBookSearchBtn.addEventListener('click', async () => {
               headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` }
             }).then(res => res.json());
             const matchedCategory = serverCategories.find(cat => 
-              info.categories.some(googleCat => googleCat.toLowerCase().includes(cat.name.toLowerCase()))
+              info.categories.some(googleCat => 
+                fixVietnameseEncoding(googleCat).toLowerCase().includes(cat.name.toLowerCase())
+              )
             );
             if (matchedCategory && select.choicesInstance) {
               select.choicesInstance.removeActiveItems();

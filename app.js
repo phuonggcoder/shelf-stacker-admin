@@ -16,6 +16,7 @@ app.get('/danhmucdonhang', (req, res) => res.sendFile(path.join(__dirname, 'view
 app.get('/trashbooks', (req, res) => res.sendFile(path.join(__dirname, 'views', 'trashbooks.html')));
 app.get('/danhmucdaxoa', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdaxoa.html')));
 app.get('/voucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'voucher.html')));
+app.get('/voucher-new', (req, res) => res.sendFile(path.join(__dirname, 'views', 'voucher-new.html')));
 app.get('/khoiphucvoucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'khoiphucvoucher.html')));
 app.get('/campaigns', (req, res) => res.sendFile(path.join(__dirname, 'views', 'campaigns.html')));
 app.get('/thongbao', (req, res) => res.sendFile(path.join(__dirname, 'views', 'thongbao.html')));

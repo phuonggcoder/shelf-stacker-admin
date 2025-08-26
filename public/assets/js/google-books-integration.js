@@ -381,6 +381,15 @@ class GoogleBooksIntegration {
     const volumeInfo = googleBook.volumeInfo || {};
     const imageLinks = volumeInfo.imageLinks || {};
 
+    // Sử dụng validation cho URL ảnh với fallback logic
+    const thumbnail = this.getBestImageUrl(imageLinks.smallThumbnail) || 
+                     this.getBestImageUrl(imageLinks.thumbnail) || '';
+    
+    const cover_image = this.getBestImageUrl(imageLinks.large) || 
+                       this.getBestImageUrl(imageLinks.medium) || 
+                       this.getBestImageUrl(imageLinks.thumbnail) || 
+                       this.getBestImageUrl(imageLinks.smallThumbnail) || '';
+
     return {
       title: volumeInfo.title || '',
       author: Array.isArray(volumeInfo.authors) ? volumeInfo.authors.join(', ') : volumeInfo.authors || '',
@@ -389,8 +398,8 @@ class GoogleBooksIntegration {
       page_count: volumeInfo.pageCount || 0,
       language: volumeInfo.language || 'vi',
       publication_date: volumeInfo.publishedDate ? new Date(volumeInfo.publishedDate).toISOString().split('T')[0] : '',
-      thumbnail: imageLinks.smallThumbnail || imageLinks.thumbnail || '',
-      cover_image: imageLinks.large || imageLinks.medium || imageLinks.thumbnail || '',
+      thumbnail: thumbnail,
+      cover_image: cover_image,
       googleBooksId: googleBook.id,
       googleCategories: volumeInfo.categories || [],
       averageRating: volumeInfo.averageRating || 0,
@@ -398,6 +407,52 @@ class GoogleBooksIntegration {
       previewLink: volumeInfo.previewLink || '',
       infoLink: volumeInfo.infoLink || ''
     };
+  }
+
+  // Kiểm tra và cải thiện URL ảnh
+  getBestImageUrl(url) {
+    // 1. Kiểm tra URL có tồn tại và hợp lệ
+    if (!url || typeof url !== 'string') return '';
+    
+    // 2. Validate URL format
+    try {
+      new URL(url);
+    } catch (error) {
+      return '';
+    }
+    
+    // 3. Kiểm tra tham số cần thiết
+    const hasRequiredParams = url.includes('id=') && 
+                             url.includes('printsec=frontcover') && 
+                             url.includes('img=');
+    
+    if (!hasRequiredParams) return '';
+    
+    // 4. Thêm imgtk parameter nếu thiếu
+    if (!url.includes('imgtk=')) {
+      const separator = url.includes('?') ? '&' : '?';
+      url += `${separator}imgtk=AFLRE72`;
+    }
+    
+    return url;
+  }
+
+  // Validate URL ảnh (async)
+  async validateImageUrl(url) {
+    try {
+      const response = await fetch(url, { method: 'HEAD' });
+      const contentType = response.headers.get('content-type');
+      return {
+        valid: contentType && contentType.startsWith('image/'),
+        contentType: contentType,
+        statusCode: response.status
+      };
+    } catch (error) {
+      return {
+        valid: false,
+        error: error.message
+      };
+    }
   }
 
   // Điền các trường form

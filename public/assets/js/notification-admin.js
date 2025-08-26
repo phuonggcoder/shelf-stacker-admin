@@ -1,14 +1,56 @@
+// Notification Admin Panel - Main JavaScript File
+
 // Global variables
 let templates = [];
-let filteredTemplates = [];
+let scheduledNotifications = [];
+let notificationHistory = [];
+let currentPage = 1;
+let totalPages = 1;
+let currentFilter = 'all';
+let charts = {};
+
+// API Configuration
+const API_BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
+// For local development, use: 'http://localhost:3000'
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    setupNavigation();
-    setupEventListeners();
-    loadTemplates();
-    updateVariables();
+    initializeApp();
 });
+
+// Initialize the application
+async function initializeApp() {
+    try {
+        showLoading(true);
+        
+        // Setup navigation
+        setupNavigation();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Load initial data
+        await Promise.all([
+            loadDashboardData(),
+            loadTemplates(),
+            loadScheduledNotifications(),
+            loadNotificationHistory()
+        ]);
+        
+        // Initialize charts
+        initializeCharts();
+        
+        showLoading(false);
+        
+        // Show success message
+        showMessage('Notification Admin Panel loaded successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error initializing app:', error);
+        showMessage('Error loading application data', 'error');
+        showLoading(false);
+    }
+}
 
 // Setup navigation
 function setupNavigation() {
@@ -16,8 +58,14 @@ function setupNavigation() {
     navItems.forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
+            
+            // Remove active class from all items
             navItems.forEach(nav => nav.classList.remove('active'));
+            
+            // Add active class to clicked item
             this.classList.add('active');
+            
+            // Show corresponding section
             const targetSection = this.getAttribute('data-section');
             showSection(targetSection);
         });
@@ -26,43 +74,269 @@ function setupNavigation() {
 
 // Show section
 function showSection(sectionId) {
+    // Hide all sections
     document.querySelectorAll('.content-section').forEach(section => {
         section.classList.remove('active');
     });
+    
+    // Show target section
     const targetSection = document.getElementById(sectionId);
-    if (targetSection) targetSection.classList.add('active');
+    if (targetSection) {
+        targetSection.classList.add('active');
+        
+        // Load section-specific data
+        switch(sectionId) {
+            case 'dashboard':
+                loadDashboardData();
+                break;
+            case 'templates':
+                loadTemplates();
+                break;
+            case 'scheduled':
+                loadScheduledNotifications();
+                break;
+            case 'history':
+                loadNotificationHistory();
+                break;
+            case 'analytics':
+                loadAnalytics();
+                break;
+        }
+    }
 }
 
 // Setup event listeners
 function setupEventListeners() {
-    const templateForm = document.getElementById('template-form');
+    // Template form
+    const templateForm = document.getElementById('template-form-modal');
     if (templateForm) {
         templateForm.addEventListener('submit', handleTemplateSubmit);
     }
     
-    const imageInput = document.getElementById('image-input');
-    if (imageInput) {
-        imageInput.addEventListener('change', handleImageChange);
-    }
+    // Notification type selector
+    const typeCards = document.querySelectorAll('.type-card');
+    typeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const type = this.getAttribute('data-type');
+            selectNotificationType(type);
+        });
+    });
+    
+    // Recipient type radio buttons
+    setupRecipientTypeListeners();
+    
+    // Form submissions
+    setupFormSubmissions();
+    
+    // Search and filter listeners
+    setupSearchAndFilters();
+    
+    // Image upload listeners
+    setupImageUploadListeners();
     
     // Modal close events
+    setupModalListeners();
+}
+
+// Setup recipient type listeners
+function setupRecipientTypeListeners() {
+    const recipientTypes = ['recipient-type', 'template-recipient-type', 'scheduled-recipient-type'];
+    
+    recipientTypes.forEach(type => {
+        const radios = document.querySelectorAll(`input[name="${type}"]`);
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                const value = this.value;
+                const formId = this.closest('form').id;
+                toggleUserSelector(value, formId);
+            });
+        });
+    });
+}
+
+// Toggle user selector based on recipient type
+function toggleUserSelector(recipientType, formId) {
+    const userSelectors = {
+        'urgent-form': {
+            specific: 'user-selector',
+            multiple: 'multiple-users'
+        },
+        'template-form': {
+            specific: 'template-user-selector',
+            multiple: 'template-multiple-users'
+        },
+        'scheduled-form': {
+            specific: 'scheduled-user-selector',
+            multiple: 'scheduled-multiple-users'
+        }
+    };
+    
+    const selectors = userSelectors[formId];
+    if (!selectors) return;
+    
+    // Hide all selectors
+    Object.values(selectors).forEach(selectorId => {
+        const element = document.getElementById(selectorId);
+        if (element) element.classList.add('hidden');
+    });
+    
+    // Show appropriate selector
+    const targetSelectorId = selectors[recipientType];
+    if (targetSelectorId) {
+        const element = document.getElementById(targetSelectorId);
+        if (element) element.classList.remove('hidden');
+    }
+}
+
+// Setup form submissions
+function setupFormSubmissions() {
+    // Urgent notification form
+    const urgentForm = document.getElementById('urgent-form');
+    if (urgentForm) {
+        urgentForm.addEventListener('submit', handleUrgentNotificationSubmit);
+    }
+    
+    // Template notification form
+    const templateForm = document.getElementById('template-form');
+    if (templateForm) {
+        templateForm.addEventListener('submit', handleTemplateNotificationSubmit);
+    }
+    
+    // Scheduled notification form
+    const scheduledForm = document.getElementById('scheduled-form');
+    if (scheduledForm) {
+        scheduledForm.addEventListener('submit', handleScheduledNotificationSubmit);
+    }
+}
+
+// Setup search and filters
+function setupSearchAndFilters() {
+    // Template search
+    const templateSearch = document.getElementById('template-search');
+    if (templateSearch) {
+        templateSearch.addEventListener('input', debounce(filterTemplates, 300));
+    }
+    
+    // Template filter buttons
+    const templateFilterBtns = document.querySelectorAll('[data-filter]');
+    templateFilterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const filter = this.getAttribute('data-filter');
+            applyTemplateFilter(filter);
+        });
+    });
+    
+    // Scheduled search
+    const scheduledSearch = document.getElementById('scheduled-search');
+    if (scheduledSearch) {
+        scheduledSearch.addEventListener('input', debounce(filterScheduled, 300));
+    }
+    
+    // History search
+    const historySearch = document.getElementById('history-search');
+    if (historySearch) {
+        historySearch.addEventListener('input', debounce(filterHistory, 300));
+    }
+}
+
+// Setup image upload listeners
+function setupImageUploadListeners() {
+    const imageInputs = ['urgent-image', 'template-image', 'scheduled-image'];
+    
+    imageInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('change', function() {
+                handleImageChange(this, inputId.replace('-image', '-image-preview'));
+            });
+        }
+    });
+}
+
+// Setup modal listeners
+function setupModalListeners() {
     const modals = document.querySelectorAll('.modal');
     modals.forEach(modal => {
         modal.addEventListener('click', function(e) {
             if (e.target === this) {
-                closeModal();
+                closeModal(this);
             }
         });
     });
 }
 
+// Select notification type
+function selectNotificationType(type) {
+    // Remove active class from all type cards
+    document.querySelectorAll('.type-card').forEach(card => {
+        card.classList.remove('active');
+    });
+    
+    // Add active class to selected card
+    const selectedCard = document.querySelector(`[data-type="${type}"]`);
+    if (selectedCard) {
+        selectedCard.classList.add('active');
+    }
+    
+    // Hide all forms
+    document.querySelectorAll('.notification-form').forEach(form => {
+        form.classList.remove('active');
+    });
+    
+    // Show selected form
+    const targetForm = document.getElementById(`${type}-form`);
+    if (targetForm) {
+        targetForm.classList.add('active');
+    }
+    
+    // Load template selector if template type
+    if (type === 'template') {
+        loadTemplateSelector();
+    }
+}
+
+// Load dashboard data
+async function loadDashboardData() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/noti/stats`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const stats = await response.json();
+            updateDashboardStats(stats);
+        } else {
+            throw new Error('Failed to load dashboard stats');
+        }
+    } catch (error) {
+        console.error('Error loading dashboard data:', error);
+        // Use sample data for demo
+        updateDashboardStats(getSampleStats());
+    }
+}
+
+// Update dashboard statistics
+function updateDashboardStats(stats) {
+    document.getElementById('urgent-count').textContent = stats.urgentSentToday || 0;
+    document.getElementById('scheduled-count').textContent = stats.scheduledActive || 0;
+    document.getElementById('template-count').textContent = stats.activeTemplates || 0;
+    document.getElementById('success-rate').textContent = `${stats.successRate || 0}%`;
+}
+
 // Load templates
 async function loadTemplates() {
     try {
-        showLoading(true);
-        const response = await fetch('/api/notification-templates');
+        const response = await fetch(`${API_BASE_URL}/api/notification-templates`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
         if (response.ok) {
-            templates = await response.json();
+            const data = await response.json();
+            templates = data.templates || data;
         } else {
             throw new Error('Failed to load templates');
         }
@@ -71,173 +345,460 @@ async function loadTemplates() {
         templates = getSampleTemplates();
     }
     
-    filteredTemplates = [...templates];
     renderTemplates();
-    showLoading(false);
-}
-
-// Show loading state
-function showLoading(show) {
-    const loading = document.getElementById('loading');
-    const noTemplates = document.getElementById('no-templates');
-    const tableContainer = document.querySelector('.table-container');
-    
-    if (show) {
-        loading.style.display = 'block';
-        noTemplates.style.display = 'none';
-        if (tableContainer) tableContainer.style.display = 'none';
-    } else {
-        loading.style.display = 'none';
-        if (tableContainer) tableContainer.style.display = 'block';
-    }
 }
 
 // Render templates
 function renderTemplates() {
-    const tbody = document.getElementById('templates-list');
-    const noTemplates = document.getElementById('no-templates');
+    const grid = document.getElementById('templates-grid');
+    if (!grid) return;
     
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    if (filteredTemplates.length === 0) {
-        noTemplates.style.display = 'block';
+    if (templates.length === 0) {
+        grid.innerHTML = `
+            <div class="no-data">
+                <i class="fas fa-inbox"></i>
+                <p>No templates found</p>
+                <button class="btn-primary" onclick="openTemplateModal()">
+                    <i class="fas fa-plus"></i> Create First Template
+                </button>
+            </div>
+        `;
         return;
     }
     
-    noTemplates.style.display = 'none';
-    
-    filteredTemplates.forEach(template => {
-        const row = createTemplateRow(template);
-        tbody.appendChild(row);
-    });
-}
-
-// Create template row
-function createTemplateRow(template) {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>
-            <span class="event-type ${template.type}">
-                ${getTypeIcon(template.type)} ${template.type}
-            </span>
-        </td>
-        <td>
-            <strong>${template.event}</strong>
-            <br>
-            <small class="text-muted">${getEventDescription(template.event)}</small>
-        </td>
-        <td>
-            <div class="template-title">
-                <strong>${template.title}</strong>
-                ${template.imageUrl ? '<br><small class="text-muted">📷 Has image</small>' : ''}
+    grid.innerHTML = templates.map(template => `
+        <div class="template-card">
+            <div class="template-header">
+                <div class="template-name">${template.name}</div>
+                <div class="template-event">${template.event}</div>
             </div>
-        </td>
-        <td>
-            <span class="status ${template.active ? 'active' : 'inactive'}">
-                ${template.active ? '✅ Active' : '❌ Inactive'}
-            </span>
-        </td>
-        <td>
-            <div class="action-buttons">
-                <button class="edit-btn" onclick="editTemplate('${template._id || template.id}')" title="Edit">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="toggle-btn" onclick="toggleTemplate('${template._id || template.id}', ${!template.active})" title="${template.active ? 'Deactivate' : 'Activate'}">
-                    <i class="fas fa-${template.active ? 'pause' : 'play'}"></i>
-                </button>
-                <button class="delete-btn" onclick="deleteTemplate('${template._id || template.id}')" title="Delete">
-                    <i class="fas fa-trash"></i>
-                </button>
+            <div class="template-content">
+                <div class="template-title">${template.title}</div>
+                <div class="template-message">${template.message}</div>
+                ${template.image ? `<img src="${template.image}" alt="Template Image" class="template-image">` : ''}
+                <div class="template-actions">
+                    <button class="btn-secondary" onclick="editTemplate('${template._id}')">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn-secondary" onclick="testTemplate('${template._id}')">
+                        <i class="fas fa-flask"></i> Test
+                    </button>
+                    <button class="btn-danger" onclick="deleteTemplate('${template._id}')">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
             </div>
-        </td>
-    `;
-    return row;
-}
-
-// Get type icon
-function getTypeIcon(type) {
-    const icons = {
-        'user': '👤',
-        'shipper': '🚚',
-        'both': '🔄'
-    };
-    return icons[type] || '📋';
-}
-
-// Get event description
-function getEventDescription(event) {
-    const descriptions = {
-        'login_success': 'Đăng nhập thành công',
-        'order_success': 'Đặt hàng thành công',
-        'payment_success': 'Thanh toán thành công',
-        'delivery_success': 'Giao hàng thành công',
-        'email_verified': 'Xác thực email',
-        'rating_received': 'Nhận đánh giá',
-        'order_status_change': 'Thay đổi trạng thái đơn hàng',
-        'payment_failed': 'Thanh toán thất bại',
-        'delivery_failed': 'Giao hàng thất bại'
-    };
-    return descriptions[event] || event;
+        </div>
+    `).join('');
 }
 
 // Filter templates
 function filterTemplates() {
-    const typeFilter = document.getElementById('type-filter').value;
-    const statusFilter = document.getElementById('status-filter').value;
-    const searchInput = document.getElementById('search-input').value.toLowerCase();
+    const searchTerm = document.getElementById('template-search').value.toLowerCase();
+    const filteredTemplates = templates.filter(template => 
+        template.name.toLowerCase().includes(searchTerm) ||
+        template.event.toLowerCase().includes(searchTerm) ||
+        template.title.toLowerCase().includes(searchTerm)
+    );
     
-    filteredTemplates = templates.filter(template => {
-        if (typeFilter && template.type !== typeFilter) return false;
-        if (statusFilter && template.active.toString() !== statusFilter) return false;
-        if (searchInput) {
-            const searchText = `${template.event} ${template.title} ${template.type}`.toLowerCase();
-            if (!searchText.includes(searchInput)) return false;
-        }
-        return true;
+    renderFilteredTemplates(filteredTemplates);
+}
+
+// Apply template filter
+function applyTemplateFilter(filter) {
+    // Update active filter button
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
     });
+    document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
     
-    renderTemplates();
+    let filteredTemplates = templates;
+    
+    if (filter !== 'all') {
+        filteredTemplates = templates.filter(template => 
+            template.event.includes(filter)
+        );
+    }
+    
+    renderFilteredTemplates(filteredTemplates);
 }
 
-// Show create modal
-function showCreateModal() {
-    document.getElementById('modal-title').innerHTML = '<i class="fas fa-plus"></i> Create New Template';
-    document.getElementById('template-form').reset();
-    document.getElementById('template-id').value = '';
-    document.getElementById('image-preview').innerHTML = '';
-    document.getElementById('active-checkbox').checked = true;
-    updateVariables();
-    document.getElementById('template-modal').style.display = 'block';
-}
-
-// Edit template
-function editTemplate(templateId) {
-    const template = templates.find(t => (t._id || t.id) === templateId);
-    if (!template) {
-        showMessage('Template not found', 'error');
+// Render filtered templates
+function renderFilteredTemplates(filteredTemplates) {
+    const grid = document.getElementById('templates-grid');
+    if (!grid) return;
+    
+    if (filteredTemplates.length === 0) {
+        grid.innerHTML = `
+            <div class="no-data">
+                <i class="fas fa-search"></i>
+                <p>No templates match your search</p>
+            </div>
+        `;
         return;
     }
     
-    document.getElementById('modal-title').innerHTML = '<i class="fas fa-edit"></i> Edit Template';
-    document.getElementById('template-id').value = template._id || template.id;
-    document.getElementById('event-select').value = template.event;
-    document.getElementById('type-select').value = template.type;
-    document.getElementById('title-input').value = template.title;
-    document.getElementById('message-input').value = template.message;
-    document.getElementById('active-checkbox').checked = template.active;
-    
-    if (template.imageUrl) {
-        document.getElementById('image-preview').innerHTML = `
-            <img src="${template.imageUrl}" alt="Template image" style="max-width: 200px; max-height: 150px;">
-        `;
-    } else {
-        document.getElementById('image-preview').innerHTML = '';
+    // Reuse the same rendering logic
+    const originalTemplates = templates;
+    templates = filteredTemplates;
+    renderTemplates();
+    templates = originalTemplates;
+}
+
+// Load scheduled notifications
+async function loadScheduledNotifications() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/noti/scheduled`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            scheduledNotifications = data.scheduledNotifications || data;
+        } else {
+            throw new Error('Failed to load scheduled notifications');
+        }
+    } catch (error) {
+        console.error('Error loading scheduled notifications:', error);
+        scheduledNotifications = getSampleScheduledNotifications();
     }
     
-    updateVariables();
-    document.getElementById('template-modal').style.display = 'block';
+    renderScheduledNotifications();
+}
+
+// Render scheduled notifications
+function renderScheduledNotifications() {
+    const list = document.getElementById('scheduled-list');
+    if (!list) return;
+    
+    if (scheduledNotifications.length === 0) {
+        list.innerHTML = `
+            <div class="no-data">
+                <i class="fas fa-clock"></i>
+                <p>No scheduled notifications</p>
+            </div>
+        `;
+        return;
+    }
+    
+    list.innerHTML = scheduledNotifications.map(scheduled => `
+        <div class="scheduled-item">
+            <div class="scheduled-info">
+                <h4>${scheduled.title}</h4>
+                <p><strong>Scheduled for:</strong> ${new Date(scheduled.scheduledAt).toLocaleString()}</p>
+                <p><strong>Type:</strong> ${scheduled.type}</p>
+                <p><strong>Status:</strong> ${scheduled.status}</p>
+                <p><strong>Recipients:</strong> ${scheduled.userId || scheduled.userIds ? 'Specific Users' : 'All Users'}</p>
+            </div>
+            <div class="scheduled-actions">
+                <button class="btn-secondary" onclick="editScheduled('${scheduled._id}')">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="btn-danger" onclick="cancelScheduled('${scheduled._id}')">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Load notification history
+async function loadNotificationHistory(page = 1, filters = {}) {
+    try {
+        const queryParams = new URLSearchParams({
+            page: page,
+            limit: 20,
+            ...filters
+        });
+        
+        const response = await fetch(`${API_BASE_URL}/api/notification/history?${queryParams}`, {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            notificationHistory = data.notifications || [];
+            currentPage = page;
+            totalPages = Math.ceil(data.total / data.limit);
+            
+            updateHistoryStats(data);
+            renderNotificationHistory();
+            renderPagination();
+        } else {
+            throw new Error('Failed to load notification history');
+        }
+    } catch (error) {
+        console.error('Error loading notification history:', error);
+        notificationHistory = getSampleNotificationHistory();
+        renderNotificationHistory();
+    }
+}
+
+// Update history statistics
+function updateHistoryStats(data) {
+    document.getElementById('total-sent').textContent = data.total || 0;
+    document.getElementById('history-success-rate').textContent = `${data.successRate || 0}%`;
+    document.getElementById('total-failed').textContent = data.failed || 0;
+}
+
+// Render notification history
+function renderNotificationHistory() {
+    const list = document.getElementById('history-list');
+    if (!list) return;
+    
+    if (notificationHistory.length === 0) {
+        list.innerHTML = `
+            <div class="no-data">
+                <i class="fas fa-history"></i>
+                <p>No notification history found</p>
+            </div>
+        `;
+        return;
+    }
+    
+    list.innerHTML = notificationHistory.map(notification => `
+        <div class="history-item ${notification.status}">
+            <div class="history-header">
+                <div>
+                    <div class="history-title">${notification.title}</div>
+                    <div class="history-message">${notification.message}</div>
+                    <div class="history-meta">
+                        <span><i class="fas fa-user"></i> ${notification.userId || 'All Users'}</span>
+                        <span><i class="fas fa-tag"></i> ${notification.type}</span>
+                        <span><i class="fas fa-clock"></i> ${new Date(notification.sendAt).toLocaleString()}</span>
+                        <span><i class="fas fa-circle"></i> ${notification.status}</span>
+                    </div>
+                </div>
+                <div class="history-actions">
+                    <button class="btn-secondary" onclick="viewNotificationDetails('${notification._id}')">
+                        <i class="fas fa-eye"></i> Details
+                    </button>
+                    <button class="btn-secondary" onclick="resendNotification('${notification._id}')">
+                        <i class="fas fa-redo"></i> Resend
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Render pagination
+function renderPagination() {
+    const pagination = document.getElementById('history-pagination');
+    if (!pagination) return;
+    
+    if (totalPages <= 1) {
+        pagination.innerHTML = '';
+        return;
+    }
+    
+    let paginationHTML = '';
+    
+    // Previous button
+    paginationHTML += `
+        <button ${currentPage === 1 ? 'disabled' : ''} onclick="changePage(${currentPage - 1})">
+            <i class="fas fa-chevron-left"></i> Previous
+        </button>
+    `;
+    
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 2 && i <= currentPage + 2)) {
+            paginationHTML += `
+                <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">
+                    ${i}
+                </button>
+            `;
+        } else if (i === currentPage - 3 || i === currentPage + 3) {
+            paginationHTML += '<span>...</span>';
+        }
+    }
+    
+    // Next button
+    paginationHTML += `
+        <button ${currentPage === totalPages ? 'disabled' : ''} onclick="changePage(${currentPage + 1})">
+            Next <i class="fas fa-chevron-right"></i>
+        </button>
+    `;
+    
+    pagination.innerHTML = paginationHTML;
+}
+
+// Change page
+function changePage(page) {
+    if (page >= 1 && page <= totalPages) {
+        loadNotificationHistory(page);
+    }
+}
+
+// Handle urgent notification submit
+async function handleUrgentNotificationSubmit(e) {
+    e.preventDefault();
+    
+    try {
+        showLoading(true);
+        
+        const formData = new FormData();
+        formData.append('title', document.getElementById('urgent-title').value);
+        formData.append('message', document.getElementById('urgent-message').value);
+        formData.append('type', 'urgent');
+        
+        const recipientType = document.querySelector('input[name="recipient-type"]:checked').value;
+        
+        if (recipientType === 'specific') {
+            formData.append('userId', document.getElementById('user-id').value);
+        } else if (recipientType === 'multiple') {
+            formData.append('userIds', document.getElementById('user-ids').value);
+        } else {
+            formData.append('all', 'true');
+        }
+        
+        const imageFile = document.getElementById('urgent-image').files[0];
+        if (imageFile) {
+            formData.append('imageFile', imageFile);
+        }
+        
+        const response = await fetch('/api/noti/send', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage('Urgent notification sent successfully!', 'success');
+            e.target.reset();
+            document.getElementById('urgent-image-preview').innerHTML = '';
+        } else {
+            throw new Error('Failed to send urgent notification');
+        }
+    } catch (error) {
+        console.error('Error sending urgent notification:', error);
+        showMessage('Error sending urgent notification', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Handle template notification submit
+async function handleTemplateNotificationSubmit(e) {
+    e.preventDefault();
+    
+    try {
+        showLoading(true);
+        
+        const selectedTemplate = document.querySelector('.template-option.selected');
+        if (!selectedTemplate) {
+            showMessage('Please select a template', 'warning');
+            return;
+        }
+        
+        const templateId = selectedTemplate.getAttribute('data-id');
+        const formData = new FormData();
+        formData.append('event', selectedTemplate.getAttribute('data-event'));
+        
+        const recipientType = document.querySelector('input[name="template-recipient-type"]:checked').value;
+        
+        if (recipientType === 'specific') {
+            formData.append('userId', document.getElementById('template-user-id').value);
+        } else if (recipientType === 'multiple') {
+            formData.append('userIds', document.getElementById('template-user-ids').value);
+        } else {
+            formData.append('all', 'true');
+        }
+        
+        // Add template variables
+        const variableInputs = document.querySelectorAll('#template-variables input');
+        const variables = {};
+        variableInputs.forEach(input => {
+            variables[input.name] = input.value;
+        });
+        formData.append('data', JSON.stringify(variables));
+        
+        const response = await fetch('/api/noti/send-event', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage('Template notification sent successfully!', 'success');
+            e.target.reset();
+        } else {
+            throw new Error('Failed to send template notification');
+        }
+    } catch (error) {
+        console.error('Error sending template notification:', error);
+        showMessage('Error sending template notification', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Handle scheduled notification submit
+async function handleScheduledNotificationSubmit(e) {
+    e.preventDefault();
+    
+    try {
+        showLoading(true);
+        
+        const formData = new FormData();
+        formData.append('title', document.getElementById('scheduled-title').value);
+        formData.append('message', document.getElementById('scheduled-message').value);
+        formData.append('type', 'scheduled');
+        
+        const date = document.getElementById('schedule-date').value;
+        const time = document.getElementById('schedule-time').value;
+        const scheduledAt = new Date(`${date}T${time}`).toISOString();
+        formData.append('scheduledAt', scheduledAt);
+        
+        const recipientType = document.querySelector('input[name="scheduled-recipient-type"]:checked').value;
+        
+        if (recipientType === 'specific') {
+            formData.append('userId', document.getElementById('scheduled-user-id').value);
+        } else if (recipientType === 'multiple') {
+            formData.append('userIds', document.getElementById('scheduled-user-ids').value);
+        } else {
+            formData.append('all', 'true');
+        }
+        
+        const imageFile = document.getElementById('scheduled-image').files[0];
+        if (imageFile) {
+            formData.append('imageFile', imageFile);
+        }
+        
+        const response = await fetch('/api/noti/schedule', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            },
+            body: formData
+        });
+        
+        if (response.ok) {
+            const result = await response.json();
+            showMessage('Notification scheduled successfully!', 'success');
+            e.target.reset();
+            document.getElementById('scheduled-image-preview').innerHTML = '';
+            loadScheduledNotifications();
+        } else {
+            throw new Error('Failed to schedule notification');
+        }
+    } catch (error) {
+        console.error('Error scheduling notification:', error);
+        showMessage('Error scheduling notification', 'error');
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Handle template submit
@@ -245,455 +806,456 @@ async function handleTemplateSubmit(e) {
     e.preventDefault();
     
     try {
-        const formData = new FormData(e.target);
-        const templateId = formData.get('_id');
+        showLoading(true);
         
-        if (!validateTemplateForm(formData)) return;
+        const formData = new FormData();
+        formData.append('name', document.getElementById('template-name').value);
+        formData.append('event', document.getElementById('template-event').value);
+        formData.append('title', document.getElementById('template-title').value);
+        formData.append('message', document.getElementById('template-message').value);
         
-        const url = templateId 
-            ? `/api/notification-templates/${templateId}`
-            : '/api/notification-templates';
+        const imageFile = document.getElementById('template-image').files[0];
+        if (imageFile) {
+            formData.append('imageFile', imageFile);
+        }
         
-        const method = templateId ? 'PUT' : 'POST';
-        
-        const response = await fetch(url, {
-            method: method,
+        const response = await fetch('/api/notification-templates', {
+            method: 'POST',
             body: formData
         });
         
         if (response.ok) {
-            showMessage(templateId ? 'Template updated successfully!' : 'Template created successfully!', 'success');
-            closeModal();
+            const result = await response.json();
+            showMessage('Template created successfully!', 'success');
+            closeTemplateModal();
             loadTemplates();
         } else {
-            throw new Error('Failed to save template');
+            throw new Error('Failed to create template');
         }
-        
     } catch (error) {
-        console.error('Error saving template:', error);
-        showMessage('Failed to save template: ' + error.message, 'error');
+        console.error('Error creating template:', error);
+        showMessage('Error creating template', 'error');
+    } finally {
+        showLoading(false);
     }
 }
 
-// Validate template form
-function validateTemplateForm(formData) {
-    const event = formData.get('event');
-    const type = formData.get('type');
-    const title = formData.get('title');
-    const message = formData.get('message');
+// Load template selector
+function loadTemplateSelector() {
+    const selector = document.getElementById('template-selector');
+    if (!selector) return;
     
-    if (!event || !type || !title || !message) {
-        showMessage('Please fill in all required fields', 'error');
-        return false;
-    }
-    
-    if (title.length > 100) {
-        showMessage('Title must be less than 100 characters', 'error');
-        return false;
-    }
-    
-    if (message.length > 500) {
-        showMessage('Message must be less than 500 characters', 'error');
-        return false;
-    }
-    
-    return true;
-}
-
-// Toggle template status
-async function toggleTemplate(templateId, newStatus) {
-    try {
-        const response = await fetch(`/api/notification-templates/${templateId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ active: newStatus })
-        });
-        
-        if (response.ok) {
-            showMessage(`Template ${newStatus ? 'activated' : 'deactivated'} successfully!`, 'success');
-            loadTemplates();
-        } else {
-            throw new Error('Failed to update template status');
-        }
-        
-    } catch (error) {
-        console.error('Error toggling template:', error);
-        showMessage('Failed to update template status: ' + error.message, 'error');
-    }
-}
-
-// Delete template
-async function deleteTemplate(templateId) {
-    if (!confirm('Are you sure you want to delete this template? This action cannot be undone.')) {
+    if (templates.length === 0) {
+        selector.innerHTML = `
+            <div class="no-data">
+                <p>No templates available</p>
+                <button class="btn-primary" onclick="openTemplateModal()">
+                    <i class="fas fa-plus"></i> Create Template
+                </button>
+            </div>
+        `;
         return;
     }
     
-    try {
-        const response = await fetch(`/api/notification-templates/${templateId}`, {
-            method: 'DELETE'
-        });
-        
-        if (response.ok) {
-            showMessage('Template deleted successfully!', 'success');
-            loadTemplates();
-        } else {
-            throw new Error('Failed to delete template');
-        }
-        
-    } catch (error) {
-        console.error('Error deleting template:', error);
-        showMessage('Failed to delete template: ' + error.message, 'error');
+    selector.innerHTML = templates.map(template => `
+        <div class="template-option" data-id="${template._id}" data-event="${template.event}" onclick="selectTemplate('${template._id}')">
+            <h4>${template.name}</h4>
+            <p>${template.title}</p>
+            <div class="event-tag">${template.event}</div>
+        </div>
+    `).join('');
+}
+
+// Select template
+function selectTemplate(templateId) {
+    // Remove selected class from all options
+    document.querySelectorAll('.template-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // Add selected class to chosen option
+    const selectedOption = document.querySelector(`[data-id="${templateId}"]`);
+    if (selectedOption) {
+        selectedOption.classList.add('selected');
+    }
+    
+    // Load template variables
+    loadTemplateVariables(templateId);
+}
+
+// Load template variables
+function loadTemplateVariables(templateId) {
+    const template = templates.find(t => t._id === templateId);
+    if (!template) return;
+    
+    const variablesContainer = document.getElementById('template-variables');
+    if (!variablesContainer) return;
+    
+    // Extract variables from template (simple regex for {{variable}})
+    const variableRegex = /\{\{(\w+)\}\}/g;
+    const variables = new Set();
+    let match;
+    
+    while ((match = variableRegex.exec(template.title + template.message)) !== null) {
+        variables.add(match[1]);
+    }
+    
+    if (variables.size === 0) {
+        variablesContainer.innerHTML = '<p>No variables found in this template</p>';
+        return;
+    }
+    
+    variablesContainer.innerHTML = Array.from(variables).map(variable => `
+        <div class="variable-input">
+            <label for="var-${variable}">${variable}:</label>
+            <input type="text" id="var-${variable}" name="${variable}" placeholder="Enter value for ${variable}">
+        </div>
+    `).join('');
+}
+
+// Handle image change
+function handleImageChange(input, previewId) {
+    const file = input.files[0];
+    const preview = document.getElementById(previewId);
+    
+    if (file && preview) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Open template modal
+function openTemplateModal() {
+    const modal = document.getElementById('template-modal');
+    if (modal) {
+        modal.style.display = 'block';
+        document.getElementById('template-modal-title').textContent = 'Add New Template';
+        document.getElementById('template-form-modal').reset();
+        document.getElementById('template-image-preview').innerHTML = '';
+    }
+}
+
+// Close template modal
+function closeTemplateModal() {
+    const modal = document.getElementById('template-modal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }
 
 // Close modal
-function closeModal() {
-    document.getElementById('template-modal').style.display = 'none';
+function closeModal(modal) {
+    modal.style.display = 'none';
 }
 
-// Close test modal
-function closeTestModal() {
-    document.getElementById('test-modal').style.display = 'none';
-}
-
-// Handle image change
-function handleImageChange(e) {
-    const file = e.target.files[0];
-    const preview = document.getElementById('image-preview');
-    
-    if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-            showMessage('Image size must be less than 5MB', 'error');
-            e.target.value = '';
-            preview.innerHTML = '';
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.innerHTML = `
-                <img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 150px; border-radius: 8px;">
-            `;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        preview.innerHTML = '';
+// Show loading
+function showLoading(show) {
+    const overlay = document.getElementById('loading-overlay');
+    if (overlay) {
+        overlay.style.display = show ? 'flex' : 'none';
     }
-}
-
-// Update variables
-function updateVariables() {
-    const event = document.getElementById('event-select').value;
-    const variablesList = document.getElementById('variables-list');
-    
-    const variables = getVariablesForEvent(event);
-    variablesList.textContent = variables.join(', ');
-}
-
-// Get variables for event
-function getVariablesForEvent(event) {
-    const variableMap = {
-        'login_success': ['username', 'login_time', 'device_info'],
-        'order_success': ['order_id', 'total_amount', 'username', 'delivery_address', 'order_date'],
-        'payment_success': ['order_id', 'payment_method', 'amount', 'username', 'payment_date'],
-        'delivery_success': ['order_id', 'shipper_name', 'delivery_time', 'tracking_number'],
-        'email_verified': ['username', 'email', 'verification_date'],
-        'rating_received': ['order_id', 'rating', 'comment', 'username'],
-        'order_status_change': ['order_id', 'old_status', 'new_status', 'username'],
-        'payment_failed': ['order_id', 'payment_method', 'error_message', 'username'],
-        'delivery_failed': ['order_id', 'shipper_name', 'failure_reason', 'username']
-    };
-    
-    return variableMap[event] || ['order_id', 'username'];
-}
-
-// Test template
-function testTemplate() {
-    const event = document.getElementById('event-select').value;
-    const title = document.getElementById('title-input').value;
-    const message = document.getElementById('message-input').value;
-    
-    if (!event || !title || !message) {
-        showMessage('Please fill in event, title and message before testing', 'error');
-        return;
-    }
-    
-    document.getElementById('test-modal').style.display = 'block';
-    
-    const testData = getTestDataForEvent(event);
-    const previewTitle = replaceVariables(title, testData);
-    const previewMessage = replaceVariables(message, testData);
-    
-    document.getElementById('test-preview-content').innerHTML = `
-        <div style="background: white; padding: 20px; border-radius: 8px; border: 1px solid #e1e8ed;">
-            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">${previewTitle}</h4>
-            <p style="margin: 0; color: #5f6368; line-height: 1.5;">${previewMessage}</p>
-        </div>
-    `;
-}
-
-// Send test notification
-async function sendTestNotification() {
-    const event = document.getElementById('event-select').value;
-    const userId = document.getElementById('test-user-id').value || 'test_user_123';
-    
-    try {
-        const testData = getTestDataForEvent(event);
-        
-        const response = await fetch('/api/noti/send-event', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                event: event,
-                userId: userId,
-                data: testData
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            showMessage('Test notification sent successfully!', 'success');
-            closeTestModal();
-        } else {
-            showMessage('Test failed: ' + (result.message || 'Unknown error'), 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error sending test notification:', error);
-        showMessage('Test failed: ' + error.message, 'error');
-    }
-}
-
-// Get test data for event
-function getTestDataForEvent(event) {
-    const testData = {
-        'login_success': {
-            username: 'Test User',
-            login_time: new Date().toLocaleString(),
-            device_info: 'Chrome on Windows'
-        },
-        'order_success': {
-            order_id: 'ORD123456',
-            total_amount: '150,000đ',
-            username: 'Test User',
-            delivery_address: '123 Test Street, Hanoi',
-            order_date: new Date().toLocaleDateString()
-        },
-        'payment_success': {
-            order_id: 'ORD123456',
-            payment_method: 'ZaloPay',
-            amount: '150,000đ',
-            username: 'Test User',
-            payment_date: new Date().toLocaleString()
-        },
-        'delivery_success': {
-            order_id: 'ORD123456',
-            shipper_name: 'Test Shipper',
-            delivery_time: new Date().toLocaleString(),
-            tracking_number: 'TRK789012'
-        },
-        'email_verified': {
-            username: 'Test User',
-            email: 'test@example.com',
-            verification_date: new Date().toLocaleString()
-        },
-        'rating_received': {
-            order_id: 'ORD123456',
-            rating: '5',
-            comment: 'Great service!',
-            username: 'Test User'
-        },
-        'order_status_change': {
-            order_id: 'ORD123456',
-            old_status: 'Processing',
-            new_status: 'Shipped',
-            username: 'Test User'
-        },
-        'payment_failed': {
-            order_id: 'ORD123456',
-            payment_method: 'Credit Card',
-            error_message: 'Insufficient funds',
-            username: 'Test User'
-        },
-        'delivery_failed': {
-            order_id: 'ORD123456',
-            shipper_name: 'Test Shipper',
-            failure_reason: 'Customer not available',
-            username: 'Test User'
-        }
-    };
-    
-    return testData[event] || {};
-}
-
-// Replace variables in text
-function replaceVariables(text, data) {
-    return text.replace(/\{\{(\w+)\}\}/g, (match, variable) => {
-        return data[variable] || match;
-    });
-}
-
-// Load notification history
-async function loadNotificationHistory() {
-    try {
-        const historyData = getSampleHistoryData();
-        renderNotificationHistory(historyData);
-    } catch (error) {
-        console.error('Error loading notification history:', error);
-        showMessage('Failed to load notification history', 'error');
-    }
-}
-
-// Render notification history
-function renderNotificationHistory(historyData) {
-    const tbody = document.getElementById('history-list');
-    if (!tbody) return;
-    
-    tbody.innerHTML = '';
-    
-    historyData.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.date}</td>
-            <td>
-                <span class="event-type ${item.type}">
-                    ${getTypeIcon(item.type)} ${item.event}
-                </span>
-            </td>
-            <td>${item.user}</td>
-            <td>
-                <span class="status ${item.status === 'sent' ? 'active' : 'inactive'}">
-                    ${item.status === 'sent' ? '✅ Sent' : '❌ Failed'}
-                </span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-info" onclick="viewHistoryDetails('${item.id}')">
-                    <i class="fas fa-eye"></i> View
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-// View history details
-function viewHistoryDetails(historyId) {
-    showMessage('History details feature coming soon!', 'info');
 }
 
 // Show message
 function showMessage(message, type = 'info') {
     const container = document.getElementById('message-container');
+    if (!container) return;
     
     const messageElement = document.createElement('div');
     messageElement.className = `message ${type}`;
-    messageElement.textContent = message;
+    messageElement.innerHTML = `
+        <i class="fas fa-${getMessageIcon(type)}"></i>
+        <span>${message}</span>
+    `;
     
     container.appendChild(messageElement);
     
+    // Auto remove after 5 seconds
     setTimeout(() => {
         messageElement.remove();
     }, 5000);
 }
 
-// Sample data for demo
+// Get message icon
+function getMessageIcon(type) {
+    switch (type) {
+        case 'success': return 'check-circle';
+        case 'error': return 'exclamation-circle';
+        case 'warning': return 'exclamation-triangle';
+        default: return 'info-circle';
+    }
+}
+
+// Get auth token
+function getAuthToken() {
+    return localStorage.getItem('adminToken') || 'demo-token';
+}
+
+// Logout
+function logout() {
+    localStorage.removeItem('adminToken');
+    window.location.href = '/admin/login';
+}
+
+// Initialize charts
+function initializeCharts() {
+    // Activity chart
+    const activityCtx = document.getElementById('activityChart');
+    if (activityCtx) {
+        charts.activity = new Chart(activityCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Notifications Sent',
+                    data: [12, 19, 15, 25, 22, 30, 28],
+                    borderColor: '#0ea5e9',
+                    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // Type chart
+    const typeCtx = document.getElementById('typeChart');
+    if (typeCtx) {
+        charts.type = new Chart(typeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Urgent', 'Template', 'Scheduled'],
+                datasets: [{
+                    data: [30, 45, 25],
+                    backgroundColor: ['#dc3545', '#007bff', '#fd7e14']
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+}
+
+// Load analytics
+async function loadAnalytics() {
+    try {
+        const response = await fetch('/api/noti/analytics', {
+            headers: {
+                'Authorization': `Bearer ${getAuthToken()}`
+            }
+        });
+        
+        if (response.ok) {
+            const analytics = await response.json();
+            updateAnalyticsCharts(analytics);
+        }
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+// Update analytics charts
+function updateAnalyticsCharts(analytics) {
+    // Update existing charts with real data
+    if (charts.activity && analytics.activity) {
+        charts.activity.data.labels = analytics.activity.labels;
+        charts.activity.data.datasets[0].data = analytics.activity.data;
+        charts.activity.update();
+    }
+    
+    if (charts.type && analytics.types) {
+        charts.type.data.labels = analytics.types.labels;
+        charts.type.data.datasets[0].data = analytics.types.data;
+        charts.type.update();
+    }
+}
+
+// Generate report
+function generateReport(type) {
+    showMessage(`Generating ${type} report...`, 'info');
+    
+    // Simulate report generation
+    setTimeout(() => {
+        const link = document.createElement('a');
+        link.href = `data:text/csv;charset=utf-8,${encodeURIComponent(getSampleReportData())}`;
+        link.download = `notification-report-${type}-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        
+        showMessage(`${type} report downloaded successfully!`, 'success');
+    }, 2000);
+}
+
+// Utility functions
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Sample data functions
+function getSampleStats() {
+    return {
+        urgentSentToday: 15,
+        scheduledActive: 8,
+        activeTemplates: 12,
+        successRate: 95
+    };
+}
+
 function getSampleTemplates() {
     return [
         {
-            id: '1',
-            event: 'login_success',
-            type: 'user',
-            title: '🎉 Chào mừng trở lại!',
-            message: 'Xin chào {{username}}, bạn đã đăng nhập thành công lúc {{login_time}}.',
-            active: true,
-            imageUrl: null
-        },
-        {
-            id: '2',
+            _id: '1',
+            name: 'Order Success',
             event: 'order_success',
-            type: 'user',
-            title: '✅ Đặt hàng thành công!',
-            message: 'Đơn hàng #{{order_id}} của bạn đã được xác nhận với tổng tiền {{total_amount}}. Chúng tôi sẽ giao hàng đến {{delivery_address}}.',
-            active: true,
-            imageUrl: null
+            title: 'Order {{orderId}} completed!',
+            message: 'Your order {{orderId}} has been completed successfully!',
+            image: null
         },
         {
-            id: '3',
-            event: 'order_success',
-            type: 'shipper',
-            title: '🆕 Đơn hàng mới chờ lấy',
-            message: 'Bạn có đơn hàng mới #{{order_id}} cần lấy tại {{delivery_address}}. Tổng tiền: {{total_amount}}.',
-            active: true,
-            imageUrl: null
-        },
-        {
-            id: '4',
-            event: 'payment_failed',
-            type: 'both',
-            title: '❌ Thanh toán thất bại',
-            message: 'Thanh toán cho đơn hàng #{{order_id}} bằng {{payment_method}} đã thất bại. Lý do: {{error_message}}.',
-            active: true,
-            imageUrl: null
-        },
-        {
-            id: '5',
-            event: 'delivery_success',
-            type: 'user',
-            title: '🚚 Giao hàng thành công!',
-            message: 'Đơn hàng #{{order_id}} đã được giao thành công bởi {{shipper_name}} lúc {{delivery_time}}. Mã theo dõi: {{tracking_number}}.',
-            active: false,
-            imageUrl: null
+            _id: '2',
+            name: 'Payment Success',
+            event: 'payment_success',
+            title: 'Payment received for {{orderId}}',
+            message: 'Payment of {{amount}} has been received for order {{orderId}}.',
+            image: null
         }
     ];
 }
 
-function getSampleHistoryData() {
+function getSampleScheduledNotifications() {
     return [
         {
-            id: '1',
-            date: '2024-01-15 14:30',
-            event: 'login_success',
-            type: 'user',
-            user: 'user123',
-            status: 'sent'
-        },
-        {
-            id: '2',
-            date: '2024-01-15 14:25',
-            event: 'order_success',
-            type: 'user',
-            user: 'user456',
-            status: 'sent'
-        },
-        {
-            id: '3',
-            date: '2024-01-15 14:20',
-            event: 'payment_success',
-            type: 'user',
-            user: 'user789',
-            status: 'sent'
-        },
-        {
-            id: '4',
-            date: '2024-01-15 14:15',
-            event: 'delivery_success',
-            type: 'shipper',
-            user: 'shipper001',
-            status: 'failed'
+            _id: '1',
+            title: 'Weekly Newsletter',
+            scheduledAt: new Date(Date.now() + 86400000).toISOString(),
+            type: 'newsletter',
+            status: 'pending',
+            userId: null
         }
     ];
 }
 
-// Export functions for global access
-window.showCreateModal = showCreateModal;
-window.editTemplate = editTemplate;
-window.toggleTemplate = toggleTemplate;
-window.deleteTemplate = deleteTemplate;
-window.closeModal = closeModal;
-window.closeTestModal = closeTestModal;
-window.testTemplate = testTemplate;
-window.sendTestNotification = sendTestNotification;
-window.loadNotificationHistory = loadNotificationHistory;
-window.viewHistoryDetails = viewHistoryDetails;
-window.filterTemplates = filterTemplates;
+function getSampleNotificationHistory() {
+    return [
+        {
+            _id: '1',
+            title: 'Order Completed',
+            message: 'Your order #12345 has been completed successfully!',
+            userId: 'user123',
+            type: 'urgent',
+            sendAt: new Date().toISOString(),
+            status: 'sent'
+        }
+    ];
+}
+
+function getSampleReportData() {
+    return `Date,Type,Recipients,Status
+2024-01-01,Urgent,All Users,Sent
+2024-01-01,Template,Specific Users,Sent
+2024-01-02,Scheduled,All Users,Pending`;
+}
+
+// Action functions (to be implemented)
+function editTemplate(id) {
+    showMessage('Edit template functionality coming soon', 'info');
+}
+
+function testTemplate(id) {
+    showMessage('Test template functionality coming soon', 'info');
+}
+
+function deleteTemplate(id) {
+    if (confirm('Are you sure you want to delete this template?')) {
+        showMessage('Delete template functionality coming soon', 'info');
+    }
+}
+
+function editScheduled(id) {
+    showMessage('Edit scheduled notification functionality coming soon', 'info');
+}
+
+function cancelScheduled(id) {
+    if (confirm('Are you sure you want to cancel this scheduled notification?')) {
+        showMessage('Cancel scheduled notification functionality coming soon', 'info');
+    }
+}
+
+function viewNotificationDetails(id) {
+    showMessage('View notification details functionality coming soon', 'info');
+}
+
+function resendNotification(id) {
+    if (confirm('Are you sure you want to resend this notification?')) {
+        showMessage('Resend notification functionality coming soon', 'info');
+    }
+}
+
+function applyDateFilter() {
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    if (startDate && endDate) {
+        loadNotificationHistory(1, {
+            startDate: new Date(startDate).toISOString(),
+            endDate: new Date(endDate).toISOString()
+        });
+    }
+}
+
+function filterScheduled() {
+    const searchTerm = document.getElementById('scheduled-search').value.toLowerCase();
+    const filteredScheduled = scheduledNotifications.filter(scheduled => 
+        scheduled.title.toLowerCase().includes(searchTerm) ||
+        scheduled.type.toLowerCase().includes(searchTerm)
+    );
+    
+    // Re-render with filtered data
+    const originalScheduled = scheduledNotifications;
+    scheduledNotifications = filteredScheduled;
+    renderScheduledNotifications();
+    scheduledNotifications = originalScheduled;
+}
+
+function filterHistory() {
+    const searchTerm = document.getElementById('history-search').value.toLowerCase();
+    const filteredHistory = notificationHistory.filter(notification => 
+        notification.title.toLowerCase().includes(searchTerm) ||
+        notification.message.toLowerCase().includes(searchTerm) ||
+        notification.type.toLowerCase().includes(searchTerm)
+    );
+    
+    // Re-render with filtered data
+    const originalHistory = notificationHistory;
+    notificationHistory = filteredHistory;
+    renderNotificationHistory();
+    notificationHistory = originalHistory;
+}

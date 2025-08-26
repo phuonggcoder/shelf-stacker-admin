@@ -813,10 +813,12 @@
           </svg>
           Tìm kiếm
         </button>
-        <select id="sort-title" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;" aria-label="Sắp xếp theo tên">
-          <option value="">Sắp xếp theo tên</option>
-          <option value="asc">Tên A → Z</option>
-          <option value="desc">Tên Z → A</option>
+        <select id="sort-unified" style="padding: 10px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px;" aria-label="Sắp xếp">
+          <option value="">Sắp xếp</option>
+          <option value="date-new">Ngày: Mới nhất</option>
+          <option value="date-old">Ngày: Cũ nhất</option>
+          <option value="price-high">Giá: Cao → thấp</option>
+          <option value="price-low">Giá: Thấp → cao</option>
         </select>
         <input type="number" id="minPrice" placeholder="Giá từ (₫)" min="0" step="1000" aria-label="Giá tối thiểu" />
         <input type="number" id="maxPrice" placeholder="Giá đến (₫)" min="0" step="1000" aria-label="Giá tối đa" />
