@@ -568,7 +568,15 @@
             <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
           </ul>
         </li>
-        <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
+         <li>
+          <button class="menu-parent" onclick="toggleMenu('notificationMenu')">
+            <i class="fas fa-bell"></i> Quản lý thông báo <i class="fas fa-chevron-down" style="float:right"></i>
+          </button>
+          <ul class="menu-child" id="notificationMenu" style="display:none;">
+            <li><a href="thongbao"><i class="fas fa-bolt"></i> Thông báo nhanh</a></li>
+            <li><a href="notification-admin"><i class="fas fa-calendar-check"></i> Thông báo sự kiện</a></li>
+          </ul>
+        </li>
         <li><a href="event-notifications"><i class="fas fa-calendar-alt"></i> Event Notifications</a></li>
                         <li><a href="admin-email-verification"><i class="fas fa-envelope-open-text"></i> Email Verification</a></li>
                 <li><a href="notification-admin"><i class="fas fa-bell"></i> Notification Admin</a></li>

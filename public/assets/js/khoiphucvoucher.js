@@ -289,13 +289,20 @@ async function fetchDeletedVouchers() {
       }
     });
 
-    if (!res.ok) throw new Error(`Lỗi khi gọi API: ${res.status}`);
+    if (!res.ok) {
+      let errorMsg = `Lỗi khi gọi API: ${res.status}`;
+      try {
+        const errData = await res.json();
+        if (errData.message) errorMsg += ` - ${errData.message}`;
+      } catch {}
+      throw new Error(errorMsg);
+    }
 
     const data = await res.json();
     renderDeletedVouchers(data);
   } catch (err) {
     console.error('Lỗi khi tải voucher đã xóa:', err);
-    trashVoucherGrid.innerHTML = '<p style="color:red;text-align:center;">Không tải được dữ liệu đã xóa.</p>';
+    trashVoucherGrid.innerHTML = `<p style="color:red;text-align:center;">${err.message || 'Không tải được dữ liệu đã xóa.'}</p>`;
   }
 }
 

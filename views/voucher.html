@@ -148,20 +148,24 @@
 
     .main-content {
       margin-left: 260px;
-      padding: 100px 20px 40px;
+      padding: 100px 40px 40px;
       width: calc(100% - 260px);
+      max-width: 2000px; /* Increased to accommodate wider table */
+      min-width: 1400px; /* Increased to ensure all columns are visible */
+      box-sizing: border-box;
     }
 
     .btn-danger {
       background-color: #ff4d4f;
       color: white;
-      padding: 10px;
-      width: 100%;
+      padding: 5px 10px;
+      width: auto;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
       transition: background-color 0.3s ease;
+      margin-right: 5px;
     }
 
     .btn-danger:hover {
@@ -171,12 +175,12 @@
     .btn-primary {
       background-color: #0ea5e9;
       color: white;
-      padding: 10px;
-      width: 100%;
+      padding: 5px 10px;
+      width: auto;
       border: none;
-      border-radius: 6px;
+      border-radius: 4px;
       cursor: pointer;
-      font-size: 14px;
+      font-size: 12px;
       transition: background-color 0.3s ease;
     }
 
@@ -487,7 +491,15 @@
             <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
           </ul>
         </li>
-        <li><a href="thongbao"><i class="fas fa-bell"></i> Thông báo</a></li>
+     <li>
+          <button class="menu-parent" onclick="toggleMenu('notificationMenu')">
+            <i class="fas fa-bell"></i> Quản lý thông báo <i class="fas fa-chevron-down" style="float:right"></i>
+          </button>
+          <ul class="menu-child" id="notificationMenu" style="display:none;">
+            <li><a href="thongbao"><i class="fas fa-bolt"></i> Thông báo nhanh</a></li>
+            <li><a href="notification-admin"><i class="fas fa-calendar-check"></i> Thông báo sự kiện</a></li>
+          </ul>
+        </li>
         <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
         <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
       </ul>
@@ -537,24 +549,27 @@
         </select>
         <button class="btn btn-add" id="btnAddVoucher">+ Thêm voucher</button>
       </div>
-      <div class="table-wrapper">
-        <table class="user-table">
+    <div class="table-wrapper" style="overflow-x:auto;">
+  <table class="user-table" style="width:100%; min-width:1800px;"> <!-- Increased min-width -->
           <thead>
             <tr>
-              <th>Mã</th>
-              <th>Loại giảm giá</th>
-              <th>Loại voucher</th>
-              <th>Giá trị giảm</th>
-              <th>Bắt đầu</th>
-              <th>Kết thúc</th>
-              <th>Trạng thái</th>
-              <th class="actions">Thao tác</th>
+              <th style="min-width:100px;">Mã</th>
+              <th style="min-width:120px;">Loại voucher</th>
+              <th style="min-width:110px;">Kiểu giảm giá</th>
+              <th style="min-width:110px;">Giá trị giảm</th>
+              <th style="min-width:110px;">Giảm tối đa</th>
+              <th style="min-width:130px;">Đơn hàng tối thiểu</th>
+              <th style="min-width:110px;">Số lần sử dụng</th>
+              <th style="min-width:110px;">Tối đa/user</th>
+              <th style="min-width:140px;">Bắt đầu</th>
+              <th style="min-width:140px;">Kết thúc</th>
+              <th style="min-width:140px;">Trạng thái</th>
+              <th style="min-width:160px;">Mô tả</th>
+              <th class="actions" style="min-width:170px;">Thao tác</th>
             </tr>
           </thead>
           <tbody id="voucher-table-body">
-            <tr>
-              <td colspan="8" style="text-align:center;">Đang tải...</td>
-            </tr>
+            <!-- Các dòng voucher sẽ được render bởi JS, bao gồm nút Sửa/Xóa -->
           </tbody>
         </table>
       </div>
@@ -562,67 +577,123 @@
   </main>
 
   <!-- Dialogs -->
-  <div id="voucherEditDialog" class="dialog-overlay" style="display:none;">
-    <div class="dialog-box">
-      <h2>Sửa Voucher</h2>
-      <label>Mã voucher:</label><input type="text" id="edit-voucher-id" disabled />
-      <label>Loại giảm giá:</label>
-      <select id="edit-discount-type">
-        <option value="order">Mã giảm giá</option>
-        <option value="transport">Mã vận chuyển</option>
-      </select>
-      <label>Loại voucher:</label>
-      <select id="edit-voucher-type">
-        <option value="percentage">Phần trăm</option>
-        <option value="fixed">Giảm cố định</option>
-      </select>
-      <label>Giá trị giảm:</label><input type="number" id="edit-discount-value" />
-      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="edit-min-order" />
-      <label>Số lần sử dụng:</label><input type="number" id="edit-usage-limit" />
-      <label>Số lần tối đa mỗi người:</label><input type="number" id="edit-max-per-user" />
-      <label>Trạng thái:</label>
-      <select id="edit-is-active">
-        <option value="true">Đang hoạt động</option>
-        <option value="false">Ngưng hoạt động</option>
-      </select>
-      <div class="dialog-actions">
-        <button onclick="submitEditVoucher()">Cập nhật</button>
-        <button onclick="closeEditDialog()">Hủy</button>
-      </div>
-    </div>
-  </div>
+  <!-- Thêm Voucher -->
+<div id="voucherAddDialog" class="dialog-overlay" style="display:none;">
+  <div class="dialog-box">
+    <h2>Thêm Voucher</h2>
+    <label>Mã voucher:</label>
+    <input type="text" id="add-voucher-id" />
 
-  <div id="voucherAddDialog" class="dialog-overlay" style="display:none;">
-    <div class="dialog-box">
-      <h2>Thêm Voucher</h2>
-      <label>Mã voucher:</label><input type="text" id="add-voucher-id" />
-      <label>Loại giảm giá:</label>
+    <label>Loại voucher:</label>
+    <select id="add-voucher-type">
+      <option value="discount">Giảm giá sản phẩm</option>
+      <option value="shipping">Giảm phí vận chuyển</option>
+    </select>
+
+    <!-- Discount fields -->
+    <div id="add-discount-fields">
+      <label>Kiểu giảm giá:</label>
       <select id="add-discount-type">
-        <option value="order">Mã giảm giá</option>
-        <option value="transport">Mã vận chuyển</option>
-      </select>
-      <label>Loại voucher:</label>
-      <select id="add-voucher-type">
-        <option value="percentage">Phần trăm</option>
         <option value="fixed">Giảm cố định</option>
+        <option value="percentage">Phần trăm</option>
       </select>
-      <label>Giá trị giảm:</label><input type="number" id="add-discount-value" />
-      <label>Giá trị đơn hàng tối thiểu:</label><input type="number" id="add-min-order" />
-      <label>Số lần sử dụng:</label><input type="number" id="add-usage-limit" />
-      <label>Số lần tối đa mỗi người:</label><input type="number" id="add-max-per-user" />
-      <label>Ngày bắt đầu:</label><input type="datetime-local" id="add-start-date" />
-      <label>Ngày kết thúc:</label><input type="datetime-local" id="add-end-date" />
-      <label>Trạng thái:</label>
-      <select id="add-is-active">
-        <option value="true">Đang hoạt động</option>
-        <option value="false">Ngưng hoạt động</option>
-      </select>
-      <div class="dialog-actions">
-        <button onclick="submitAddVoucher()">Thêm mới</button>
-        <button onclick="closeAddDialog()">Hủy</button>
+      <label>Giá trị giảm:</label>
+      <input type="number" id="add-discount-value" min="1" />
+      <div id="add-max-discount-group" style="display:none;">
+        <label>Giảm tối đa (chỉ cho phần trăm):</label>
+        <input type="number" id="add-max-discount-value" min="1" />
       </div>
     </div>
+
+    <!-- Shipping fields -->
+    <div id="add-shipping-fields" style="display:none;">
+      <label>Giảm phí vận chuyển:</label>
+      <input type="number" id="add-shipping-discount" min="1" />
+    </div>
+
+    <label>Giá trị đơn hàng tối thiểu:</label>
+    <input type="number" id="add-min-order" min="0" />
+    <label>Số lần sử dụng:</label>
+    <input type="number" id="add-usage-limit" min="1" />
+    <label>Số lần tối đa mỗi người:</label>
+    <input type="number" id="add-max-per-user" min="1" />
+    <label>Ngày bắt đầu:</label>
+    <input type="datetime-local" id="add-start-date" />
+    <label>Ngày kết thúc:</label>
+    <input type="datetime-local" id="add-end-date" />
+    <label>Trạng thái:</label>
+    <select id="add-is-active">
+      <option value="true">Đang hoạt động</option>
+      <option value="false">Ngưng hoạt động</option>
+    </select>
+    <label>Mô tả:</label>
+    <input type="text" id="add-description" />
+
+    <div class="dialog-actions">
+      <button onclick="submitAddVoucher()">Thêm mới</button>
+      <button onclick="closeAddDialog()">Hủy</button>
+    </div>
   </div>
+</div>
+
+<!-- Sửa Voucher -->
+<div id="voucherEditDialog" class="dialog-overlay" style="display:none;">
+  <div class="dialog-box">
+    <h2>Sửa Voucher</h2>
+    <label>Mã voucher:</label>
+    <input type="text" id="edit-voucher-id" disabled />
+
+    <label>Loại voucher:</label>
+    <select id="edit-voucher-type">
+      <option value="discount">Giảm giá sản phẩm</option>
+      <option value="shipping">Giảm phí vận chuyển</option>
+    </select>
+
+    <!-- Discount fields -->
+    <div id="edit-discount-fields">
+      <label>Kiểu giảm giá:</label>
+      <select id="edit-discount-type">
+        <option value="fixed">Giảm cố định</option>
+        <option value="percentage">Phần trăm</option>
+      </select>
+      <label>Giá trị giảm:</label>
+      <input type="number" id="edit-discount-value" min="1" />
+      <div id="edit-max-discount-group" style="display:none;">
+        <label>Giảm tối đa (chỉ cho phần trăm):</label>
+        <input type="number" id="edit-max-discount-value" min="1" />
+      </div>
+    </div>
+
+    <!-- Shipping fields -->
+    <div id="edit-shipping-fields" style="display:none;">
+      <label>Giảm phí vận chuyển:</label>
+      <input type="number" id="edit-shipping-discount" min="1" />
+    </div>
+
+    <label>Giá trị đơn hàng tối thiểu:</label>
+    <input type="number" id="edit-min-order" min="0" />
+    <label>Số lần sử dụng:</label>
+    <input type="number" id="edit-usage-limit" min="1" />
+    <label>Số lần tối đa mỗi người:</label>
+    <input type="number" id="edit-max-per-user" min="1" />
+    <label>Ngày bắt đầu:</label>
+    <input type="datetime-local" id="edit-start-date" />
+    <label>Ngày kết thúc:</label>
+    <input type="datetime-local" id="edit-end-date" />
+    <label>Trạng thái:</label>
+    <select id="edit-is-active">
+      <option value="true">Đang hoạt động</option>
+      <option value="false">Ngưng hoạt động</option>
+    </select>
+    <label>Mô tả:</label>
+    <input type="text" id="edit-description" />
+
+    <div class="dialog-actions">
+      <button onclick="submitEditVoucher()">Cập nhật</button>
+      <button onclick="closeEditDialog()">Hủy</button>
+    </div>
+  </div>
+</div>
 
   <!-- Dialog Upload Avatar -->
   <dialog id="uploadDialog">
