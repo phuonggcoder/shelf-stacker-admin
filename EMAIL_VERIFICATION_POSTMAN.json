@@ -1,0 +1,254 @@
+{
+  "info": {
+    "name": "Email Verification API",
+    "description": "Collection cho việc xác thực email và gửi thông báo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://server-shelf-stacker-w1ds.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "your_auth_token_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Login để lấy token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"your_password\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. Gửi thông báo xác thực email - Single User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "event",
+              "value": "email_verified",
+              "type": "text"
+            },
+            {
+              "key": "userId",
+              "value": "user_id_here",
+              "type": "text"
+            },
+            {
+              "key": "data[verifiedTime]",
+              "value": "2024-01-15T10:30:00Z",
+              "type": "text"
+            },
+            {
+              "key": "data[email]",
+              "value": "user@example.com",
+              "type": "text"
+            },
+            {
+              "key": "title",
+              "value": "Email đã được xác thực thành công",
+              "type": "text"
+            },
+            {
+              "key": "message",
+              "value": "Chúc mừng! Email của bạn đã được xác thực thành công.",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/noti/event",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "noti", "event"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. Gửi thông báo xác thực email - Multicast",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "event",
+              "value": "email_verified",
+              "type": "text"
+            },
+            {
+              "key": "userIds",
+              "value": "user1,user2,user3",
+              "type": "text"
+            },
+            {
+              "key": "data[verifiedTime]",
+              "value": "2024-01-15T10:30:00Z",
+              "type": "text"
+            },
+            {
+              "key": "data[email]",
+              "value": "user@example.com",
+              "type": "text"
+            },
+            {
+              "key": "title",
+              "value": "Email đã được xác thực thành công",
+              "type": "text"
+            },
+            {
+              "key": "message",
+              "value": "Chúc mừng! Email của bạn đã được xác thực thành công.",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/noti/event-multicast",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "noti", "event-multicast"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. Gửi thông báo xác thực email - Broadcast",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "event",
+              "value": "email_verified",
+              "type": "text"
+            },
+            {
+              "key": "data[verifiedTime]",
+              "value": "2024-01-15T10:30:00Z",
+              "type": "text"
+            },
+            {
+              "key": "data[email]",
+              "value": "user@example.com",
+              "type": "text"
+            },
+            {
+              "key": "title",
+              "value": "Hệ thống xác thực email đã được cập nhật",
+              "type": "text"
+            },
+            {
+              "key": "message",
+              "value": "Hệ thống xác thực email đã được nâng cấp với tính năng mới.",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/noti/event-broadcast",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "noti", "event-broadcast"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Lấy danh sách user để test",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "users"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Kiểm tra trạng thái xác thực email của user",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{authToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/auth/users/{{userId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "users", "{{userId}}"]
+        }
+      },
+      "response": []
+    }
+  ]
+}
+

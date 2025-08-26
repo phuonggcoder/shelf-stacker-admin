@@ -612,6 +612,30 @@ function renderNotifications(orders) {
 let lastNotifiedOrderId = null;
 
 async function fetchStats() {
+
+  // Dữ liệu mặc định từ BE bạn gửi
+  const defaultData = {
+    totalOrders: 237,
+    totalRevenue: 32036686,
+    statusStats: {
+      Cancelled: 55,
+      Processing: 16,
+      Pending: 121,
+      Shipped: 8,
+      OutForDelivery: 15,
+      null: 5,
+      Delivered: 17
+    },
+    paymentStats: {
+      ZALOPAY: 96,
+      COD: 130,
+      PAYOS: 10
+    },
+    successCount: 17,
+    failedCount: 55
+  };
+
+
   const token = localStorage.getItem('authToken');
   let data = null;
   let orders = [];
@@ -735,6 +759,7 @@ async function fetchStats() {
     }
   };
 
+
   // Dịch phương thức thanh toán sang tiếng Việt, bỏ 'null'
   const PAYMENT_LABELS = {
     ZALOPAY: 'ZaloPay',
@@ -760,7 +785,6 @@ async function fetchStats() {
         backgroundColor: [
           '#0ea5e9', // COD
           '#ff4d4f', // ZALOPAY
-          '#ffc107', // MOMO
           '#d9d9d9', // PAYOS
           '#6c63ff', // khác
         ],

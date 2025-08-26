@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Templates Management - Shelf Stacker Admin</title>
+    <link rel="stylesheet" href="/assets/css/notification-admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="notification-admin">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-bell"></i> Notification Management</h3>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#templates" class="nav-item active" data-section="templates-section">
+                    <i class="fas fa-list"></i> Templates List
+                </a>
+                <a href="#create" class="nav-item" data-section="create-section">
+                    <i class="fas fa-plus"></i> Create Template
+                </a>
+                <a href="#events" class="nav-item" data-section="events-section">
+                    <i class="fas fa-chart-bar"></i> Events Overview
+                </a>
+                <a href="#history" class="nav-item" data-section="history-section">
+                    <i class="fas fa-history"></i> Notification History
+                </a>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Templates List Section -->
+            <div id="templates-section" class="content-section active">
+                <div class="section-header">
+                    <h2><i class="fas fa-list"></i> Notification Templates</h2>
+                    <button class="btn btn-primary" onclick="showCreateModal()">
+                        <i class="fas fa-plus"></i> Add New Template
+                    </button>
+                </div>
+                
+                <!-- Filters -->
+                <div class="filters">
+                    <div class="filter-group">
+                        <label>Type:</label>
+                        <select id="type-filter" onchange="filterTemplates()">
+                            <option value="">All Types</option>
+                            <option value="user">👤 User</option>
+                            <option value="shipper">🚚 Shipper</option>
+                            <option value="both">🔄 Both</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Status:</label>
+                        <select id="status-filter" onchange="filterTemplates()">
+                            <option value="">All Status</option>
+                            <option value="true">✅ Active</option>
+                            <option value="false">❌ Inactive</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>Search:</label>
+                        <input type="text" id="search-input" placeholder="Search templates..." onkeyup="filterTemplates()">
+                    </div>
+                </div>
+
+                <!-- Templates Table -->
+                <div class="templates-table">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Event</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="templates-list">
+                                <!-- Templates will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="loading" class="loading" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading templates...
+                    </div>
+                    <div id="no-templates" class="no-data" style="display: none;">
+                        <i class="fas fa-inbox"></i>
+                        <p>No templates found</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Events Overview Section -->
+            <div id="events-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-chart-bar"></i> Events Overview</h2>
+                </div>
+                
+                <div class="events-grid">
+                    <div class="event-card user">
+                        <div class="card-header">
+                            <h3><i class="fas fa-user"></i> User Events</h3>
+                        </div>
+                        <ul class="event-list">
+                            <li><strong>login_success</strong> - Đăng nhập thành công</li>
+                            <li><strong>order_success</strong> - Đặt hàng thành công</li>
+                            <li><strong>payment_success</strong> - Thanh toán thành công</li>
+                            <li><strong>delivery_success</strong> - Giao hàng thành công</li>
+                            <li><strong>email_verified</strong> - Xác thực email</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="event-card shipper">
+                        <div class="card-header">
+                            <h3><i class="fas fa-truck"></i> Shipper Events</h3>
+                        </div>
+                        <ul class="event-list">
+                            <li><strong>order_success</strong> - Đơn hàng mới chờ lấy</li>
+                            <li><strong>delivery_success</strong> - Giao hàng thành công</li>
+                            <li><strong>rating_received</strong> - Nhận đánh giá từ khách hàng</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="event-card both">
+                        <div class="card-header">
+                            <h3><i class="fas fa-sync-alt"></i> Both Events</h3>
+                        </div>
+                        <ul class="event-list">
+                            <li><strong>order_status_change</strong> - Thay đổi trạng thái đơn hàng</li>
+                            <li><strong>payment_failed</strong> - Thanh toán thất bại</li>
+                            <li><strong>delivery_failed</strong> - Giao hàng thất bại</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notification History Section -->
+            <div id="history-section" class="content-section">
+                <div class="section-header">
+                    <h2><i class="fas fa-history"></i> Notification History</h2>
+                </div>
+                
+                <div class="history-filters">
+                    <div class="filter-group">
+                        <label>Date Range:</label>
+                        <input type="date" id="start-date">
+                        <input type="date" id="end-date">
+                    </div>
+                    <div class="filter-group">
+                        <label>Event Type:</label>
+                        <select id="history-event-filter">
+                            <option value="">All Events</option>
+                            <option value="login_success">Login Success</option>
+                            <option value="order_success">Order Success</option>
+                            <option value="payment_success">Payment Success</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadNotificationHistory()">
+                        <i class="fas fa-search"></i> Search
+                    </button>
+                </div>
+
+                <div class="history-table">
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Event</th>
+                                    <th>User</th>
+                                    <th>Status</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-list">
+                                <!-- History will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create/Edit Template Modal -->
+    <div id="template-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title"><i class="fas fa-edit"></i> Edit Template</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <form id="template-form" enctype="multipart/form-data">
+                <input type="hidden" id="template-id" name="_id">
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="event-select">Event:</label>
+                        <select id="event-select" name="event" required onchange="updateVariables()">
+                            <option value="login_success">login_success - Đăng nhập thành công</option>
+                            <option value="order_success">order_success - Đặt hàng thành công</option>
+                            <option value="payment_success">payment_success - Thanh toán thành công</option>
+                            <option value="delivery_success">delivery_success - Giao hàng thành công</option>
+                            <option value="email_verified">email_verified - Xác thực email</option>
+                            <option value="rating_received">rating_received - Nhận đánh giá</option>
+                            <option value="order_status_change">order_status_change - Thay đổi trạng thái</option>
+                            <option value="payment_failed">payment_failed - Thanh toán thất bại</option>
+                            <option value="delivery_failed">delivery_failed - Giao hàng thất bại</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="type-select">Type:</label>
+                        <select id="type-select" name="type" required>
+                            <option value="user">👤 User</option>
+                            <option value="shipper">🚚 Shipper</option>
+                            <option value="both">🔄 Both</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="title-input">Title:</label>
+                    <input type="text" id="title-input" name="title" required placeholder="Enter notification title">
+                </div>
+
+                <div class="form-group">
+                    <label for="message-input">Message:</label>
+                    <textarea id="message-input" name="message" rows="4" required placeholder="Enter notification message"></textarea>
+                    <div class="variables-help">
+                        <strong>Available Variables:</strong>
+                        <span id="variables-list">order_id, total_amount, username</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="image-input">Image:</label>
+                    <input type="file" id="image-input" name="imageFile" accept="image/*">
+                    <div id="image-preview"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="active-checkbox" name="active" checked>
+                        <span class="checkmark"></span>
+                        Active
+                    </label>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="testTemplate()">
+                        <i class="fas fa-flask"></i> Test Template
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Test Template Modal -->
+    <div id="test-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-flask"></i> Test Template</h3>
+                <span class="close" onclick="closeTestModal()">&times;</span>
+            </div>
+            
+            <div class="test-content">
+                <div class="form-group">
+                    <label for="test-user-id">User ID:</label>
+                    <input type="text" id="test-user-id" placeholder="Enter user ID for testing">
+                </div>
+                
+                <div class="test-preview">
+                    <h4>Preview:</h4>
+                    <div id="test-preview-content">
+                        <!-- Test preview will be shown here -->
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="sendTestNotification()">
+                        <i class="fas fa-paper-plane"></i> Send Test
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeTestModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success/Error Messages -->
+    <div id="message-container" class="message-container"></div>
+
+    <script src="/assets/js/notification-admin.js"></script>
+</body>
+</html>
