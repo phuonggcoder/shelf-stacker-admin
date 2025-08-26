@@ -31,6 +31,7 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
   tbody.innerHTML = '';
   if (pageCategories.length === 0) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu</td></tr>';
+    renderCategoryPagination(page, totalPages);
     return;
   }
 
@@ -57,56 +58,80 @@ function renderCategoriesWithPagination(categoriesArr, page = 1) {
     `;
   });
 
-  // Render nút phân trang
-  const paginationDiv = document.querySelector('.pagination');
-  paginationDiv.innerHTML = '';
-  if (totalPages > 1) {
-    let buttons = `
-      <button id="prevCatPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-    `;
-    // Hiển thị số trang (ví dụ: 1 ... 4 5 6 ... 10)
-    let pageNumbers = '';
-    const maxPages = 5;
-    let start = Math.max(1, page - 2);
-    let end = Math.min(totalPages, page + 2);
-    if (end - start < maxPages - 1) {
-      if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
-      else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
-    }
-    if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
-    for (let i = start; i <= end; i++) {
-      pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
-    }
-    if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
-    buttons += pageNumbers;
-    buttons += `
-      <button id="nextCatPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    `;
-    paginationDiv.innerHTML = buttons;
+  renderCategoryPagination(page, totalPages);
+}
 
-    document.getElementById('prevCatPage').onclick = () => {
-      if (page > 1) {
-        renderCategoriesWithPagination(categoriesArr, page - 1);
-      }
-    };
-    document.getElementById('nextCatPage').onclick = () => {
-      if (page < totalPages) {
-        renderCategoriesWithPagination(categoriesArr, page + 1);
-      }
-    };
-    document.querySelectorAll('.page-btn').forEach(btn => {
-      btn.onclick = function() {
-        const gotoPage = Number(this.dataset.page);
-        if (gotoPage !== page) {
-          renderCategoriesWithPagination(categoriesArr, gotoPage);
-        }
-      };
-    });
+// Hàm render phân trang danh mục (giống với đơn hàng)
+function renderCategoryPagination(page, totalPages) {
+  const pagination = document.getElementById('category-pagination');
+  if (!pagination) return;
+  if (totalPages <= 1) {
+    pagination.innerHTML = '';
+    return;
   }
+
+  let buttons = `
+    <button id="prevCatPage" ${page === 1 ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+  `;
+  let pageNumbers = '';
+  const maxPages = 5;
+  let start = Math.max(1, page - 2);
+  let end = Math.min(totalPages, page + 2);
+  if (end - start < maxPages - 1) {
+    if (start === 1) end = Math.min(totalPages, start + maxPages - 1);
+    else if (end === totalPages) start = Math.max(1, end - maxPages + 1);
+  }
+  if (start > 1) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  for (let i = start; i <= end; i++) {
+    pageNumbers += `<button class="page-btn${i === page ? ' active' : ''}" data-page="${i}">${i}</button>`;
+  }
+  if (end < totalPages) pageNumbers += `<span class="page-ellipsis">...</span>`;
+  buttons += pageNumbers;
+  buttons += `
+    <button id="nextCatPage" ${page === totalPages ? 'disabled' : ''} class="page-circle-btn">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  `;
+  pagination.innerHTML = buttons;
+
+  document.getElementById('prevCatPage').onclick = () => {
+    if (page > 1) {
+      catCurrentPage--;
+      const keyword = document.getElementById('search-slug').value.trim();
+      const status = document.getElementById('filter-status').value;
+      const sortOrder = document.getElementById('sort-order').value;
+      const customLetter = document.getElementById('custom-sort-letter').value.trim();
+      const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
+      renderCategoriesWithPagination(filtered, catCurrentPage);
+    }
+  };
+  document.getElementById('nextCatPage').onclick = () => {
+    if (page < totalPages) {
+      catCurrentPage++;
+      const keyword = document.getElementById('search-slug').value.trim();
+      const status = document.getElementById('filter-status').value;
+      const sortOrder = document.getElementById('sort-order').value;
+      const customLetter = document.getElementById('custom-sort-letter').value.trim();
+      const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
+      renderCategoriesWithPagination(filtered, catCurrentPage);
+    }
+  };
+  document.querySelectorAll('.page-btn').forEach(btn => {
+    btn.onclick = function() {
+      const gotoPage = Number(this.dataset.page);
+      if (gotoPage !== page) {
+        catCurrentPage = gotoPage;
+        const keyword = document.getElementById('search-slug').value.trim();
+        const status = document.getElementById('filter-status').value;
+        const sortOrder = document.getElementById('sort-order').value;
+        const customLetter = document.getElementById('custom-sort-letter').value.trim();
+        const filtered = filterCategories(categories, keyword, status, sortOrder, customLetter);
+        renderCategoriesWithPagination(filtered, catCurrentPage);
+      }
+    };
+  });
 }
 
 // Fetch categories
