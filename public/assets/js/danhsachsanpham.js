@@ -197,8 +197,8 @@ function renderProducts(products) {
     let thumbUrl = product.thumbnail && product.thumbnail !== 'undefined' ? product.thumbnail : '';
     let fallbackThumb = 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
     let imagesHtml = thumbUrl
-      ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'" style="max-width:80px; margin:2px;">`
-      : `<img src="${fallbackThumb}" alt="No thumbnail" style="max-width:80px; margin:2px;">`;
+      ? `<img src="${thumbUrl}" alt="Thumbnail" onerror="this.onerror=null;this.src='${fallbackThumb}'">`
+      : `<img src="${fallbackThumb}" alt="No thumbnail">`;
 
     card.innerHTML = `
       ${imagesHtml}
