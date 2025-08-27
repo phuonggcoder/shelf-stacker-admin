@@ -21,10 +21,23 @@ function isValidStatusTransition(currentStatus, newStatus, order) {
   if (currentStatus === 'Returned') {
     return newStatus === 'Refunded' || newStatus === 'Returned';
   }
-  // Nếu là chờ xác nhận thì cho phép lên chờ lấy hàng hoặc đã hoàn tiền với đơn COD
+  // Nếu là chờ xác nhận thì xử lý theo phương thức thanh toán
   if (currentStatus === 'Pending') {
-    const isCOD = order?.payment_method === 'COD';
-    return newStatus === 'AwaitingPickup' || (newStatus === 'Refunded' && isCOD) || newStatus === 'Pending';
+    const isCOD = order?.payment_id?.payment_method === 'COD' || order?.payment_method === 'COD';
+    if (isCOD) {
+      // COD: cho phép chuyển sang Chờ lấy hàng hoặc Đã huỷ hoặc giữ nguyên
+      return (
+        newStatus === 'AwaitingPickup' ||
+        newStatus === 'Cancelled' ||
+        newStatus === 'Pending'
+      );
+    } else {
+      // Đã thanh toán: chỉ cho phép chuyển sang Chờ lấy hàng hoặc giữ nguyên
+      return (
+        newStatus === 'AwaitingPickup' ||
+        newStatus === 'Pending'
+      );
+    }
   }
   // Các trạng thái khác chỉ cho phép giữ nguyên
   return currentStatus === newStatus;
@@ -218,6 +231,18 @@ function renderOrders(orders) {
     const total = order.total_amount?.toLocaleString('vi-VN') || '0';
     const status = STATUS_MAP[order.order_status] || 'Chưa rõ';
 
+    // Thêm dòng này để lấy phương thức thanh toán
+    const paymentMethod = order.payment_id?.payment_method || 'Không rõ';
+    // Hiển thị tiếng Việt
+    const paymentMethodText = {
+      'COD': 'Thanh toán khi nhận hàng',
+      'PAYOS': 'PayOS',
+      'ZALOPAY': 'ZaloPay',
+      'BANK_TRANSFER': 'Chuyển khoản',
+      'MOMO': 'MoMo',
+      'VNPAY': 'VNPay'
+    }[paymentMethod] || paymentMethod;
+
     const formattedDate = createdAt
       ? new Date(createdAt).toLocaleString('vi-VN', {
           hour: '2-digit',
@@ -241,7 +266,8 @@ function renderOrders(orders) {
         <td>${formattedDate}</td>
         <td>${status}</td>
         <td>${total}₫</td>
-        <td>${shipperName}</td> <!-- Hiển thị shipper nhận -->
+        <td>${shipperName}</td>
+        <td>${paymentMethodText}</td> <!-- Thêm cột này -->
         <td class="actions">
           <button class="btn-detail">Chi tiết</button>
           <button class="btn-update">Cập nhật</button>
