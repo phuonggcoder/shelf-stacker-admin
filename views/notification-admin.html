@@ -239,6 +239,42 @@
                     </div>
                 </form>
                 
+                <!-- Template Management Section -->
+                <div class="template-management-section">
+                    <div class="section-header">
+                        <h3>Template Management</h3>
+                        <div class="template-actions">
+                            <button type="button" class="btn-secondary" onclick="createSampleTemplates()">
+                                <i class="fas fa-plus"></i> Create All Sample Templates
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="createUserSampleTemplates()">
+                                <i class="fas fa-user"></i> Create User Templates
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="createShipperSampleTemplates()">
+                                <i class="fas fa-truck"></i> Create Shipper Templates
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="createMissingSampleTemplates()">
+                                <i class="fas fa-sync"></i> Create Missing Templates
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="template-stats">
+                        <div class="stat-card">
+                            <h4>User Templates</h4>
+                            <span class="stat-number" id="user-template-count">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Shipper Templates</h4>
+                            <span class="stat-number" id="shipper-template-count">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <h4>Total Templates</h4>
+                            <span class="stat-number" id="total-template-count">0</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Template Notification Form -->
                 <form id="template-form" class="notification-form">
                     <div class="form-section">

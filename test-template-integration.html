@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Template Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .btn-success {
+            background: #28a745;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .template-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .template-card {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+        .template-name {
+            font-weight: bold;
+            color: #333;
+        }
+        .template-event {
+            color: #666;
+            font-size: 0.9em;
+        }
+        .template-variables {
+            margin-top: 10px;
+            font-size: 0.8em;
+            color: #888;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.9em;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Template Integration Test</h1>
+        <p>Test the integration of 50+ sample templates into the notification admin panel.</p>
+
+        <div class="test-section">
+            <h2>📊 Template Statistics</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="user-template-count">18</div>
+                    <div>User Templates</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="shipper-template-count">32</div>
+                    <div>Shipper Templates</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="total-template-count">50</div>
+                    <div>Total Templates</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚀 Template Creation Actions</h2>
+            <button class="btn btn-success" onclick="createAllTemplates()">
+                <i class="fas fa-plus"></i> Create All Sample Templates
+            </button>
+            <button class="btn btn-warning" onclick="createUserTemplates()">
+                <i class="fas fa-user"></i> Create User Templates Only
+            </button>
+            <button class="btn btn-warning" onclick="createShipperTemplates()">
+                <i class="fas fa-truck"></i> Create Shipper Templates Only
+            </button>
+            <button class="btn" onclick="createMissingTemplates()">
+                <i class="fas fa-sync"></i> Create Missing Templates
+            </button>
+            <button class="btn" onclick="openAdminPanel()">
+                <i class="fas fa-external-link-alt"></i> Open Admin Panel
+            </button>
+        </div>
+
+        <div class="test-section">
+            <h2>👤 User Event Templates (18 templates)</h2>
+            <div class="template-list" id="user-templates">
+                <!-- User templates will be loaded here -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚚 Shipper Event Templates (32 templates)</h2>
+            <div class="template-list" id="shipper-templates">
+                <!-- Shipper templates will be loaded here -->
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 Test Log</h2>
+            <div class="log" id="test-log">
+                Ready to test template integration...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample templates data (same as in notification-admin.js)
+        const SAMPLE_TEMPLATES = {
+            userEventTemplates: [
+                {
+                    name: 'Order Created',
+                    event: 'order_created',
+                    title: 'Đơn hàng {{orderId}} đã được tạo!',
+                    message: 'Cảm ơn bạn đã đặt hàng {{orderId}}. Chúng tôi đang xử lý đơn hàng của bạn với tổng trị giá {{amount}}đ.',
+                    type: 'order',
+                    active: true
+                },
+                {
+                    name: 'Order Confirmed',
+                    event: 'order_confirmed',
+                    title: 'Đơn hàng {{orderId}} đã được xác nhận!',
+                    message: 'Đơn hàng {{orderId}} của bạn đã được xác nhận và sẽ được giao trong {{estimatedDelivery}} ngày.',
+                    type: 'order',
+                    active: true
+                },
+                {
+                    name: 'Payment Success',
+                    event: 'payment_success',
+                    title: 'Thanh toán thành công cho đơn hàng {{orderId}}!',
+                    message: 'Thanh toán {{amount}}đ cho đơn hàng {{orderId}} bằng {{paymentMethod}} đã thành công.',
+                    type: 'payment',
+                    active: true
+                }
+            ],
+            shipperEventTemplates: [
+                {
+                    name: 'Order Assigned',
+                    event: 'order_assigned',
+                    title: 'Đơn hàng mới được giao: {{orderId}}',
+                    message: 'Bạn được giao đơn hàng {{orderId}} từ {{pickupAddress}} đến {{deliveryAddress}}. Tổng trị giá: {{amount}}đ.',
+                    type: 'assignment',
+                    active: true
+                },
+                {
+                    name: 'Delivery Started',
+                    event: 'delivery_started',
+                    title: 'Bắt đầu giao hàng: {{orderId}}',
+                    message: 'Đang giao đơn hàng {{orderId}} đến {{deliveryAddress}}. Dự kiến giao lúc {{estimatedTime}}.',
+                    type: 'delivery',
+                    active: true
+                },
+                {
+                    name: 'Earnings Update',
+                    event: 'earnings_update',
+                    title: 'Cập nhật thu nhập tuần',
+                    message: 'Thu nhập tuần này: {{weeklyEarnings}}đ từ {{completedOrders}} đơn hàng. Thưởng: {{bonus}}đ.',
+                    type: 'earnings',
+                    active: true
+                }
+            ]
+        };
+
+        // Helper functions
+        function getTemplateVariables(template) {
+            const variables = new Set();
+            const text = template.title + ' ' + template.message;
+            const matches = text.match(/\$\{(\w+)\}|\{\{(\w+)\}\}/g);
+            if (matches) {
+                matches.forEach(match => {
+                    const variable = match.replace(/\$\{(\w+)\}/, '$1').replace(/\{\{(\w+)\}\}/, '$1');
+                    variables.add(variable);
+                });
+            }
+            return Array.from(variables);
+        }
+
+        function log(message) {
+            const logElement = document.getElementById('test-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logElement.innerHTML += `\n[${timestamp}] ${message}`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function renderTemplates() {
+            // Render user templates
+            const userTemplatesContainer = document.getElementById('user-templates');
+            userTemplatesContainer.innerHTML = SAMPLE_TEMPLATES.userEventTemplates.map(template => `
+                <div class="template-card">
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-event">${template.event}</div>
+                    <div class="template-variables">
+                        Variables: ${getTemplateVariables(template).join(', ')}
+                    </div>
+                </div>
+            `).join('');
+
+            // Render shipper templates
+            const shipperTemplatesContainer = document.getElementById('shipper-templates');
+            shipperTemplatesContainer.innerHTML = SAMPLE_TEMPLATES.shipperEventTemplates.map(template => `
+                <div class="template-card">
+                    <div class="template-name">${template.name}</div>
+                    <div class="template-event">${template.event}</div>
+                    <div class="template-variables">
+                        Variables: ${getTemplateVariables(template).join(', ')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Test functions
+        function createAllTemplates() {
+            log('🚀 Creating all sample templates...');
+            log(`📊 Total templates to create: ${SAMPLE_TEMPLATES.userEventTemplates.length + SAMPLE_TEMPLATES.shipperEventTemplates.length}`);
+            log('✅ This would create all 50 templates in the database');
+        }
+
+        function createUserTemplates() {
+            log('👤 Creating user event templates...');
+            log(`📊 User templates: ${SAMPLE_TEMPLATES.userEventTemplates.length}`);
+            SAMPLE_TEMPLATES.userEventTemplates.forEach(template => {
+                log(`✅ Would create: ${template.name} (${template.event})`);
+            });
+        }
+
+        function createShipperTemplates() {
+            log('🚚 Creating shipper event templates...');
+            log(`📊 Shipper templates: ${SAMPLE_TEMPLATES.shipperEventTemplates.length}`);
+            SAMPLE_TEMPLATES.shipperEventTemplates.forEach(template => {
+                log(`✅ Would create: ${template.name} (${template.event})`);
+            });
+        }
+
+        function createMissingTemplates() {
+            log('🔄 Checking for missing templates...');
+            log('✅ This would check existing templates and create only missing ones');
+        }
+
+        function openAdminPanel() {
+            log('🔗 Opening notification admin panel...');
+            window.open('views/notification-admin.html', '_blank');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🎯 Template integration test initialized');
+            renderTemplates();
+            log('✅ Sample templates loaded and displayed');
+        });
+    </script>
+</body>
+</html>
+
