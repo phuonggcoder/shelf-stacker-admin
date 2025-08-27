@@ -427,7 +427,7 @@
             <i class="fas fa-store"></i> Quản lý Cửa hàng <i class="fas fa-chevron-down" style="float:right"></i>
           </button>
           <ul class="menu-child" id="storeMenu" style="display:none;">
-            <li><a href="voucher"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>
+            <li><a href="voucher-new"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>
             <li><a href="khoiphucvoucher"><i class="fas fa-history"></i> Voucher xóa gần đây</a></li>
           </ul>
         </li>
@@ -438,7 +438,7 @@
           <ul class="menu-child" id="categoryMenu" style="display:none;">
             <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
             <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li> 
+            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>
           </ul>
         </li>
         <li>
@@ -459,10 +459,15 @@
             <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
           </ul>
         </li>
-        <ul class="menu-child" id="notificationMenu" style="display:none;">
+        <li>
+          <button class="menu-parent" onclick="toggleMenu('notificationMenu')">
+            <i class="fas fa-bell"></i> Quản lý thông báo <i class="fas fa-chevron-down" style="float:right"></i>
+          </button>
+          <ul class="menu-child" id="notificationMenu" style="display:none;">
             <li><a href="thongbao"><i class="fas fa-bolt"></i> Thông báo nhanh</a></li>
             <li><a href="notification-admin"><i class="fas fa-calendar-check"></i> Thông báo sự kiện</a></li>
           </ul>
+        </li>
         <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
         <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
       </ul>
