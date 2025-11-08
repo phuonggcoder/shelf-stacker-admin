@@ -3,30 +3,175 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Trang quản trị</title>
+  <title>Đăng nhập - Trang quản trị</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="stylesheet" href="/assets/css/components.css" />
   <link rel="stylesheet" href="/assets/css/login.css" />
+  <style>
+    .connection-status {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 12px;
+      z-index: 1000;
+      display: none;
+    }
+    .connection-status.offline {
+      display: block;
+      background-color: #dc3545;
+      color: white;
+    }
+    .connection-status.server-down {
+      display: block;
+      background-color: #ffc107;
+      color: black;
+    }
+    .login-btn.loading {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+    .login-btn.loading span {
+      visibility: hidden;
+    }
+    .login-btn.loading::after {
+      content: "";
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+      border: 2px solid transparent;
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spinner 0.6s linear infinite;
+    }
+    @keyframes spinner {
+      to {transform: rotate(360deg);}
+    }
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 12px 24px;
+      border-radius: 4px;
+      color: #fff;
+      font-size: 14px;
+      z-index: 1000;
+      display: none;
+    }
+    .toast.success {
+      background-color: #28a745;
+    }
+    .toast.error {
+      background-color: #dc3545;
+    }
+  </style>
 </head>
 <body>
-  <h1>Quản trị viên</h1>
-
   <div class="container">
-    <div class="login">
-      <h2>Đăng nhập</h2>
-      <p>
-        "Người dùng chỉ thấy giao diện, nhưng admin là người gánh cả hệ thống vận hành phía sau." - "Admin không chỉ quản lý dữ liệu, mà còn quản lý niềm tin."
-      </p>
-    </div>
-    <div class="register">
-      <h2>Đăng Nhập</h2>
-      <input type="email" id="email" placeholder="Email">
-      <input type="password" id="password" placeholder="Mật khẩu">
-      <button id="loginBtn">Đăng nhập</button>
-      <p id="errorMsg"></p>
+    <div class="login-box">
+      <div class="logo">
+        <i class="fas fa-book"></i>
+        <h1>Shelf Stacker</h1>
+        <p>Hệ thống quản lý</p>
+      </div>
+
+      <form id="loginForm" class="login-form" onsubmit="return false;">
+        <div class="input-group">
+          <i class="fas fa-envelope"></i>
+          <input 
+            type="email" 
+            id="email" 
+            placeholder="Email" 
+            autocomplete="email"
+            required
+            tabindex="1"
+          >
+          
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-lock"></i>
+          <input 
+            type="password" 
+            id="password" 
+            placeholder="Mật khẩu" 
+            autocomplete="current-password"
+            required
+            tabindex="2"
+          >
+          <button type="button" class="toggle-password" tabindex="-1">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+
+        <div class="form-footer">
+          <label class="remember-me">
+            <input type="checkbox" id="remember" tabindex="3">
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+          <a href="#" tabindex="5">Quên mật khẩu?</a>
+        </div>
+
+        <button 
+          type="submit" 
+          id="loginBtn" 
+          class="login-btn" 
+          tabindex="4"
+        >
+          <span>Đăng nhập</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+
+        <div id="errorMsg" class="error-message"></div>
+      </form>
     </div>
   </div>
-  <!-- Thêm div cho toast notification -->
+
   <div id="toast" class="toast"></div>
-  <script src="/public/config.js"></script>
+  <div class="connection-status">
+    <span class="offline-text">Mất kết nối internet</span>
+    <span class="server-text">Không thể kết nối đến máy chủ</span>
+  </div>
+
+  <!-- Load API client first -->
+  <script src="/assets/js/apiClient.js"></script>
+  <script>
+    // Monitor connection status
+    function updateConnectionStatus() {
+      const statusEl = document.querySelector('.connection-status');
+      
+      if (!navigator.onLine) {
+        statusEl.classList.add('offline');
+        statusEl.classList.remove('server-down');
+      } else {
+        checkServerStatus().then(isHealthy => {
+          if (!isHealthy) {
+            statusEl.classList.remove('offline');
+            statusEl.classList.add('server-down');
+          } else {
+            statusEl.classList.remove('offline', 'server-down');
+          }
+        });
+      }
+    }
+
+    // Check connection on load
+    updateConnectionStatus();
+
+    // Monitor connection changes
+    window.addEventListener('online', updateConnectionStatus);
+    window.addEventListener('offline', updateConnectionStatus);
+
+    // Check server periodically
+    setInterval(updateConnectionStatus, 30000);
+  </script>
   <script src="/assets/js/login.js"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/assets/css/campaigns.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
   <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
+  <script src="/assets/js/includes.js"></script>
   <style>
     :root {
       --theme: #6c63ff;
@@ -507,17 +508,7 @@
     </div>
   </header>
 
-  <aside class="sidebar" id="mainSidebar">
-    <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">WEB ADMIN</h3>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="home"><i class="fas fa-home"></i> Trang chủ</a></li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('storeMenu')">
-            <i class="fas fa-store"></i> Quản lý Cửa hàng <i class="fas fa-chevron-down" style="float:right"></i>
+  <div data-include="/partials/sidebar.html">
           </button>
           <ul class="menu-child" id="storeMenu" style="display:none;">
             <li><a href="voucher-new"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>

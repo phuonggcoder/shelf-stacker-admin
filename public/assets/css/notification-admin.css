@@ -11,6 +11,16 @@
     --scheduled: #fd7e14;
     --template: #007bff;
     
+    /* Toast colors */
+    --toast-success-bg: #059669;
+    --toast-error-bg: #dc2626;
+    --toast-info-bg: #0284c7;
+    
+    /* Form validation colors */
+    --input-focus: #3b82f6;
+    --input-error: #ef4444;
+    --input-success: #059669;
+    
     --white: #ffffff;
     --gray-50: #f8fafc;
     --gray-100: #f1f5f9;

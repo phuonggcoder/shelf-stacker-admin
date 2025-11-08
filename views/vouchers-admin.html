@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Voucher Admin</title>
+  <link rel="stylesheet" href="/assets/css/vouchers-admin.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Voucher Dashboard</h1>
+    <div id="dashboard">
+      <button id="btn-new">+ Tạo Voucher</button>
+      <button id="btn-view-trash">Thùng rác</button>
+    </div>
+    <div class="filters">
+      <label>Trạng thái:
+        <select id="filter-status">
+          <option value="active">Active</option>
+          <option value="archived">Archived</option>
+          <option value="all">All</option>
+        </select>
+      </label>
+      <input id="filter-search" placeholder="Tìm kiếm mã hoặc mô tả">
+      <button id="btn-search">Tìm</button>
+    </div>
+    <div class="bulk-actions">
+      <label><input type="checkbox" id="select-all"> Chọn tất cả</label>
+      <button id="btn-bulk-archive">Archive selected</button>
+      <button id="btn-bulk-delete">Delete selected</button>
+    </div>
+    <div id="list">
+      <table id="voucher-table">
+        <thead><tr><th></th><th>Code</th><th>Type</th><th>Value</th><th>Valid To</th><th>Usage Limit</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="modal" class="hidden">
+    <div class="modal-content">
+      <h2 id="modal-title">Tạo Voucher</h2>
+      <form id="voucher-form">
+        <div class="form-group">
+          <label>Mã Voucher (A-Z0-9) <span class="required">*</span>
+            <input name="voucher_id" pattern="[A-Z0-9]+" required title="Chỉ chấp nhận chữ in hoa và số">
+          </label>
+          <div class="error-message" data-for="voucher_id"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Loại Voucher <span class="required">*</span>
+            <select name="voucher_type" required>
+              <option value="discount">Giảm giá đơn hàng</option>
+              <option value="shipping">Giảm phí vận chuyển</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-group discount-options">
+          <label>Kiểu giảm giá
+            <select name="discount_type">
+              <option value="fixed">Số tiền cố định</option>
+              <option value="percentage">Phần trăm</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Giá trị giảm <span class="required">*</span>
+            <input name="discount_value" type="number" min="0" required>
+          </label>
+          <div class="error-message" data-for="discount_value"></div>
+        </div>
+
+        <div class="form-group">
+          <label>Giá trị đơn hàng tối thiểu <span class="required">*</span>
+            <input name="min_order_value" type="number" min="0" required>
+          </label>
+        </div>
+
+        <div class="form-group percentage-only hidden">
+          <label>Giảm tối đa
+            <input name="max_discount_value" type="number" min="0">
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Giới hạn sử dụng <span class="required">*</span>
+            <input name="usage_limit" type="number" min="1" required>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Giới hạn mỗi người dùng <span class="required">*</span>
+            <input name="max_per_user" type="number" min="1" required>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Ngày bắt đầu <span class="required">*</span>
+            <input name="start_date" type="datetime-local" required>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Ngày kết thúc <span class="required">*</span>
+            <input name="end_date" type="datetime-local" required>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label>Mô tả
+            <textarea name="description"></textarea>
+          </label>
+        </div>
+
+        <div id="api-error" class="error-message hidden"></div>
+        <div id="api-success" class="success-message hidden"></div>
+
+        <div class="modal-actions">
+          <button type="submit" id="btn-submit">
+            <span class="button-text">Lưu Voucher</span>
+            <span class="loading-indicator hidden">Đang xử lý...</span>
+          </button>
+          <button type="button" id="btn-cancel">Huỷ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+    <!-- Archive confirmation modal -->
+    <div id="confirm-archive-modal" class="hidden">
+      <div class="modal-content">
+        <h3 id="confirm-archive-title">Xác nhận lưu trữ</h3>
+        <p id="confirm-archive-body">Bạn có chắc muốn lưu trữ voucher <strong id="confirm-archive-code"></strong>?</p>
+        <div class="modal-actions">
+          <button id="confirm-archive-cancel" type="button">Huỷ</button>
+          <button id="confirm-archive-ok" type="button">Xác nhận lưu trữ</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/assets/js/config.js"></script>
+    <script src="/assets/js/vouchers-admin.js"></script>
+    <script src="/assets/js/voucher-detail.js" defer></script>
+</body>
+</html>

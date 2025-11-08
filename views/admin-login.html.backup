@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Login - Shelf Stacker</title>
+    <%- include('../partials/head.ejs') %>
+    <style>
+        :root {
+            --primary: #6c63ff;
+            --error: #dc3545;
+            --success: #28a745;
+            --warning: #ffc107;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .login-header img {
+            width: 120px;
+            margin-bottom: 1rem;
+        }
+
+        .login-header h1 {
+            color: var(--primary);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .login-form .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #eee;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .login-button:hover {
+            opacity: 0.9;
+        }
+
+        .login-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .login-error {
+            display: none;
+            color: var(--error);
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-radius: 6px;
+            background-color: #fff3f4;
+            border: 1px solid #ffccd1;
+        }
+        
+        .server-status {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .server-status.online {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .server-status.offline {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 0.75rem;
+            font-weight: 500;
+        }
+
+        .loading {
+            position: relative;
+            pointer-events: none;
+        }
+
+        .loading:after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            top: 50%;
+            right: 1rem;
+            margin-top: -10px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h2 class="h4 mb-1">Đăng nhập Admin</h2>
+                <p class="text-muted">Nhập thông tin đăng nhập của bạn</p>
+            </div>
+
+            <div class="login-error" id="loginError"></div>
+
+            <form class="login-form" id="loginForm" novalidate>
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                           required autocomplete="email">
+                    <div class="invalid-feedback">Email không hợp lệ</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password" class="form-label">Mật khẩu</label>
+                    <input type="password" class="form-control" id="password" name="password" 
+                           required autocomplete="current-password">
+                    <div class="invalid-feedback">Vui lòng nhập mật khẩu</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-login mt-3" id="loginBtn">
+                    Đăng nhập
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="server-status" id="serverStatus"></div>
+
+    <%- include('../partials/scripts.ejs') %>
+    <script src="/assets/js/apiClient.js"></script>
+    <script src="/assets/js/login.js"></script>
+</body>
+</html>

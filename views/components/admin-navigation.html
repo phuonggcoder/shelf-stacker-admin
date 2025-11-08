@@ -1,0 +1,101 @@
+<!-- Admin Navigation Component -->
+<div class="admin-sidebar">
+    <div class="sidebar-header">
+        <h4 class="mb-4">
+            <i class="fas fa-shield-alt me-2"></i>
+            Admin Dashboard
+        </h4>
+        <small class="text-muted">Shelf Stacker Admin</small>
+    </div>
+    <nav class="nav flex-column">
+        <!-- Dashboard -->
+        <a class="nav-link" href="/home" data-page="dashboard">
+            <i class="fas fa-home me-2"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <!-- Order Management -->
+        <div class="nav-group">
+            <div class="nav-group-header">
+                <i class="fas fa-shopping-cart me-2"></i>
+                <span>Orders</span>
+            </div>
+            <a class="nav-link" href="/order-stats" data-page="order-stats">
+                <i class="fas fa-chart-line me-2"></i>
+                <span>Order Statistics</span>
+            </a>
+            <a class="nav-link" href="/danhmucdonhang" data-page="order-list">
+                <i class="fas fa-list me-2"></i>
+                <span>Order List</span>
+            </a>
+        </div>
+
+        <!-- Product Management -->
+        <div class="nav-group">
+            <div class="nav-group-header">
+                <i class="fas fa-box me-2"></i>
+                <span>Products</span>
+            </div>
+            <a class="nav-link" href="/quanlydanhmuc" data-page="category">
+                <i class="fas fa-tags me-2"></i>
+                <span>Categories</span>
+            </a>
+            <a class="nav-link" href="/category-products" data-page="products">
+                <i class="fas fa-box-open me-2"></i>
+                <span>Products</span>
+            </a>
+            <a class="nav-link" href="/trashbooks" data-page="trash">
+                <i class="fas fa-trash me-2"></i>
+                <span>Deleted Items</span>
+            </a>
+        </div>
+
+        <!-- Marketing -->
+        <div class="nav-group">
+            <div class="nav-group-header">
+                <i class="fas fa-bullhorn me-2"></i>
+                <span>Marketing</span>
+            </div>
+            <a class="nav-link" href="/vouchers-admin" data-page="vouchers">
+                <i class="fas fa-ticket-alt me-2"></i>
+                <span>Vouchers</span>
+            </a>
+            <a class="nav-link" href="/campaigns" data-page="campaigns">
+                <i class="fas fa-ad me-2"></i>
+                <span>Campaigns</span>
+            </a>
+        </div>
+
+        <!-- User Management -->
+        <div class="nav-group">
+            <div class="nav-group-header">
+                <i class="fas fa-users-cog me-2"></i>
+                <span>Users</span>
+            </div>
+            <a class="nav-link" href="/quanlynguoidung" data-page="users">
+                <i class="fas fa-users me-2"></i>
+                <span>User Management</span>
+            </a>
+            <a class="nav-link" href="/admin-email-verification" data-page="email-verification">
+                <i class="fas fa-envelope-open me-2"></i>
+                <span>Email Verification</span>
+            </a>
+        </div>
+
+        <!-- Communications -->
+        <div class="nav-group">
+            <div class="nav-group-header">
+                <i class="fas fa-comments me-2"></i>
+                <span>Communications</span>
+            </div>
+            <a class="nav-link" href="/notification-admin" data-page="notifications">
+                <i class="fas fa-bell me-2"></i>
+                <span>Notifications</span>
+            </a>
+            <a class="nav-link" href="/thongbao" data-page="announcements">
+                <i class="fas fa-bullhorn me-2"></i>
+                <span>Announcements</span>
+            </a>
+        </div>
+    </nav>
+</div>

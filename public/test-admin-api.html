@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin API - Response Format</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 2rem;
+        }
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section h2 {
+            color: #6366f1;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        button {
+            background: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        button:hover {
+            background: #4f46e5;
+        }
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f9fafb;
+            border-radius: 6px;
+            border-left: 4px solid #6366f1;
+        }
+        .result pre {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+        .error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+        .success {
+            border-left-color: #10b981;
+            background: #f0fdf4;
+        }
+        .info {
+            background: #eff6ff;
+            border-left-color: #3b82f6;
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+        .status.loading {
+            background: #fbbf24;
+            color: #78350f;
+        }
+        .status.success {
+            background: #10b981;
+            color: #065f46;
+        }
+        .status.error {
+            background: #ef4444;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Admin API - Response Format</h1>
+        
+        <div class="info">
+            <strong>📝 Hướng dẫn:</strong>
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                <li>Đảm bảo đã đăng nhập và có token trong localStorage</li>
+                <li>Click các button để test từng API</li>
+                <li>Kiểm tra format response trong console và kết quả hiển thị</li>
+                <li>Response sẽ tự động extract <code>data</code> nếu có format <code>{ success: true, data: {...} }</code></li>
+            </ul>
+        </div>
+
+        <!-- Dashboard Stats -->
+        <div class="test-section">
+            <h2>📊 Dashboard Statistics</h2>
+            <button onclick="testDashboardStats()">Test getDashboardStats()</button>
+            <div id="dashboardResult"></div>
+        </div>
+
+        <!-- Orders -->
+        <div class="test-section">
+            <h2>📦 Orders</h2>
+            <button onclick="testGetOrders()">Test getOrders()</button>
+            <div id="ordersResult"></div>
+        </div>
+
+        <!-- Books -->
+        <div class="test-section">
+            <h2>📚 Books</h2>
+            <button onclick="testGetBooks()">Test getBooks()</button>
+            <div id="booksResult"></div>
+        </div>
+
+        <!-- Categories -->
+        <div class="test-section">
+            <h2>📁 Categories</h2>
+            <button onclick="testGetCategories()">Test getCategories()</button>
+            <div id="categoriesResult"></div>
+        </div>
+
+        <!-- Order Statistics -->
+        <div class="test-section">
+            <h2>📈 Order Statistics</h2>
+            <button onclick="testOrderStatistics()">Test getOrderStatistics()</button>
+            <div id="orderStatsResult"></div>
+        </div>
+
+        <!-- Revenue by Time -->
+        <div class="test-section">
+            <h2>💰 Revenue by Time</h2>
+            <button onclick="testRevenueByTime()">Test getRevenueByTime()</button>
+            <div id="revenueResult"></div>
+        </div>
+    </div>
+
+    <script src="/AdminServices.js"></script>
+    <script>
+        // Helper function to display result
+        function displayResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            const statusClass = isError ? 'error' : 'success';
+            const statusText = isError ? '❌ Error' : '✅ Success';
+            
+            element.innerHTML = `
+                <div class="result ${statusClass}">
+                    <div class="status ${isError ? 'error' : 'success'}">${statusText}</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        // Test Dashboard Stats
+        async function testDashboardStats() {
+            const resultEl = document.getElementById('dashboardResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                if (!window.AdminServices) {
+                    throw new Error('AdminServices is not loaded. Make sure /AdminServices.js is loaded.');
+                }
+
+                const stats = await window.AdminServices.getDashboardStats();
+                console.log('Dashboard Stats:', stats);
+                
+                // Check if data was extracted correctly
+                const hasDirectProperties = stats.totalOrders !== undefined || stats.totalRevenue !== undefined;
+                
+                displayResult('dashboardResult', {
+                    message: 'Response format check',
+                    hasDirectProperties: hasDirectProperties,
+                    properties: Object.keys(stats),
+                    sample: {
+                        totalOrders: stats.totalOrders,
+                        totalRevenue: stats.totalRevenue,
+                        activeUsers: stats.activeUsers,
+                        pendingOrders: stats.pendingOrders
+                    },
+                    fullResponse: stats
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('dashboardResult', {
+                    error: error.message,
+                    stack: error.stack
+                }, true);
+            }
+        }
+
+        // Test Get Orders
+        async function testGetOrders() {
+            const resultEl = document.getElementById('ordersResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                const result = await window.AdminServices.getOrders({ limit: 5, page: 1 });
+                console.log('Orders Result:', result);
+                
+                displayResult('ordersResult', {
+                    message: 'Orders response format',
+                    hasOrdersProperty: result.orders !== undefined,
+                    isArray: Array.isArray(result.orders),
+                    ordersCount: result.orders ? result.orders.length : 0,
+                    pagination: {
+                        total: result.total,
+                        page: result.page,
+                        limit: result.limit,
+                        pages: result.pages
+                    },
+                    sample: result.orders ? result.orders.slice(0, 2) : null,
+                    fullResponse: result
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('ordersResult', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Test Get Books
+        async function testGetBooks() {
+            const resultEl = document.getElementById('booksResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                const result = await window.AdminServices.getBooks({ limit: 5, page: 1 });
+                console.log('Books Result:', result);
+                
+                displayResult('booksResult', {
+                    message: 'Books response format',
+                    hasBooksProperty: result.books !== undefined,
+                    isArray: Array.isArray(result.books),
+                    booksCount: result.books ? result.books.length : 0,
+                    pagination: result.pagination,
+                    sample: result.books ? result.books.slice(0, 2) : null,
+                    fullResponse: result
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('booksResult', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Test Get Categories
+        async function testGetCategories() {
+            const resultEl = document.getElementById('categoriesResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                const result = await window.AdminServices.getCategories();
+                console.log('Categories Result:', result);
+                
+                const isArray = Array.isArray(result);
+                const categories = isArray ? result : (result.categories || result.data || []);
+                
+                displayResult('categoriesResult', {
+                    message: 'Categories response format',
+                    isDirectArray: isArray,
+                    hasCategoriesProperty: result.categories !== undefined,
+                    categoriesCount: categories.length,
+                    sample: categories.slice(0, 3),
+                    fullResponse: result
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('categoriesResult', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Test Order Statistics
+        async function testOrderStatistics() {
+            const resultEl = document.getElementById('orderStatsResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                const result = await window.AdminServices.getOrderStatistics({
+                    start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                    end_date: new Date().toISOString()
+                });
+                console.log('Order Statistics Result:', result);
+                
+                displayResult('orderStatsResult', {
+                    message: 'Order Statistics response format',
+                    properties: Object.keys(result),
+                    fullResponse: result
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('orderStatsResult', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Test Revenue by Time
+        async function testRevenueByTime() {
+            const resultEl = document.getElementById('revenueResult');
+            resultEl.innerHTML = '<div class="status loading">⏳ Loading...</div>';
+            
+            try {
+                const result = await window.AdminServices.getRevenueByTime({
+                    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                    end_date: new Date().toISOString(),
+                    group_by: 'day'
+                });
+                console.log('Revenue by Time Result:', result);
+                
+                displayResult('revenueResult', {
+                    message: 'Revenue by Time response format',
+                    properties: Object.keys(result),
+                    hasRevenueStats: result.revenueStats !== undefined,
+                    fullResponse: result
+                });
+            } catch (error) {
+                console.error('Error:', error);
+                displayResult('revenueResult', {
+                    error: error.message
+                }, true);
+            }
+        }
+
+        // Check AdminServices on load
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.AdminServices) {
+                console.log('✅ AdminServices loaded successfully');
+                console.log('Available methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(window.AdminServices)).filter(name => name !== 'constructor'));
+            } else {
+                console.error('❌ AdminServices not loaded');
+            }
+        });
+    </script>
+</body>
+</html>
+

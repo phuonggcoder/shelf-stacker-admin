@@ -1,0 +1,126 @@
+/* Admin Navigation Styles */
+.admin-sidebar {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    min-height: 100vh;
+    color: white;
+    padding: 0;
+    width: 280px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.sidebar-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-header h4 {
+    color: white;
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.nav-group {
+    margin: 0.5rem 0;
+}
+
+.nav-group-header {
+    padding: 0.75rem 1.5rem;
+    color: rgba(255,255,255,0.7);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.nav-link {
+    padding: 0.75rem 1.5rem;
+    color: rgba(255,255,255,0.8);
+    display: flex;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    color: white;
+    background: rgba(255,255,255,0.1);
+    text-decoration: none;
+}
+
+.nav-link.active {
+    color: white;
+    background: rgba(255,255,255,0.15);
+    border-right: 3px solid #fff;
+}
+
+.nav-link i {
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        width: 60px;
+        overflow: visible;
+    }
+
+    .admin-sidebar:hover {
+        width: 280px;
+    }
+
+    .nav-link span,
+    .nav-group-header span,
+    .sidebar-header small {
+        display: none;
+    }
+
+    .admin-sidebar:hover .nav-link span,
+    .admin-sidebar:hover .nav-group-header span,
+    .admin-sidebar:hover .sidebar-header small {
+        display: inline;
+    }
+
+    .sidebar-header h4 {
+        font-size: 1.5rem;
+    }
+
+    .admin-sidebar:hover .sidebar-header h4 {
+        font-size: 1.25rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .admin-sidebar {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    }
+}
+
+/* Loading States */
+.nav-link.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.nav-link.loading::after {
+    content: '';
+    position: absolute;
+    right: 1rem;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Voucher Trash</title>
+  <link rel="stylesheet" href="/assets/css/vouchers-admin.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Vouchers - Thùng rác</h1>
+    <div id="trash-actions">
+      <button id="btn-back">Quay lại</button>
+      <label><input type="checkbox" id="select-all-trash"> Chọn tất cả</label>
+      <button id="btn-bulk-restore">Khôi phục đã chọn</button>
+      <button id="btn-bulk-hard-delete">Xóa vĩnh viễn đã chọn</button>
+    </div>
+    <div id="trash-list">
+      <table id="trash-table">
+        <thead><tr><th></th><th>Code</th><th>Type</th><th>Value</th><th>Deleted At</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Hard-delete confirmation modal -->
+  <div id="confirm-hard-delete-modal" class="hidden">
+    <div class="modal-content">
+      <h3>Xác nhận xóa vĩnh viễn</h3>
+      <p>Nhập mã voucher <strong id="hard-delete-code"></strong> vào ô bên dưới để xác nhận xóa vĩnh viễn.</p>
+      <input id="hard-delete-input" placeholder="Nhập mã voucher để xác nhận">
+      <div class="modal-actions">
+        <button id="hard-delete-cancel" type="button">Huỷ</button>
+        <button id="hard-delete-confirm" type="button" disabled>Xóa vĩnh viễn</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/config.js"></script>
+  <script src="/assets/js/vouchers-trash.js"></script>
+</body>
+</html>

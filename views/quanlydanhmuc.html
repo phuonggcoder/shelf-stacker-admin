@@ -521,19 +521,7 @@
     </div>
   </header>
 
-  <aside class="sidebar" id="mainSidebar">
-    <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">WEB ADMIN</h3>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="home"><i class="fas fa-home"></i> Trang chủ</a></li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('storeMenu')">
-            <i class="fas fa-store"></i> Quản lý Cửa hàng <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="storeMenu" style="display:none;">
+  <div data-include="/partials/sidebar.html"></div>
             <li><a href="voucher-new"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>
             <li><a href="khoiphucvoucher"><i class="fas fa-history"></i> Voucher xóa gần đây</a></li>
           </ul>

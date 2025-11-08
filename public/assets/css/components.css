@@ -1,0 +1,345 @@
+/* Common UI Components Styles */
+
+/* DataTable Styles */
+.datatable-wrapper {
+  margin: 1rem 0;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.datatable-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.datatable-search {
+  position: relative;
+}
+
+.datatable-search input {
+  padding: 0.5rem 1rem 0.5rem 2rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 200px;
+}
+
+.datatable-search i {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+}
+
+.datatable-pagesize {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.datatable-pagesize select {
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #333;
+  background: #f8f9fa;
+}
+
+th.sortable {
+  cursor: pointer;
+  position: relative;
+  padding-right: 1.5rem;
+}
+
+th.sortable::after {
+  content: "↕";
+  position: absolute;
+  right: 0.5rem;
+  color: #999;
+}
+
+th.asc::after {
+  content: "↑";
+  color: #333;
+}
+
+th.desc::after {
+  content: "↓";
+  color: #333;
+}
+
+td {
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+tr:hover td {
+  background: #f8f9fa;
+}
+
+.datatable-pager {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.datatable-pager button {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 0.5rem;
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.datatable-pager button:hover:not(:disabled) {
+  background: #f8f9fa;
+}
+
+.datatable-pager button.active {
+  background: #0ea5e9;
+  color: #fff;
+  border-color: #0ea5e9;
+}
+
+.datatable-pager button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Form Styles */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 2px rgba(14,165,233,0.2);
+}
+
+.form-control.error {
+  border-color: #dc3545;
+}
+
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+
+/* Button Styles */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn i {
+  font-size: 16px;
+}
+
+.btn-primary {
+  background: #0ea5e9;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #0284c7;
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #e0e0e0;
+}
+
+.btn-secondary:hover {
+  background: #e9ecef;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: #bb2d3b;
+}
+
+.btn.loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.btn.loading span {
+  visibility: hidden;
+}
+
+.btn.loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spinner 0.6s linear infinite;
+}
+
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  width: 90%;
+  max-width: 500px;
+  margin: 2rem auto;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.modal-header {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.modal-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #666;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 1rem;
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  padding: 1rem;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+  display: none;
+}
+
+.toast.success {
+  background: #28a745;
+  color: #fff;
+}
+
+.toast.error {
+  background: #dc3545;
+  color: #fff;
+}
+
+/* Animation */
+@keyframes spinner {
+  to {transform: rotate(360deg);}
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .datatable-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .datatable-search input {
+    width: 100%;
+  }
+
+  .datatable-pager {
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+}

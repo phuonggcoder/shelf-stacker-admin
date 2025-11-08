@@ -1,5 +1,73 @@
 const BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
 
+// Khởi tạo biểu đồ
+function initializeCharts() {
+  const statusCtx = document.getElementById('statusChart')?.getContext('2d');
+  const paymentCtx = document.getElementById('paymentChart')?.getContext('2d');
+
+  if (statusCtx) {
+    new Chart(statusCtx, {
+      type: 'pie',
+      data: {
+        labels: ['Hoàn thành', 'Đang xử lý', 'Đã hủy'],
+        datasets: [{
+          data: [65, 25, 10],
+          backgroundColor: ['#28a745', '#ffc107', '#ff4d4f']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
+
+  if (paymentCtx) {
+    new Chart(paymentCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['COD', 'Banking', 'E-wallet'],
+        datasets: [{
+          data: [45, 35, 20],
+          backgroundColor: ['#6c63ff', '#36a2eb', '#ff9f40']
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false
+      }
+    });
+  }
+}
+
+// Cập nhật thống kê dashboard
+async function updateDashboardStats() {
+  try {
+    const response = await fetch(`${BASE_URL}/api/dashboard/stats`, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+      }
+    });
+    
+    if (response.ok) {
+      const stats = await response.json();
+      
+      document.getElementById('totalOrders').textContent = stats.totalOrders?.toLocaleString() || '0';
+      document.getElementById('totalRevenue').textContent = (stats.totalRevenue?.toLocaleString() || '0') + ' ₫';
+      document.getElementById('successCount').textContent = stats.successCount?.toLocaleString() || '0';
+      document.getElementById('failedCount').textContent = stats.failedCount?.toLocaleString() || '0';
+    }
+  } catch (error) {
+    console.error('Lỗi khi tải thống kê:', error);
+  }
+}
+
+// Khởi tạo trang
+document.addEventListener('DOMContentLoaded', () => {
+  initializeCharts();
+  updateDashboardStats();
+});
+
 const STATUS_MAP = {
   Pending: 'Chờ xác nhận',
   AwaitingPickup: 'Chờ lấy hàng',

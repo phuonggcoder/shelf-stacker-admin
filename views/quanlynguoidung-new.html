@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quản Lý Người Dùng - Shelf Stacker Admin</title>
+  <link rel="stylesheet" href="/assets/css/user-management.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+  <div class="main">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon total">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3 id="totalUsers">0</h3>
+          <p>Tổng số người dùng</p>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon active">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-content">
+          <h3 id="activeUsers">0</h3>
+          <p>Đang hoạt động</p>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon inactive">
+          <i class="fas fa-user-clock"></i>
+        </div>
+        <div class="stat-content">
+          <h3 id="inactiveUsers">0</h3>
+          <p>Không hoạt động</p>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon blocked">
+          <i class="fas fa-user-lock"></i>
+        </div>
+        <div class="stat-content">
+          <h3 id="blockedUsers">0</h3>
+          <p>Đã khóa</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-filter">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input 
+          type="text" 
+          id="searchInput"
+          class="search-input"
+          placeholder="Tìm kiếm theo tên, email, số điện thoại..."
+        />
+      </div>
+      
+      <select id="statusFilter" class="filter-select">
+        <option value="">Tất cả trạng thái</option>
+        <option value="active">Đang hoạt động</option>
+        <option value="inactive">Không hoạt động</option>
+        <option value="blocked">Đã khóa</option>
+      </select>
+      
+      <select id="sortFilter" class="filter-select">
+        <option value="newest">Mới nhất</option>
+        <option value="oldest">Cũ nhất</option>
+        <option value="name">Theo tên</option>
+        <option value="lastLogin">Đăng nhập gần đây</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" id="selectAll" />
+            </th>
+            <th>Thông tin người dùng</th>
+            <th>Đăng nhập gần đây</th>
+            <th>Ngày tạo</th>
+            <th>Trạng thái</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody id="userTableBody">
+          <!-- Users will be loaded here dynamically -->
+        </tbody>
+      </table>
+
+      <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Đang tải dữ liệu...</p>
+      </div>
+
+      <div id="emptyState" class="empty-state" style="display: none;">
+        <i class="fas fa-users-slash"></i>
+        <h3>Không tìm thấy người dùng nào</h3>
+        <p>Thử thay đổi bộ lọc tìm kiếm của bạn</p>
+      </div>
+    </div>
+
+    <div class="pagination">
+      <button id="prevPage" class="page-btn" disabled>
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div id="pageNumbers" class="page-numbers"></div>
+      <button id="nextPage" class="page-btn" disabled>
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Thông tin người dùng</h2>
+          <button class="close-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="user-info">
+            <div class="user-avatar">
+              <img id="modalUserAvatar" src="/assets/images/default-avatar.png" alt="User avatar" />
+            </div>
+            <div class="user-details">
+              <h3 id="modalUserName">Loading...</h3>
+              <p id="modalUserEmail">loading@example.com</p>
+              <div class="user-status">
+                <span id="modalUserStatusBadge" class="status-badge">
+                  <i class="fas fa-circle"></i>
+                  <span>Đang hoạt động</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <label>Số điện thoại</label>
+              <p id="modalUserPhone">-</p>
+            </div>
+            <div class="info-item">
+              <label>Ngày tham gia</label>
+              <p id="modalUserJoinDate">-</p>
+            </div>
+            <div class="info-item">
+              <label>Đăng nhập cuối</label>
+              <p id="modalUserLastLogin">-</p>
+            </div>
+            <div class="info-item">
+              <label>Số đơn hàng</label>
+              <p id="modalUserOrders">-</p>
+            </div>
+          </div>
+
+          <div class="actions-section">
+            <h4>Thao tác tài khoản</h4>
+            <div class="action-buttons">
+              <button id="blockUserBtn" class="btn-warning">
+                <i class="fas fa-user-lock"></i>
+                Khóa tài khoản
+              </button>
+              <button id="deleteUserBtn" class="btn-danger">
+                <i class="fas fa-user-times"></i>
+                Xóa người dùng
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmationModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="confirmationTitle">Xác nhận thao tác</h2>
+          <button class="close-modal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmationMessage">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+          <div class="action-buttons">
+            <button id="cancelActionBtn" class="btn-secondary">
+              <i class="fas fa-times"></i>
+              Hủy bỏ
+            </button>
+            <button id="confirmActionBtn" class="btn-primary">
+              <i class="fas fa-check"></i>
+              Xác nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/js/user-management.js"></script>
+</body>
+</html>

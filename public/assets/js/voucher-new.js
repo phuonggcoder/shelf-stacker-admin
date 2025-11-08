@@ -19,6 +19,29 @@ function debugLog(message, data = null) {
   }
 }
 
+// Update voucher stats
+function updateVoucherStats(stats) {
+  document.getElementById('totalVouchers').textContent = stats.total || 0;
+  document.getElementById('activeVouchers').textContent = stats.active || 0;
+  document.getElementById('expiredVouchers').textContent = stats.expired || 0;
+  document.getElementById('usageCount').textContent = stats.used || 0;
+}
+
+// Loading spinner
+function showLoadingSpinner() {
+  const spinner = document.createElement('div');
+  spinner.className = 'loading-spinner';
+  spinner.innerHTML = '<div class="spinner"></div>';
+  document.body.appendChild(spinner);
+}
+
+function hideLoadingSpinner() {
+  const spinner = document.querySelector('.loading-spinner');
+  if (spinner) {
+    spinner.remove();
+  }
+}
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
   debugLog('Initializing voucher system...');
@@ -36,6 +59,51 @@ function initializeApp() {
     return;
   }
   debugLog('App initialized successfully');
+}
+
+// Validate voucher data
+function validateVoucherData(data) {
+  // Required fields
+  if (!data.code || !data.discountType || !data.discountValue || !data.minOrderValue) {
+    return 'Vui lòng điền đầy đủ thông tin bắt buộc';
+  }
+
+  // Validate discount value
+  const discountValue = parseFloat(data.discountValue);
+  if (isNaN(discountValue) || discountValue <= 0) {
+    return 'Giá trị giảm giá không hợp lệ';
+  }
+
+  // For percentage discounts
+  if (data.discountType === 'percent' && discountValue > 100) {
+    return 'Phần trăm giảm giá không thể vượt quá 100%';
+  }
+
+  // Validate minimum order value
+  const minOrderValue = parseFloat(data.minOrderValue);
+  if (isNaN(minOrderValue) || minOrderValue < 0) {
+    return 'Giá trị đơn hàng tối thiểu không hợp lệ';
+  }
+
+  // Validate usage limit
+  if (data.usageLimit && parseInt(data.usageLimit) <= 0) {
+    return 'Giới hạn sử dụng phải lớn hơn 0';
+  }
+
+  // Validate dates
+  const startDate = new Date(data.startDate);
+  const endDate = new Date(data.endDate);
+  const now = new Date();
+
+  if (startDate < now) {
+    return 'Ngày bắt đầu phải sau thời điểm hiện tại';
+  }
+
+  if (endDate <= startDate) {
+    return 'Ngày kết thúc phải sau ngày bắt đầu';
+  }
+
+  return null;
 }
 
 // Setup event listeners

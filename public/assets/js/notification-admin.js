@@ -9,6 +9,109 @@ let totalPages = 1;
 let currentFilter = 'all';
 let charts = {};
 
+// API Configuration
+const API_BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com';
+const API_ENDPOINTS = {
+  notifications: {
+    send: `${API_BASE_URL}/api/notifications/send`,
+    list: `${API_BASE_URL}/api/notifications/list`,
+    scheduled: `${API_BASE_URL}/api/notifications/scheduled`, 
+    templates: `${API_BASE_URL}/api/notifications/templates`,
+    stats: `${API_BASE_URL}/api/notifications/stats`
+  }
+};
+
+// Authentication header
+const getAuthHeader = () => {
+  const token = localStorage.getItem('authToken');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+};
+
+// Error Handler
+const handleError = (error) => {
+  console.error('API Error:', error);
+  showToast(error.message || 'Có lỗi xảy ra, vui lòng thử lại', 'error');
+};
+
+// Toast Notification
+const showToast = (message, type = 'info') => {
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+};
+
+// Load Dashboard Stats
+async function loadDashboardStats() {
+  try {
+    const response = await fetch(API_ENDPOINTS.notifications.stats, {
+      headers: getAuthHeader()
+    });
+    
+    if (!response.ok) throw new Error('Không thể tải thống kê');
+    
+    const stats = await response.json();
+    document.getElementById('urgent-count').textContent = stats.urgentToday || 0;
+    document.getElementById('scheduled-count').textContent = stats.scheduledActive || 0;
+    document.getElementById('template-count').textContent = stats.activeTemplates || 0;
+    
+    updateCharts(stats);
+  } catch (error) {
+    handleError(error);
+  }
+}
+
+// Send Notification
+async function sendNotification(formData) {
+  try {
+    const response = await fetch(API_ENDPOINTS.notifications.send, {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify(formData)
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Không thể gửi thông báo');
+    }
+
+    const result = await response.json();
+    showToast('Gửi thông báo thành công', 'success');
+    return result;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
+// Image Upload Handler
+async function handleImageUpload(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': getAuthHeader().Authorization
+      },
+      body: formData
+    });
+
+    if (!response.ok) throw new Error('Không thể tải lên hình ảnh');
+    
+    const result = await response.json();
+    return result.imageUrl;
+  } catch (error) {
+    handleError(error);
+    throw error;
+  }
+}
+
 // Sample Templates Data (50+ templates)
 const SAMPLE_TEMPLATES = {
   // User Event Templates (18 templates)

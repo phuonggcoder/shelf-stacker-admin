@@ -1,0 +1,53 @@
+{
+  "root": {
+    "head": {
+      "scripts": [
+        "/assets/js/api-client.js",
+        "/assets/js/sidebar.js",
+        "/assets/js/dashboard.js"
+      ],
+      "styles": [
+        "/assets/css/components.css",
+        "/assets/css/home.css", 
+        "/assets/css/sidebar.css"
+      ]
+    },
+    "routes": {
+      "/api/dashboard/stats": {
+        "method": "GET",
+        "response": {
+          "newOrders": 25,
+          "ordersChange": 15,
+          "totalVouchers": 150,
+          "vouchersChange": -5,
+          "newUsers": 42,
+          "usersChange": 20,
+          "revenue": 25000000,
+          "revenueChange": 12
+        }
+      },
+      "/api/dashboard/activities": {
+        "method": "GET",
+        "response": [
+          {
+            "type": "order",
+            "message": "Đơn hàng mới #1234 từ Nguyễn Văn A",
+            "timestamp": "2025-11-04T10:30:00Z"
+          },
+          {
+            "type": "user",
+            "message": "Người dùng mới đăng ký: tranb@email.com",
+            "timestamp": "2025-11-04T10:15:00Z"
+          }
+        ]
+      },
+      "/api/dashboard/orders-chart": {
+        "method": "GET",
+        "response": {
+          "labels": ["T2", "T3", "T4", "T5", "T6", "T7", "CN"],
+          "values": [12, 19, 15, 25, 22, 30, 18]
+        }
+      }
+    }
+  }
+}

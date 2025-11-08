@@ -89,25 +89,45 @@
 
     .sidebar nav ul li a,
     .sidebar nav ul li button {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      color: #e0f2fe;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: calc(100% - 12px);
+      padding: 10px 8px;
+      color: #e8f8ff;
       text-decoration: none;
       background: none;
       border: none;
       text-align: left;
-      border-radius: 8px;
-      transition: all 0.2s;
-      font-weight: 500;
+      border-radius: 10px;
+      transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+      font-weight: 600;
       cursor: pointer;
       font-size: 14px;
     }
 
     .sidebar nav ul li a:hover,
     .sidebar nav ul li button:hover {
-      background: #fff;
-      color: #0ea5e9;
+      background: rgba(255,255,255,0.08);
+      color: #ffffff;
+      transform: translateX(6px);
+      box-shadow: 0 6px 18px rgba(14,165,233,0.06);
+    }
+
+    .sidebar nav ul li a.active,
+    .sidebar nav ul li button.active {
+      background: rgba(255,255,255,0.12);
+      color: #ffffff;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.03), 0 6px 18px rgba(14,165,233,0.08);
+      border-left: 4px solid rgba(255,255,255,0.18);
+    }
+
+    .menu-parent i.fa-chevron-down {
+      transition: transform 0.18s ease;
+      opacity: 0.9;
+    }
+    .menu-parent[aria-expanded="true"] i.fa-chevron-down {
+      transform: rotate(180deg);
     }
 
     .header {
@@ -178,6 +198,10 @@
       gap: 10px;
       margin-bottom: 20px;
       position: relative;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 6px;
     }
 
     .tab-parent {
@@ -191,11 +215,29 @@
       transition: all 0.2s;
       position: relative;
       z-index: 1;
+      flex: 0 0 auto;
+      outline: none;
     }
 
     .tab-parent.active {
       background: #0ea5e9;
       color: #fff;
+    }
+
+    .tab-parent:focus {
+      box-shadow: 0 0 0 3px rgba(14,165,233,0.16);
+      z-index: 2;
+    }
+
+    .tabs-indicator {
+      position: absolute;
+      height: 3px;
+      background: linear-gradient(90deg,#06b6d4,#0ea5e9);
+      bottom: 0;
+      left: 0;
+      width: 0;
+      border-radius: 3px;
+      transition: transform 0.25s ease, width 0.25s ease;
     }
 
     .tab-parent:hover:not(.active) {
@@ -716,65 +758,7 @@
     </div>
   </header>
 
-  <aside class="sidebar" id="mainSidebar">
-    <div class="profile">
-      <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-      <h3 style="margin-bottom:0;">WEB ADMIN</h3>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="home"><i class="fas fa-home"></i> Trang chủ</a></li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('storeMenu')">
-            <i class="fas fa-store"></i> Quản lý Cửa hàng <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="storeMenu" style="display:none;">
-            <li><a href="voucher-new"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>
-            <li><a href="khoiphucvoucher"><i class="fas fa-history"></i> Voucher xóa gần đây</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('categoryMenu')">
-            <i class="fas fa-th-list"></i> Quản lý danh mục <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="categoryMenu" style="display:none;">
-            <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
-            <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('productMenu')">
-            <i class="fas fa-book"></i> Sản phẩm <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="productMenu" style="display:none;">
-            <li><a href="danhgiasanpham"><i class="fas fa-book"></i> Danh sách truyện tranh</a></li>
-            <li><a href="trashbooks"><i class="fas fa-book-dead"></i> Sản phẩm xóa gần đây</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('managementMenu')">
-            <i class="fas fa-cogs"></i> Quản lý <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="managementMenu" style="display:none;">
-            <li><a href="quanlynguoidung"><i class="fas fa-users-cog"></i> Quản lý người dùng</a></li>
-            <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('notificationMenu')">
-            <i class="fas fa-bell"></i> Quản lý thông báo <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="notificationMenu" style="display:none;">
-            <li><a href="thongbao"><i class="fas fa-bolt"></i> Thông báo nhanh</a></li>
-            <li><a href="notification-admin"><i class="fas fa-calendar-check"></i> Thông báo sự kiện</a></li>
-          </ul>
-        </li>
-        <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
-        <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
-      </ul>
-    </nav>
-  </aside>
+  <div data-include="/partials/sidebar.html"></div>
 
   <aside class="sidebar hidden" id="settingsSidebar">
     <div class="profile" style="text-align: left;">
@@ -1149,7 +1133,12 @@
 
     function toggleMenu(id) {
       const el = document.getElementById(id);
-      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      if (!el) return;
+      const isHidden = window.getComputedStyle(el).display === 'none';
+      el.style.display = isHidden ? 'block' : 'none';
+      // find the button that controls this menu and set aria-expanded
+      const btn = document.querySelector(`[onclick="toggleMenu('${id}')"]`);
+      if (btn) btn.setAttribute('aria-expanded', String(isHidden));
     }
 
     // --- Avatar upload logic giống trang home ---
@@ -1291,5 +1280,60 @@
       });
     }
   </script>
+  <script>
+    (function(){
+      const tabsEl = document.querySelector('.tabs');
+      if (!tabsEl) return;
+      const tabs = Array.from(tabsEl.querySelectorAll('.tab-parent'));
+      const indicator = document.createElement('div');
+      indicator.className = 'tabs-indicator';
+      tabsEl.appendChild(indicator);
+
+      tabsEl.setAttribute('role', 'tablist');
+      tabs.forEach((t, i) => {
+        t.setAttribute('role', 'tab');
+        t.setAttribute('tabindex', t.classList.contains('active') ? '0' : '-1');
+        t.setAttribute('aria-selected', t.classList.contains('active') ? 'true' : 'false');
+        t.addEventListener('click', () => setActive(i));
+        t.addEventListener('keydown', (e) => {
+          let next = null;
+          if (e.key === 'ArrowRight') next = (i + 1) % tabs.length;
+          else if (e.key === 'ArrowLeft') next = (i - 1 + tabs.length) % tabs.length;
+          else if (e.key === 'Home') next = 0;
+          else if (e.key === 'End') next = tabs.length - 1;
+          if (next !== null) {
+            e.preventDefault();
+            setActive(next, true);
+            tabs[next].scrollIntoView({behavior:'smooth', inline:'center'});
+          }
+        });
+      });
+
+      function setActive(index, focus) {
+        tabs.forEach((t, i) => {
+          t.classList.toggle('active', i === index);
+          t.setAttribute('aria-selected', i === index ? 'true' : 'false');
+          t.setAttribute('tabindex', i === index ? '0' : '-1');
+        });
+        const active = tabs[index];
+        if (active) {
+          const pr = tabsEl.getBoundingClientRect();
+          const r = active.getBoundingClientRect();
+          const left = r.left - pr.left + tabsEl.scrollLeft;
+          indicator.style.width = r.width + 'px';
+          indicator.style.transform = `translateX(${left}px)`;
+          if (focus) active.focus();
+        }
+      }
+
+      setTimeout(()=>{
+        const initial = tabs.findIndex(t => t.classList.contains('active')) || 0;
+        setActive(initial);
+      }, 50);
+      window.addEventListener('resize', ()=> setActive(tabs.findIndex(t=>t.classList.contains('active')) || 0));
+      tabsEl.addEventListener('scroll', ()=> setActive(tabs.findIndex(t=>t.classList.contains('active')) || 0));
+    })();
+  </script>
+  <script src="/assets/js/includes.js"></script>
 </body>
 </html>
