@@ -141,17 +141,29 @@
             <!-- Filters and Actions -->
             <div class="card" style="margin-bottom: 1.5rem;">
                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                    <div style="flex: 1; min-width: 250px;">
+                    <div style="flex: 1; min-width: 250px; position: relative;">
                         <input type="text" id="searchInput" class="form-input" placeholder="Tìm kiếm sản phẩm...">
+                        <button id="clearSearchBtn" class="btn btn-sm btn-secondary" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); padding: 0.25rem 0.5rem; display: none;" title="Xóa tìm kiếm">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                     <select id="categoryFilter" class="form-select" style="width: 200px;">
                         <option value="">Tất cả danh mục</option>
                     </select>
                     <select id="statusFilter" class="form-select" style="width: 150px;">
                         <option value="">Tất cả trạng thái</option>
-                        <option value="active">Đang bán</option>
+                        <option value="in_stock">Còn hàng</option>
                         <option value="out_of_stock">Hết hàng</option>
-                        <option value="featured">Nổi bật</option>
+                    </select>
+                    <select id="featuredFilter" class="form-select" style="width: 150px;" title="Lọc sách nổi bật">
+                        <option value="">Tất cả sách</option>
+                        <option value="true">Sách nổi bật</option>
+                        <option value="false">Sách thường</option>
+                    </select>
+                    <select id="stockFilter" class="form-select" style="width: 150px;" title="Lọc tồn kho">
+                        <option value="">Tất cả tồn kho</option>
+                        <option value="in_stock">Còn hàng</option>
+                        <option value="out_of_stock">Hết hàng</option>
                     </select>
                     <select id="sortBy" class="form-select" style="width: 150px;" title="Sắp xếp theo">
                         <option value="createdAt">Ngày tạo</option>
@@ -161,9 +173,12 @@
                         <option value="sold">Đã bán</option>
                     </select>
                     <select id="sortOrder" class="form-select" style="width: 120px;" title="Thứ tự">
-                        <option value="desc">Giảm dần</option>
+                        <option value="desc" selected>Giảm dần</option>
                         <option value="asc">Tăng dần</option>
                     </select>
+                    <button class="btn btn-secondary" id="clearFiltersBtn" title="Xóa tất cả bộ lọc" style="white-space: nowrap;">
+                        <i class="fas fa-filter"></i> Xóa lọc
+                    </button>
                     <button class="btn btn-primary" id="addBookBtn">
                         <i class="fas fa-plus"></i>
                         Thêm sản phẩm
@@ -215,8 +230,8 @@
                 </div>
                 <!-- Pagination -->
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #e5e7eb;">
-                    <div style="color: #6b7280; font-size: 0.9rem;">
-                        Hiển thị <span id="pageInfo">0-0</span> của <span id="totalItems">0</span> sản phẩm
+                    <div style="color: #6b7280; font-size: 0.9rem;" id="pageInfo">
+                        Hiển thị <span>0-0</span> của <span id="totalItems">0</span> sản phẩm
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <button class="btn btn-sm btn-secondary" id="prevPage" disabled>

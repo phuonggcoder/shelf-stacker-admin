@@ -164,17 +164,69 @@ class AdminServices {
     }
 
     async createBook(data) {
-        return this.request('/api/books', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            // Don't set Content-Type for FormData, browser will set it with boundary
+            const response = await fetch(`${this.baseUrl}/api/books`, {
+                method: 'POST',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Create book failed');
+            }
+            const result = await response.json();
+            // Auto-extract data if response has { success: true, data: {...} }
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            // Fallback to JSON if no files
+            return this.request('/api/books', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async updateBook(id, data) {
-        return this.request(`/api/books/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            // Don't set Content-Type for FormData, browser will set it with boundary
+            const response = await fetch(`${this.baseUrl}/api/books/${id}`, {
+                method: 'PUT',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Update book failed');
+            }
+            const result = await response.json();
+            // Auto-extract data if response has { success: true, data: {...} }
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            // Fallback to JSON if no files
+            return this.request(`/api/books/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async deleteBook(id) {
@@ -239,10 +291,15 @@ class AdminServices {
         return this.request(`/api/orders/${id}`);
     }
 
-    async updateOrderStatus(id, status, note = '') {
+    async updateOrderStatus(id, orderStatus, note = '') {
+        // API expects: { "order_status": "Delivered" }
+        const body = { order_status: orderStatus };
+        if (note) {
+            body.note = note;
+        }
         return this.request(`/api/orders/${id}/status`, {
             method: 'PATCH',
-            body: JSON.stringify({ status, note })
+            body: JSON.stringify(body)
         });
     }
 
@@ -318,9 +375,10 @@ class AdminServices {
     }
 
     // ==================== Users Management ====================
-    async getUsers(params = {}) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/users/users${query ? '?' + query : ''}`);
+    async getUsers() {
+        // Theo tài liệu: GET /api/users/users KHÔNG có query parameters
+        // Trả về tất cả users (không pagination)
+        return this.request('/api/users/users');
     }
 
     async getUser(id) {
@@ -366,8 +424,9 @@ class AdminServices {
     }
 
     // ==================== Categories Management ====================
-    async getCategories() {
-        return this.request('/api/categories');
+    async getCategories(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/api/categories${query ? '?' + query : ''}`);
     }
 
     async getCategory(id) {
@@ -375,17 +434,63 @@ class AdminServices {
     }
 
     async createCategory(data) {
-        return this.request('/api/categories', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/categories`, {
+                method: 'POST',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Create category failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request('/api/categories', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async updateCategory(id, data) {
-        return this.request(`/api/categories/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/categories/${id}`, {
+                method: 'PUT',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Update category failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request(`/api/categories/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async deleteCategory(id) {
@@ -459,17 +564,63 @@ class AdminServices {
     }
 
     async createCampaign(data) {
-        return this.request('/api/campaigns', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/campaigns`, {
+                method: 'POST',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Create campaign failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request('/api/campaigns', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async updateCampaign(id, data) {
-        return this.request(`/api/campaigns/${id}`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+        // API expects multipart/form-data for file uploads
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/campaigns/${id}`, {
+                method: 'PUT',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Update campaign failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request(`/api/campaigns/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
     }
 
     async deleteCampaign(id) {
@@ -558,7 +709,7 @@ class AdminServices {
 
     // ==================== Reviews Management ====================
     async deleteReview(reviewId) {
-        return this.request(`/api/review/${reviewId}`, {
+        return this.request(`/api/v1/review/${reviewId}`, {
             method: 'DELETE'
         });
     }
@@ -602,68 +753,145 @@ class AdminServices {
     // ==================== Notifications Management ====================
     async getNotificationTemplates(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/notification-templates${query ? '?' + query : ''}`);
+        return this.request(`/api/v1/admin/notification-templates${query ? '?' + query : ''}`);
     }
 
     async createNotificationTemplate(data) {
-        return this.request('/api/admin/notification-templates', {
+        return this.request('/api/v1/admin/notification-templates', {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
     async updateNotificationTemplate(id, data) {
-        return this.request(`/api/admin/notification-templates/${id}`, {
+        return this.request(`/api/v1/admin/notification-templates/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     }
 
     async deleteNotificationTemplate(id) {
-        return this.request(`/api/admin/notification-templates/${id}`, {
+        return this.request(`/api/v1/admin/notification-templates/${id}`, {
             method: 'DELETE'
         });
     }
 
     async sendDynamicNotification(data) {
-        return this.request('/api/admin/dynamic-notifications/send', {
+        return this.request('/api/v1/admin/dynamic-notifications/send', {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
+    // Scheduled Notifications (Section 14 - different from admin scheduled notifications)
     async getScheduledNotifications(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/scheduled-notifications${query ? '?' + query : ''}`);
+        return this.request(`/api/scheduled-notifications${query ? '?' + query : ''}`);
     }
 
     async createScheduledNotification(data) {
-        return this.request('/api/admin/scheduled-notifications', {
+        // API expects multipart/form-data
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/scheduled-notifications`, {
+                method: 'POST',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Create scheduled notification failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request('/api/scheduled-notifications', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+        }
+    }
+
+    async updateScheduledNotification(id, data) {
+        // API expects multipart/form-data
+        if (data instanceof FormData) {
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            const response = await fetch(`${this.baseUrl}/api/scheduled-notifications/${id}`, {
+                method: 'PUT',
+                headers,
+                body: data
+            });
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(error.message || 'Update scheduled notification failed');
+            }
+            const result = await response.json();
+            if (result && typeof result === 'object' && result.success === true && 'data' in result) {
+                return result.data;
+            }
+            return result;
+        } else {
+            return this.request(`/api/scheduled-notifications/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+        }
+    }
+
+    async deleteScheduledNotification(id) {
+        return this.request(`/api/scheduled-notifications/${id}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async getScheduledNotificationDetail(id) {
+        return this.request(`/api/scheduled-notifications/${id}`);
+    }
+
+    // Admin Scheduled Notifications (Section 11.3 - different from Section 14)
+    async getAdminScheduledNotifications(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/api/v1/admin/scheduled-notifications${query ? '?' + query : ''}`);
+    }
+
+    async createAdminScheduledNotification(data) {
+        return this.request('/api/v1/admin/scheduled-notifications', {
             method: 'POST',
             body: JSON.stringify(data)
         });
     }
 
-    async updateScheduledNotification(id, data) {
-        return this.request(`/api/admin/scheduled-notifications/${id}`, {
+    async updateAdminScheduledNotification(id, data) {
+        return this.request(`/api/v1/admin/scheduled-notifications/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         });
     }
 
-    async deleteScheduledNotification(id) {
-        return this.request(`/api/admin/scheduled-notifications/${id}`, {
+    async deleteAdminScheduledNotification(id) {
+        return this.request(`/api/v1/admin/scheduled-notifications/${id}`, {
             method: 'DELETE'
         });
     }
 
     async getInstantNotifications(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/instant-notifications${query ? '?' + query : ''}`);
+        return this.request(`/api/v1/admin/instant-notifications${query ? '?' + query : ''}`);
     }
 
     async sendInstantNotification(data) {
-        return this.request('/api/admin/instant-notifications/send', {
+        return this.request('/api/v1/admin/instant-notifications/send', {
             method: 'POST',
             body: JSON.stringify(data)
         });
@@ -671,21 +899,21 @@ class AdminServices {
 
     async getRecipientsUsers(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/recipients/users${query ? '?' + query : ''}`);
+        return this.request(`/api/v1/admin/recipients/users${query ? '?' + query : ''}`);
     }
 
     async getRecipientsShippers(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/recipients/shippers${query ? '?' + query : ''}`);
+        return this.request(`/api/v1/admin/recipients/shippers${query ? '?' + query : ''}`);
     }
 
     async getNotificationStats(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/notification-stats${query ? '?' + query : ''}`);
+        return this.request(`/api/v1/admin/notification-stats${query ? '?' + query : ''}`);
     }
 
     async getNotificationEvents() {
-        return this.request('/api/admin/notification-events');
+        return this.request('/api/v1/admin/notification-events');
     }
 
     // Notification Template Router
@@ -732,23 +960,23 @@ class AdminServices {
     // Notification History
     async getNotificationHistory(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/notifications/history${query ? '?' + query : ''}`);
+        return this.request(`/api/notification-history${query ? '?' + query : ''}`);
     }
 
     async getNotificationHistoryStats(params = {}) {
         const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/notifications/history/stats${query ? '?' + query : ''}`);
+        return this.request(`/api/notification-history/stats${query ? '?' + query : ''}`);
     }
 
     async cleanOldNotifications(days = 90) {
-        return this.request('/api/admin/notifications/history/clean-old', {
+        return this.request('/api/notification-history/clean-old', {
             method: 'POST',
             body: JSON.stringify({ days })
         });
     }
 
     async exportNotificationHistory(data) {
-        return this.request('/api/admin/notifications/history/export', {
+        return this.request('/api/notification-history/export', {
             method: 'POST',
             body: JSON.stringify(data)
         });
@@ -796,6 +1024,10 @@ class AdminServices {
     async getPayments(params = {}) {
         const query = new URLSearchParams(params).toString();
         return this.request(`/api/payments${query ? '?' + query : ''}`);
+    }
+
+    async getPayment(id) {
+        return this.request(`/api/payments/${id}`);
     }
 
     async createPayment(data) {
@@ -882,47 +1114,120 @@ class AdminServices {
 
     // ==================== Shipper Notifications ====================
     async getShipperNotificationStatus() {
-        return this.request('/api/admin/shipper-notifications/status');
+        return this.request('/api/v1/shipper-notifications/status');
     }
 
     async testAwaitingPickupNotification(orderId, shipperId) {
-        return this.request('/api/admin/shipper-notifications/test-awaiting-pickup', {
+        return this.request('/api/v1/shipper-notifications/test-awaiting-pickup', {
             method: 'POST',
             body: JSON.stringify({ orderId, shipperId })
         });
     }
 
     async testDeliverySuccessNotification(orderId, shipperId) {
-        return this.request('/api/admin/shipper-notifications/test-delivery-success', {
+        return this.request('/api/v1/shipper-notifications/test-delivery-success', {
             method: 'POST',
             body: JSON.stringify({ orderId, shipperId })
         });
     }
 
-    async testRatingNotification(orderId, shipperId, rating, comment) {
-        return this.request('/api/admin/shipper-notifications/test-rating', {
+    async testRatingNotification(shipperId, ratingData) {
+        return this.request('/api/v1/shipper-notifications/test-rating', {
             method: 'POST',
-            body: JSON.stringify({ orderId, shipperId, rating, comment })
+            body: JSON.stringify({ shipper_id: shipperId, rating_data: ratingData })
         });
     }
 
-    async broadcastAwaitingPickup(orderId) {
-        return this.request('/api/admin/shipper-notifications/broadcast-awaiting-pickup', {
+    async broadcastAwaitingPickup(orderData) {
+        return this.request('/api/v1/shipper-notifications/broadcast-awaiting-pickup', {
             method: 'POST',
-            body: JSON.stringify({ orderId })
+            body: JSON.stringify({ order_data: orderData })
         });
     }
 
-    async getShippersForNotification(params = {}) {
-        const query = new URLSearchParams(params).toString();
-        return this.request(`/api/admin/shipper-notifications/shippers${query ? '?' + query : ''}`);
+    async getShippersForNotification() {
+        return this.request('/api/v1/shipper-notifications/shippers');
     }
 
-    async sendNotificationToOrderShipper(orderId, type) {
-        return this.request('/api/admin/shipper-notifications/send-to-order-shipper', {
+    async sendNotificationToOrderShipper(orderId, notificationType) {
+        return this.request('/api/v1/shipper-notifications/send-to-order-shipper', {
             method: 'POST',
-            body: JSON.stringify({ orderId, type })
+            body: JSON.stringify({ order_id: orderId, notification_type: notificationType })
         });
+    }
+
+    // ==================== CKEditor Upload ====================
+    async uploadCKEditorImage(file) {
+        const formData = new FormData();
+        formData.append('upload', file);
+        
+        const token = this.getToken();
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`${this.baseUrl}/api/ckeditor/ckeditor5-upload`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Upload image failed');
+        }
+        
+        const result = await response.json();
+        // Response format: { "default": "https://cloudinary.com/..." }
+        return result.default || result.url || result;
+    }
+
+    async uploadCKEditorImageFromUrl(url) {
+        return this.request('/api/ckeditor/ckeditor5-upload-from-url', {
+            method: 'POST',
+            body: JSON.stringify({ url })
+        });
+    }
+
+    async uploadCKEditorImageBase64(imageData) {
+        return this.request('/api/ckeditor/ckeditor5-upload-base64', {
+            method: 'POST',
+            body: JSON.stringify({ imageData })
+        });
+    }
+
+    async uploadCKEditorImagesMultiple(files) {
+        const formData = new FormData();
+        // files should be an array of File objects
+        if (Array.isArray(files)) {
+            files.forEach((file, index) => {
+                formData.append('upload', file);
+            });
+        } else {
+            formData.append('upload', files);
+        }
+        
+        const token = this.getToken();
+        const headers = {};
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(`${this.baseUrl}/api/ckeditor/ckeditor5-upload-multiple`, {
+            method: 'POST',
+            headers,
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.message || 'Upload images failed');
+        }
+        
+        const result = await response.json();
+        // Response format: { "urls": ["https://...", "https://..."] }
+        return result.urls || result;
     }
 
     // ==================== Utility Methods ====================
@@ -958,4 +1263,5 @@ class AdminServices {
 
 // Export singleton instance
 window.AdminServices = new AdminServices();
+
 

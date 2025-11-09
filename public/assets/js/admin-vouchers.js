@@ -164,7 +164,12 @@ async function loadVouchers() {
             throw new Error('AdminServices is not loaded');
         }
         
-        const params = { page: currentPage, limit: pageSize };
+        // Theo tài liệu: GET /api/vouchers hỗ trợ: page, limit, search, voucher_type, status
+        // KHÔNG hỗ trợ sortBy/sortOrder (mặc định sort theo createdAt desc)
+        const params = { 
+            page: currentPage, 
+            limit: pageSize 
+        };
         if (filters.search) params.search = filters.search;
         if (filters.voucher_type) params.voucher_type = filters.voucher_type;
         if (filters.status) params.status = filters.status;

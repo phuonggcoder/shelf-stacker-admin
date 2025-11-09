@@ -137,45 +137,59 @@ async function loadUsers() {
             throw new Error('AdminServices is not loaded');
         }
         
-        const params = { page: currentPage, limit: pageSize };
-        if (filters.search) params.search = filters.search;
-        if (filters.role) params.role = filters.role;
-        if (filters.status) params.status = filters.status;
+        // Theo tài liệu: GET /api/users/users KHÔNG có query parameters
+        // Trả về tất cả users (không pagination)
+        // Nếu cần pagination, có thể filter client-side
+        const params = {};
+        // Không có query parameters theo tài liệu
 
         console.log('👥 Loading users with params:', params);
         const response = await window.AdminServices.getUsers(params);
         console.log('👥 Users response received:', response);
         
-        // API có thể trả về { users: [...] } hoặc { data: [...] } hoặc array trực tiếp
-        const users = response.users || response.data || (Array.isArray(response) ? response : []);
+        // API trả về array trực tiếp (không pagination theo tài liệu)
+        const users = Array.isArray(response) ? response : (response.users || response.data || []);
         
-        if (Array.isArray(users) && users.length > 0) {
-            renderUsers(users);
-            
-            // Xử lý pagination
-            let paginationData;
-            if (response.pagination) {
-                paginationData = response.pagination;
-            } else {
-                const total = response.total || response.pagination?.total || users.length;
-                const limit = response.limit || response.pagination?.limit || pageSize;
-                const page = response.page || response.pagination?.page || currentPage;
-                const pages = response.pages || response.pagination?.pages || response.pagination?.totalPages || Math.ceil(total / limit);
-                
-                paginationData = {
-                    page: page,
-                    limit: limit,
-                    total: total,
-                    pages: pages,
-                    totalPages: pages
-                };
-                
-                if (response.page) {
-                    currentPage = response.page;
-                }
-            }
-            
-            updatePagination(paginationData);
+        // Filter và paginate client-side vì API không hỗ trợ
+        let filteredUsers = users;
+        
+        // Apply client-side filters
+        if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            filteredUsers = filteredUsers.filter(u => 
+                (u.email && u.email.toLowerCase().includes(searchLower)) ||
+                (u.full_name && u.full_name.toLowerCase().includes(searchLower)) ||
+                (u.username && u.username.toLowerCase().includes(searchLower))
+            );
+        }
+        if (filters.role) {
+            filteredUsers = filteredUsers.filter(u => 
+                u.roles && u.roles.includes(filters.role)
+            );
+        }
+        if (filters.status) {
+            filteredUsers = filteredUsers.filter(u => {
+                if (filters.status === 'active') return u.isActive !== false;
+                if (filters.status === 'inactive') return u.isActive === false;
+                return true;
+            });
+        }
+        
+        // Client-side pagination
+        const total = filteredUsers.length;
+        const start = (currentPage - 1) * pageSize;
+        const end = start + pageSize;
+        const paginatedUsers = filteredUsers.slice(start, end);
+        
+        if (paginatedUsers.length > 0) {
+            renderUsers(paginatedUsers);
+            updatePagination({ 
+                page: currentPage, 
+                limit: pageSize, 
+                total: total, 
+                pages: Math.ceil(total / pageSize), 
+                totalPages: Math.ceil(total / pageSize) 
+            });
         } else {
             renderUsers([]);
             updatePagination({ page: 1, limit: pageSize, total: 0, pages: 1, totalPages: 1 });

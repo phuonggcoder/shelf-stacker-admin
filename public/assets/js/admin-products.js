@@ -29,7 +29,9 @@ let totalPages = 1;
 let filters = {
     search: '',
     category: '',
-    status: ''
+    status: '',
+    featured: '',
+    stock: ''
 };
 let sortBy = 'createdAt'; // Mặc định sắp xếp theo ngày tạo
 let sortOrder = 'desc'; // Mặc định giảm dần
@@ -74,18 +76,36 @@ async function initProductsPage() {
 }
 
 function setupEventListeners() {
-    // Search
+    // Search with debounce
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = value ? 'block' : 'none';
+            }
+            
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                filters.search = e.target.value;
+                filters.search = value;
                 currentPage = 1;
                 loadProducts();
             }, 500);
         });
+        
+        // Clear search button
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        if (clearSearchBtn) {
+            clearSearchBtn.addEventListener('click', () => {
+                searchInput.value = '';
+                clearSearchBtn.style.display = 'none';
+                filters.search = '';
+                currentPage = 1;
+                loadProducts();
+            });
+        }
     }
 
     // Filters
@@ -102,6 +122,25 @@ function setupEventListeners() {
     if (statusFilter) {
         statusFilter.addEventListener('change', (e) => {
             filters.status = e.target.value;
+            currentPage = 1;
+            loadProducts();
+        });
+    }
+    
+    // Quick filters
+    const featuredFilter = document.getElementById('featuredFilter');
+    if (featuredFilter) {
+        featuredFilter.addEventListener('change', (e) => {
+            filters.featured = e.target.value;
+            currentPage = 1;
+            loadProducts();
+        });
+    }
+    
+    const stockFilter = document.getElementById('stockFilter');
+    if (stockFilter) {
+        stockFilter.addEventListener('change', (e) => {
+            filters.stock = e.target.value;
             currentPage = 1;
             loadProducts();
         });
@@ -123,6 +162,29 @@ function setupEventListeners() {
             sortOrder = e.target.value;
             currentPage = 1;
             loadProducts();
+        });
+    }
+    
+    // Clear all filters
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    if (clearFiltersBtn) {
+        clearFiltersBtn.addEventListener('click', () => {
+            filters = { search: '', category: '', status: '', featured: '', stock: '' };
+            sortBy = 'createdAt';
+            sortOrder = 'desc';
+            currentPage = 1;
+            
+            // Reset form inputs
+            if (searchInput) searchInput.value = '';
+            if (categoryFilter) categoryFilter.value = '';
+            if (statusFilter) statusFilter.value = '';
+            if (featuredFilter) featuredFilter.value = '';
+            if (stockFilter) stockFilter.value = '';
+            if (sortBySelect) sortBySelect.value = 'createdAt';
+            if (sortOrderSelect) sortOrderSelect.value = 'desc';
+            
+            loadProducts();
+            showToast('Đã xóa tất cả bộ lọc', 'info');
         });
     }
 
@@ -184,6 +246,13 @@ async function loadCategories() {
     }
 }
 
+// Refresh products data (optimized version)
+async function refreshProductsData() {
+    // Reset to first page when refreshing after CRUD
+    currentPage = 1;
+    await loadProducts();
+}
+
 async function loadProducts() {
     showLoading();
     
@@ -192,16 +261,23 @@ async function loadProducts() {
             throw new Error('AdminServices is not loaded');
         }
         
+        // Theo tài liệu: GET /api/books/admin hỗ trợ: page, limit, category, status, search
+        // KHÔNG hỗ trợ sortBy/sortOrder (mặc định sort theo createdAt desc)
         const params = {
             page: currentPage,
-            limit: pageSize,
-            sortBy: sortBy,
-            sortOrder: sortOrder
+            limit: pageSize
         };
         
         if (filters.search) params.search = filters.search;
         if (filters.category) params.category = filters.category;
-        if (filters.status) params.status = filters.status;
+        // Status filter: in_stock hoặc out_of_stock
+        if (filters.status) {
+            params.status = filters.status;
+        } else if (filters.stock) {
+            // Stock filter có thể override status
+            params.status = filters.stock;
+        }
+        // Featured filter không được hỗ trợ trong API, sẽ filter client-side nếu cần
 
         console.log('📚 Loading books with params:', params);
         const response = await window.AdminServices.getBooks(params);
@@ -285,20 +361,26 @@ function renderProducts(products) {
         return;
     }
 
-    if (products.length === 0) {
-        console.log('📚 No products to render');
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="9" style="text-align: center; padding: 3rem;">
-                    <i class="fas fa-inbox" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
-                    <p style="color: #6b7280;">Không tìm thấy sản phẩm nào</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
+    // Add fade animation
+    tbody.style.opacity = '0.5';
+    tbody.style.transition = 'opacity 0.2s';
 
-    tbody.innerHTML = products.map(book => {
+    setTimeout(() => {
+        if (products.length === 0) {
+            console.log('📚 No products to render');
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-inbox" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                        <p style="color: #6b7280;">Không tìm thấy sản phẩm nào</p>
+                    </td>
+                </tr>
+            `;
+            tbody.style.opacity = '1';
+            return;
+        }
+
+        tbody.innerHTML = products.map(book => {
         // Escape tất cả các giá trị để tránh XSS và syntax errors
         const bookId = book._id || '';
         const title = escapeHtml(book.title || 'N/A');
@@ -354,13 +436,19 @@ function renderProducts(products) {
             </td>
         </tr>
     `;
-    }).join('');
+        }).join('');
 
-    // Update count
-    const countEl = document.getElementById('productsCount');
-    if (countEl) {
-        countEl.textContent = `${products.length} sản phẩm`;
-    }
+        // Update count
+        const countEl = document.getElementById('productsCount');
+        if (countEl) {
+            countEl.textContent = `${products.length} sản phẩm`;
+        }
+        
+        // Fade in animation
+        setTimeout(() => {
+            tbody.style.opacity = '1';
+        }, 50);
+    }, 200);
 }
 
 function updatePagination(pagination) {
@@ -379,23 +467,41 @@ function updatePagination(pagination) {
     const prevBtn = document.getElementById('prevPage');
     const nextBtn = document.getElementById('nextPage');
 
+    // Update pagination info with better formatting
     if (currentPageEl) currentPageEl.textContent = currentPage;
     if (totalPagesEl) totalPagesEl.textContent = totalPages;
-    if (totalItemsEl) totalItemsEl.textContent = pagination.total || 0;
-    if (pageInfoEl) {
-        const start = (currentPage - 1) * pageSize + 1;
-        const end = Math.min(currentPage * pageSize, pagination.total || 0);
-        pageInfoEl.textContent = `${start}-${end}`;
+    if (totalItemsEl) {
+        const total = pagination.total || 0;
+        totalItemsEl.textContent = total.toLocaleString('vi-VN');
     }
+    if (pageInfoEl) {
+        const total = pagination.total || 0;
+        const start = total > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+        const end = Math.min(currentPage * pageSize, total);
+        const totalItemsSpan = pageInfoEl.querySelector('#totalItems') || document.getElementById('totalItems');
+        if (totalItemsSpan) {
+            totalItemsSpan.textContent = total.toLocaleString('vi-VN');
+        }
+        const pageInfoSpan = pageInfoEl.querySelector('span:not(#totalItems)');
+        if (pageInfoSpan) {
+            pageInfoSpan.textContent = `${start.toLocaleString('vi-VN')}-${end.toLocaleString('vi-VN')}`;
+        } else {
+            pageInfoEl.innerHTML = `Hiển thị <span>${start.toLocaleString('vi-VN')}-${end.toLocaleString('vi-VN')}</span> của <span id="totalItems">${total.toLocaleString('vi-VN')}</span> sản phẩm`;
+        }
+    }
+    
+    // Update button states with better UX
     if (prevBtn) {
         prevBtn.disabled = currentPage <= 1;
         prevBtn.style.opacity = currentPage <= 1 ? '0.5' : '1';
         prevBtn.style.cursor = currentPage <= 1 ? 'not-allowed' : 'pointer';
+        prevBtn.title = currentPage <= 1 ? 'Đã ở trang đầu' : 'Trang trước';
     }
     if (nextBtn) {
         nextBtn.disabled = currentPage >= totalPages;
         nextBtn.style.opacity = currentPage >= totalPages ? '0.5' : '1';
         nextBtn.style.cursor = currentPage >= totalPages ? 'not-allowed' : 'pointer';
+        nextBtn.title = currentPage >= totalPages ? 'Đã ở trang cuối' : 'Trang sau';
     }
 }
 
@@ -492,71 +598,143 @@ async function deleteBook(id) {
     try {
         showLoading();
         await window.AdminServices.deleteBook(id);
-        showToast('Xóa sản phẩm thành công', 'success');
-        loadProducts();
+        showToast('✅ Xóa sản phẩm thành công!', 'success');
+        // Refresh data without reloading page
+        await refreshProductsData();
     } catch (error) {
         console.error('Error deleting book:', error);
-        showToast('Không thể xóa sản phẩm', 'error');
+        showToast('❌ ' + (error.message || 'Không thể xóa sản phẩm'), 'error');
     } finally {
         hideLoading();
     }
 }
 
-function showAddBookModal() {
-    const form = AdminCRUDForms.createBookForm();
-    const modal = AdminUIComponents.createModal({
-        title: 'Thêm sách mới',
-        content: form.outerHTML,
-        size: 'large',
-        buttons: [
-            {
-                text: 'Hủy',
-                class: 'btn-secondary',
-                onClick: 'this.closest(\'.admin-modal-overlay\').remove();'
-            },
-            {
-                text: 'Lưu',
-                class: 'btn-primary',
-                icon: 'fas fa-save',
-                onClick: 'this.closest(\'form\')?.requestSubmit();'
-            }
-        ]
-    });
-    
-    // Re-attach form submit handler
-    const formElement = modal.querySelector('form');
+async function showAddBookModal() {
+    try {
+        // Load categories for the form
+        const categories = await window.AdminServices.getCategories();
+        const categoriesList = Array.isArray(categories) ? categories : (categories.categories || categories.data || []);
+        
+        const form = AdminCRUDForms.createBookForm();
+        
+        // Add categories select if not exists
+        const categoriesSelect = form.querySelector('[name="categories"]');
+        if (!categoriesSelect && categoriesList.length > 0) {
+            // Add categories field to form
+            const categoriesField = document.createElement('div');
+            categoriesField.className = 'form-group';
+            categoriesField.innerHTML = `
+                <label class="form-label">Danh mục</label>
+                <select name="categories" class="form-select" multiple style="min-height: 100px;">
+                    ${categoriesList.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('')}
+                </select>
+                <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">Giữ Ctrl/Cmd để chọn nhiều danh mục</small>
+            `;
+            form.insertBefore(categoriesField, form.querySelector('.form-group:last-child'));
+        }
+        
+        const modal = AdminUIComponents.createModal({
+            title: 'Thêm sách mới',
+            content: form.outerHTML,
+            size: 'large',
+            buttons: [
+                {
+                    text: 'Hủy',
+                    class: 'btn-secondary',
+                    onClick: 'this.closest(\'.admin-modal-overlay\').remove();'
+                },
+                {
+                    text: 'Lưu',
+                    class: 'btn-primary',
+                    icon: 'fas fa-save',
+                    onClick: 'this.closest(\'form\')?.requestSubmit();'
+                }
+            ]
+        });
+        
+        // Re-attach form submit handler
+        const formElement = modal.querySelector('form');
     if (formElement) {
         formElement.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(formElement);
-            const data = {};
-            for (let [key, value] of formData.entries()) {
-                data[key] = value;
-            }
             
             // Handle checkbox
-            data.featured = formElement.querySelector('[name="featured"]')?.checked || false;
+            const featured = formElement.querySelector('[name="featured"]')?.checked || false;
+            formData.set('featured', featured);
+            
+            // Handle categories array
+            const categoryInputs = formElement.querySelectorAll('[name="categories"]:checked, select[name="categories"] option:checked');
+            if (categoryInputs.length > 0) {
+                // Remove old categories entries
+                formData.delete('categories');
+                categoryInputs.forEach(opt => {
+                    if (opt.value) {
+                        formData.append('categories', opt.value);
+                    }
+                });
+            }
+            
+            // Convert number fields
+            const price = formData.get('price');
+            if (price) formData.set('price', parseFloat(price));
+            const stock = formData.get('stock');
+            if (stock) formData.set('stock', parseInt(stock));
+            const pageCount = formData.get('page_count');
+            if (pageCount) formData.set('page_count', parseInt(pageCount));
+            const weight = formData.get('weight');
+            if (weight) formData.set('weight', parseFloat(weight));
             
             try {
                 AdminUIComponents.showLoading('Đang lưu...');
-                await window.AdminServices.createBook(data);
-                showToast('Tạo sách thành công', 'success');
+                const result = await window.AdminServices.createBook(formData);
+                showToast('✅ Tạo sách thành công!', 'success');
                 modal.remove();
-                loadProducts();
+                // Refresh data without reloading page
+                await refreshProductsData();
             } catch (error) {
-                showToast(error.message || 'Không thể tạo sách', 'error');
+                console.error('Error creating book:', error);
+                showToast('❌ ' + (error.message || 'Không thể tạo sách'), 'error');
             } finally {
                 AdminUIComponents.hideLoading();
             }
         });
     }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        showToast('Không thể tải danh sách danh mục', 'error');
+    }
 }
 
 function showEditBookModal(bookId) {
     AdminUIComponents.showLoading('Đang tải...');
-    window.AdminServices.getBook(bookId).then(book => {
+    Promise.all([
+        window.AdminServices.getBook(bookId),
+        window.AdminServices.getCategories()
+    ]).then(([book, categories]) => {
         AdminUIComponents.hideLoading();
+        const categoriesList = Array.isArray(categories) ? categories : (categories.categories || categories.data || []);
         const form = AdminCRUDForms.createBookForm(book);
+        
+        // Add categories select if not exists
+        const categoriesSelect = form.querySelector('[name="categories"]');
+        if (!categoriesSelect && categoriesList.length > 0) {
+            // Get current book categories
+            const bookCategories = book.categories?.map(c => c._id || c) || [];
+            
+            // Add categories field to form
+            const categoriesField = document.createElement('div');
+            categoriesField.className = 'form-group';
+            categoriesField.innerHTML = `
+                <label class="form-label">Danh mục</label>
+                <select name="categories" class="form-select" multiple style="min-height: 100px;">
+                    ${categoriesList.map(cat => `<option value="${cat._id}" ${bookCategories.includes(cat._id) ? 'selected' : ''}>${cat.name}</option>`).join('')}
+                </select>
+                <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">Giữ Ctrl/Cmd để chọn nhiều danh mục</small>
+            `;
+            form.insertBefore(categoriesField, form.querySelector('.form-group:last-child'));
+        }
+        
         const modal = AdminUIComponents.createModal({
             title: 'Sửa sách',
             content: form.outerHTML,
@@ -581,20 +759,43 @@ function showEditBookModal(bookId) {
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(formElement);
-                const data = {};
-                for (let [key, value] of formData.entries()) {
-                    data[key] = value;
+                
+                // Handle checkbox
+                const featured = formElement.querySelector('[name="featured"]')?.checked || false;
+                formData.set('featured', featured);
+                
+                // Handle categories array
+                const categoryInputs = formElement.querySelectorAll('[name="categories"]:checked, select[name="categories"] option:checked');
+                if (categoryInputs.length > 0) {
+                    // Remove old categories entries
+                    formData.delete('categories');
+                    categoryInputs.forEach(opt => {
+                        if (opt.value) {
+                            formData.append('categories', opt.value);
+                        }
+                    });
                 }
-                data.featured = formElement.querySelector('[name="featured"]')?.checked || false;
+                
+                // Convert number fields
+                const price = formData.get('price');
+                if (price) formData.set('price', parseFloat(price));
+                const stock = formData.get('stock');
+                if (stock) formData.set('stock', parseInt(stock));
+                const pageCount = formData.get('page_count');
+                if (pageCount) formData.set('page_count', parseInt(pageCount));
+                const weight = formData.get('weight');
+                if (weight) formData.set('weight', parseFloat(weight));
                 
                 try {
                     AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.updateBook(bookId, data);
-                    showToast('Cập nhật sách thành công', 'success');
+                    const result = await window.AdminServices.updateBook(bookId, formData);
+                    showToast('✅ Cập nhật sách thành công!', 'success');
                     modal.remove();
-                    loadProducts();
+                    // Refresh data without reloading page
+                    await refreshProductsData();
                 } catch (error) {
-                    showToast(error.message || 'Không thể cập nhật sách', 'error');
+                    console.error('Error updating book:', error);
+                    showToast('❌ ' + (error.message || 'Không thể cập nhật sách'), 'error');
                 } finally {
                     AdminUIComponents.hideLoading();
                 }

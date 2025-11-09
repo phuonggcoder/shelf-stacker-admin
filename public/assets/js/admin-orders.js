@@ -162,18 +162,18 @@ async function loadOrders() {
             throw new Error('AdminServices is not loaded');
         }
         
+        // Theo tài liệu: GET /api/orders hỗ trợ: page, limit, status, user_id, shipper_id
+        // KHÔNG hỗ trợ sortBy/sortOrder (mặc định sort theo createdAt desc)
         const params = {
             page: currentPage,
-            limit: pageSize,
-            sortBy: sortBy,
-            sortOrder: sortOrder
+            limit: pageSize
         };
         
-        if (filters.search) params.search = filters.search;
         if (filters.status) params.status = filters.status;
-        if (filters.payment_method) params.payment_method = filters.payment_method;
-        if (filters.dateFrom) params.start_date = filters.dateFrom;
-        if (filters.dateTo) params.end_date = filters.dateTo;
+        if (filters.user_id) params.user_id = filters.user_id;
+        if (filters.shipper_id) params.shipper_id = filters.shipper_id;
+        // Search, payment_method, dateFrom, dateTo không được hỗ trợ trong API này
+        // Có thể filter client-side hoặc sử dụng endpoint khác
 
         console.log('📦 Loading orders with params:', params);
         const response = await window.AdminServices.getOrders(params);

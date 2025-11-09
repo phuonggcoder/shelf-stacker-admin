@@ -26,6 +26,7 @@ function waitForAdminServices(maxWait = 5000) {
 let categories = [];
 let sortBy = 'name'; // Mặc định sắp xếp theo tên
 let sortOrder = 'asc'; // Mặc định tăng dần
+let filters = { search: '', status: '', visible: '' };
 
 document.addEventListener('DOMContentLoaded', async function() {
     const pathname = window.location.pathname;
@@ -110,8 +111,13 @@ async function loadCategories() {
             throw new Error('AdminServices is not loaded');
         }
         
+        // Theo tài liệu: GET /api/categories hỗ trợ: visible (string: "true" hoặc "false")
+        const params = {};
+        if (filters.visible !== undefined && filters.visible !== '') {
+            params.visible = filters.visible;
+        }
         console.log('📁 Loading categories...');
-        const response = await window.AdminServices.getCategories();
+        const response = await window.AdminServices.getCategories(params);
         console.log('📁 Categories response received:', response);
         
         // API có thể trả về array trực tiếp hoặc { categories: [...] }
@@ -319,20 +325,25 @@ async function editCategory(id) {
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(formElement);
-                const data = {};
-                for (let [key, value] of formData.entries()) {
-                    data[key] = value;
+                
+                // Handle checkbox
+                const isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
+                formData.set('isVisible', isVisible);
+                
+                // Remove categoryBook_id if empty
+                const categoryBookId = formData.get('categoryBook_id');
+                if (!categoryBookId || categoryBookId === '') {
+                    formData.delete('categoryBook_id');
                 }
-                data.isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
-                if (!data.categoryBook_id) delete data.categoryBook_id;
                 
                 try {
                     AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.updateCategory(id, data);
+                    await window.AdminServices.updateCategory(id, formData);
                     showToast('Cập nhật danh mục thành công', 'success');
                     modal.remove();
                     loadCategories();
                 } catch (error) {
+                    console.error('Error updating category:', error);
                     showToast(error.message || 'Không thể cập nhật danh mục', 'error');
                 } finally {
                     AdminUIComponents.hideLoading();
@@ -417,20 +428,25 @@ async function showAddCategoryModal() {
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const formData = new FormData(formElement);
-                const data = {};
-                for (let [key, value] of formData.entries()) {
-                    data[key] = value;
+                
+                // Handle checkbox
+                const isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
+                formData.set('isVisible', isVisible);
+                
+                // Remove categoryBook_id if empty
+                const categoryBookId = formData.get('categoryBook_id');
+                if (!categoryBookId || categoryBookId === '') {
+                    formData.delete('categoryBook_id');
                 }
-                data.isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
-                if (!data.categoryBook_id) delete data.categoryBook_id;
                 
                 try {
                     AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.createCategory(data);
+                    await window.AdminServices.createCategory(formData);
                     showToast('Tạo danh mục thành công', 'success');
                     modal.remove();
                     loadCategories();
                 } catch (error) {
+                    console.error('Error creating category:', error);
                     showToast(error.message || 'Không thể tạo danh mục', 'error');
                 } finally {
                     AdminUIComponents.hideLoading();

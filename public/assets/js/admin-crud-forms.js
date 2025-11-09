@@ -94,10 +94,28 @@ class AdminCRUDForms {
                 label: 'Sách nổi bật',
                 type: 'checkbox',
                 value: bookData?.featured || false
+            },
+            {
+                name: 'thumbnail',
+                label: 'Ảnh thumbnail',
+                type: 'file',
+                accept: 'image/*',
+                value: bookData?.thumbnail || '',
+                helpText: 'Upload ảnh thumbnail cho sách'
+            },
+            {
+                name: 'cover_images',
+                label: 'Ảnh bìa (có thể chọn nhiều)',
+                type: 'file',
+                accept: 'image/*',
+                multiple: true,
+                helpText: 'Upload một hoặc nhiều ảnh bìa cho sách'
             }
         ];
 
-        return AdminUIComponents.createForm(fields, async (data) => {
+        // Note: This form is used by showAddBookModal and showEditBookModal
+        // They handle FormData submission directly, so this onSubmit is not used
+        return AdminUIComponents.createForm(fields, async (data, formElement) => {
             try {
                 AdminUIComponents.showLoading('Đang lưu...');
                 
@@ -179,6 +197,13 @@ class AdminCRUDForms {
                 label: 'Hiển thị',
                 type: 'checkbox',
                 value: categoryData?.isVisible !== false
+            },
+            {
+                name: 'image',
+                label: 'Ảnh danh mục',
+                type: 'file',
+                accept: 'image/*',
+                helpText: 'Upload ảnh cho danh mục'
             }
         ];
 
