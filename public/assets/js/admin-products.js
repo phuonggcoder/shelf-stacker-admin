@@ -282,43 +282,60 @@ async function loadProducts() {
         console.log('📚 Loading books with params:', params);
         const response = await window.AdminServices.getBooks(params);
         console.log('📚 Books response received:', response);
+        console.log('📚 Response type:', typeof response);
+        console.log('📚 Response keys:', response ? Object.keys(response) : 'null');
         
-        // API trả về { books: [...], pagination: {...} } hoặc { books: [...], total, page, limit, pages }
-        const books = response.books || response.data || (Array.isArray(response) ? response : []);
+        // Use helper functions from api-response-helpers.js
+        // Ensure helper functions are available (fallback if not loaded)
+        const extractDataFunc = window.extractData || function(resp, key) {
+            if (!resp) return [];
+            if (Array.isArray(resp)) return resp;
+            if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+            if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+            return [];
+        };
         
-        // Đảm bảo chỉ render số sản phẩm trong trang hiện tại (không render tất cả)
-        if (Array.isArray(books) && books.length > 0) {
-            renderProducts(books);
-            
-            // Xử lý pagination từ response
-            let paginationData;
-            if (response.pagination) {
-                paginationData = response.pagination;
-            } else {
-                // Tính toán từ response trực tiếp
-                const total = response.total || response.pagination?.total || books.length;
-                const limit = response.limit || response.pagination?.limit || pageSize;
-                const page = response.page || response.pagination?.page || currentPage;
-                const pages = response.pages || response.pagination?.pages || response.pagination?.totalPages || Math.ceil(total / limit);
-                
-                paginationData = {
-                    page: page,
-                    limit: limit,
-                    total: total,
-                    pages: pages,
-                    totalPages: pages // Hỗ trợ cả pages và totalPages
-                };
-                
-                // Cập nhật currentPage từ response
-                if (response.page) {
-                    currentPage = response.page;
-                }
+        const extractPaginationFunc = window.extractPagination || function(resp, defaultPage, defaultLimit) {
+            if (!resp) {
+                return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
             }
-            
+            if (resp.pagination) {
+                return {
+                    page: resp.pagination.page || defaultPage,
+                    limit: resp.pagination.limit || defaultLimit,
+                    total: resp.pagination.total || 0,
+                    pages: resp.pagination.pages || resp.pagination.totalPages || 1,
+                    totalPages: resp.pagination.totalPages || resp.pagination.pages || 1
+                };
+            }
+            if (resp.page || resp.total) {
+                const total = resp.total || 0;
+                const limit = resp.limit || defaultLimit;
+                const page = resp.page || defaultPage;
+                const pages = resp.pages || resp.totalPages || Math.ceil(total / limit);
+                return { page, limit, total, pages, totalPages: pages };
+            }
+            return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
+        };
+        
+        // Extract books và pagination using helper functions
+        const books = extractDataFunc(response, 'books');
+        const paginationData = extractPaginationFunc(response, currentPage, pageSize);
+        
+        console.log('📚 Extracted books:', books.length);
+        console.log('📚 Extracted pagination:', paginationData);
+        
+        // Cập nhật currentPage từ pagination
+        if (paginationData.page) {
+            currentPage = paginationData.page;
+        }
+        
+        if (books.length > 0) {
+            renderProducts(books);
             updatePagination(paginationData);
         } else {
             renderProducts([]);
-            updatePagination({ page: 1, limit: pageSize, total: 0, pages: 1, totalPages: 1 });
+            updatePagination(paginationData);
         }
     } catch (error) {
         console.error('Error loading products:', error);
@@ -585,6 +602,8 @@ async function viewBook(id) {
 }
 
 async function deleteBook(id) {
+    console.log('📚 deleteBook called with id:', id);
+    
     const confirmed = await AdminUIComponents.confirm({
         title: 'Xóa sản phẩm',
         message: 'Bạn có chắc chắn muốn xóa sản phẩm này? Hành động này có thể khôi phục.',
@@ -593,16 +612,27 @@ async function deleteBook(id) {
         confirmClass: 'btn-danger'
     });
 
-    if (!confirmed) return;
+    console.log('📚 Confirm dialog result:', confirmed);
+    
+    if (!confirmed) {
+        console.log('📚 Delete cancelled by user');
+        return;
+    }
 
     try {
         showLoading();
+        console.log('📚 Deleting book:', id);
         await window.AdminServices.deleteBook(id);
+        console.log('📚 Book deleted successfully');
         showToast('✅ Xóa sản phẩm thành công!', 'success');
         // Refresh data without reloading page
         await refreshProductsData();
     } catch (error) {
-        console.error('Error deleting book:', error);
+        console.error('❌ Error deleting book:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
         showToast('❌ ' + (error.message || 'Không thể xóa sản phẩm'), 'error');
     } finally {
         hideLoading();
@@ -659,44 +689,90 @@ async function showAddBookModal() {
             e.preventDefault();
             const formData = new FormData(formElement);
             
-            // Handle checkbox
+            // Handle checkbox - FormData needs string values
             const featured = formElement.querySelector('[name="featured"]')?.checked || false;
-            formData.set('featured', featured);
+            formData.set('featured', featured ? 'true' : 'false');
             
-            // Handle categories array
-            const categoryInputs = formElement.querySelectorAll('[name="categories"]:checked, select[name="categories"] option:checked');
-            if (categoryInputs.length > 0) {
+            // Handle categories array - Fix: use select element directly
+            const categorySelect = formElement.querySelector('select[name="categories"]');
+            if (categorySelect) {
                 // Remove old categories entries
                 formData.delete('categories');
-                categoryInputs.forEach(opt => {
-                    if (opt.value) {
-                        formData.append('categories', opt.value);
+                const selectedCategories = Array.from(categorySelect.selectedOptions);
+                selectedCategories.forEach(option => {
+                    if (option.value) {
+                        formData.append('categories', option.value);
                     }
                 });
             }
             
-            // Convert number fields
+            // Convert number fields - FormData values are strings, need to convert
             const price = formData.get('price');
-            if (price) formData.set('price', parseFloat(price));
+            if (price) {
+                const priceNum = parseFloat(price);
+                if (!isNaN(priceNum)) {
+                    formData.set('price', priceNum.toString());
+                }
+            }
             const stock = formData.get('stock');
-            if (stock) formData.set('stock', parseInt(stock));
+            if (stock) {
+                const stockNum = parseInt(stock);
+                if (!isNaN(stockNum)) {
+                    formData.set('stock', stockNum.toString());
+                }
+            }
             const pageCount = formData.get('page_count');
-            if (pageCount) formData.set('page_count', parseInt(pageCount));
+            if (pageCount) {
+                const pageCountNum = parseInt(pageCount);
+                if (!isNaN(pageCountNum)) {
+                    formData.set('page_count', pageCountNum.toString());
+                }
+            }
             const weight = formData.get('weight');
-            if (weight) formData.set('weight', parseFloat(weight));
+            if (weight) {
+                const weightNum = parseFloat(weight);
+                if (!isNaN(weightNum)) {
+                    formData.set('weight', weightNum.toString());
+                }
+            }
+            
+            // Debug: Log FormData contents
+            console.log('📚 FormData contents:', Array.from(formData.entries()));
+            
+            // Disable save button
+            const saveBtn = modal.querySelector('.btn-primary');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Đang lưu...';
+                saveBtn.style.opacity = '0.6';
+            }
             
             try {
                 AdminUIComponents.showLoading('Đang lưu...');
+                console.log('📚 Creating book with FormData...');
                 const result = await window.AdminServices.createBook(formData);
+                console.log('📚 Book created successfully:', result);
                 showToast('✅ Tạo sách thành công!', 'success');
                 modal.remove();
                 // Refresh data without reloading page
                 await refreshProductsData();
             } catch (error) {
-                console.error('Error creating book:', error);
+                console.error('❌ Error creating book:', error);
+                console.error('Error details:', {
+                    message: error.message,
+                    stack: error.stack
+                });
                 showToast('❌ ' + (error.message || 'Không thể tạo sách'), 'error');
             } finally {
                 AdminUIComponents.hideLoading();
+                // Re-enable button
+                if (saveBtn && !modal.parentNode) {
+                    // Modal was removed, don't re-enable
+                } else if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Lưu';
+                    saveBtn.style.opacity = '1';
+                }
             }
         });
     }
@@ -707,14 +783,41 @@ async function showAddBookModal() {
 }
 
 function showEditBookModal(bookId) {
+    console.log('📚 showEditBookModal called with bookId:', bookId);
+    
+    if (!bookId) {
+        console.error('❌ No bookId provided to showEditBookModal');
+        showToast('Lỗi: Không có ID sách', 'error');
+        return;
+    }
+    
     AdminUIComponents.showLoading('Đang tải...');
+    
     Promise.all([
         window.AdminServices.getBook(bookId),
         window.AdminServices.getCategories()
     ]).then(([book, categories]) => {
+        console.log('📚 Book data loaded:', { id: book?._id, title: book?.title });
+        console.log('📚 Categories loaded:', categories?.length || 0);
+        
         AdminUIComponents.hideLoading();
+        
+        if (!book) {
+            console.error('❌ Book data is null or undefined');
+            showToast('Không thể tải thông tin sách', 'error');
+            return;
+        }
+        
         const categoriesList = Array.isArray(categories) ? categories : (categories.categories || categories.data || []);
+        
         const form = AdminCRUDForms.createBookForm(book);
+        console.log('📚 Form created:', !!form);
+        
+        if (!form) {
+            console.error('❌ Failed to create form');
+            showToast('Không thể tạo form', 'error');
+            return;
+        }
         
         // Add categories select if not exists
         const categoriesSelect = form.querySelector('[name="categories"]');
@@ -748,62 +851,191 @@ function showEditBookModal(bookId) {
                 {
                     text: 'Lưu',
                     class: 'btn-primary',
-                    icon: 'fas fa-save',
-                    onClick: 'this.closest(\'form\')?.requestSubmit();'
+                    icon: 'fas fa-save'
+                    // Don't use onClick - we'll attach handler manually
                 }
             ]
         });
         
         const formElement = modal.querySelector('form');
+        const modalFooter = modal.querySelector('.admin-modal-footer') || modal.querySelector('.modal-footer');
+        const cancelBtn = modalFooter ? modalFooter.querySelector('.btn-secondary') : null;
+        const saveBtn = modalFooter ? modalFooter.querySelector('.btn-primary') : modal.querySelector('.btn-primary');
+        
+        // Remove inline onclick from save button and attach proper handler
+        if (saveBtn) {
+            saveBtn.removeAttribute('onclick');
+            saveBtn.setAttribute('type', 'button'); // Prevent form submit by default
+        }
+        
+        console.log('📚 Edit modal setup:', {
+            formFound: !!formElement,
+            saveBtnFound: !!saveBtn,
+            cancelBtnFound: !!cancelBtn,
+            bookId: bookId
+        });
+        
         if (formElement) {
-            formElement.addEventListener('submit', async (e) => {
-                e.preventDefault();
+            // Handle form submission
+            const handleSubmit = async (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                console.log('📚 Form submit triggered for book:', bookId);
+                
                 const formData = new FormData(formElement);
                 
-                // Handle checkbox
+                // Handle checkbox - FormData needs string values
                 const featured = formElement.querySelector('[name="featured"]')?.checked || false;
-                formData.set('featured', featured);
+                formData.set('featured', featured ? 'true' : 'false');
                 
-                // Handle categories array
-                const categoryInputs = formElement.querySelectorAll('[name="categories"]:checked, select[name="categories"] option:checked');
-                if (categoryInputs.length > 0) {
+                // Handle categories array - Fix: use select element directly
+                const categorySelect = formElement.querySelector('select[name="categories"]');
+                if (categorySelect) {
                     // Remove old categories entries
                     formData.delete('categories');
-                    categoryInputs.forEach(opt => {
-                        if (opt.value) {
-                            formData.append('categories', opt.value);
+                    const selectedCategories = Array.from(categorySelect.selectedOptions);
+                    selectedCategories.forEach(option => {
+                        if (option.value) {
+                            formData.append('categories', option.value);
                         }
                     });
                 }
                 
-                // Convert number fields
+                // Convert number fields - FormData values are strings, need to convert
                 const price = formData.get('price');
-                if (price) formData.set('price', parseFloat(price));
+                if (price) {
+                    const priceNum = parseFloat(price);
+                    if (!isNaN(priceNum)) {
+                        formData.set('price', priceNum.toString());
+                    }
+                }
                 const stock = formData.get('stock');
-                if (stock) formData.set('stock', parseInt(stock));
+                if (stock) {
+                    const stockNum = parseInt(stock);
+                    if (!isNaN(stockNum)) {
+                        formData.set('stock', stockNum.toString());
+                    }
+                }
                 const pageCount = formData.get('page_count');
-                if (pageCount) formData.set('page_count', parseInt(pageCount));
+                if (pageCount) {
+                    const pageCountNum = parseInt(pageCount);
+                    if (!isNaN(pageCountNum)) {
+                        formData.set('page_count', pageCountNum.toString());
+                    }
+                }
                 const weight = formData.get('weight');
-                if (weight) formData.set('weight', parseFloat(weight));
+                if (weight) {
+                    const weightNum = parseFloat(weight);
+                    if (!isNaN(weightNum)) {
+                        formData.set('weight', weightNum.toString());
+                    }
+                }
+                
+                // Debug: Log FormData contents
+                console.log('📚 FormData contents (update):', Array.from(formData.entries()));
+                console.log('📚 Updating book ID:', bookId);
+                
+                // Disable save button - try multiple selectors
+                const currentSaveBtn = modalFooter ? modalFooter.querySelector('.btn-primary') : 
+                                      modal.querySelector('button.btn-primary') ||
+                                      modal.querySelector('button[type="button"].btn-primary') ||
+                                      Array.from(modal.querySelectorAll('button')).find(btn => 
+                                          btn.textContent.trim().includes('Lưu') && btn.classList.contains('btn-primary')
+                                      );
+                
+                let originalText = 'Lưu';
+                if (currentSaveBtn) {
+                    originalText = currentSaveBtn.textContent.trim();
+                    currentSaveBtn.disabled = true;
+                    currentSaveBtn.textContent = 'Đang cập nhật...';
+                    currentSaveBtn.style.opacity = '0.6';
+                    currentSaveBtn.style.cursor = 'not-allowed';
+                    console.log('✅ Save button disabled');
+                } else {
+                    console.warn('⚠️  Save button not found in modal');
+                }
                 
                 try {
-                    AdminUIComponents.showLoading('Đang lưu...');
+                    AdminUIComponents.showLoading('Đang cập nhật...');
+                    console.log('📚 Calling AdminServices.updateBook...');
                     const result = await window.AdminServices.updateBook(bookId, formData);
+                    console.log('✅ Book updated successfully:', result);
                     showToast('✅ Cập nhật sách thành công!', 'success');
-                    modal.remove();
+                    
+                    // Close modal
+                    if (modal && modal.parentNode) {
+                        modal.remove();
+                    }
+                    
                     // Refresh data without reloading page
                     await refreshProductsData();
                 } catch (error) {
-                    console.error('Error updating book:', error);
+                    console.error('❌ Error updating book:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
                     showToast('❌ ' + (error.message || 'Không thể cập nhật sách'), 'error');
                 } finally {
                     AdminUIComponents.hideLoading();
+                    
+                    // Re-enable button - try to find it again in case modal structure changed
+                    if (modal && modal.parentNode) {
+                        const btnToEnable = modalFooter ? modalFooter.querySelector('.btn-primary') : 
+                                          modal.querySelector('button.btn-primary') ||
+                                          Array.from(modal.querySelectorAll('button')).find(btn => 
+                                              btn.classList.contains('btn-primary')
+                                          );
+                        if (btnToEnable) {
+                            btnToEnable.disabled = false;
+                            btnToEnable.textContent = originalText;
+                            btnToEnable.style.opacity = '1';
+                            btnToEnable.style.cursor = 'pointer';
+                            console.log('✅ Save button re-enabled');
+                        }
+                    }
                 }
-            });
+            };
+            
+            // Attach submit handler to form
+            formElement.addEventListener('submit', handleSubmit);
+            
+            // Attach click handler to save button
+            if (saveBtn) {
+                saveBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('📚 Save button clicked - triggering form submit');
+                    handleSubmit(e);
+                }, { once: false });
+            } else {
+                console.error('❌ Save button not found!');
+            }
+            
+            // Ensure cancel button works
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    modal.remove();
+                });
+            }
+        } else {
+            console.error('❌ Form element not found in modal!');
         }
     }).catch(error => {
+        console.error('❌ Error in showEditBookModal:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name,
+            bookId: bookId
+        });
         AdminUIComponents.hideLoading();
-        showToast('Không thể tải thông tin sách', 'error');
+        showToast('Không thể tải thông tin sách: ' + (error.message || 'Lỗi không xác định'), 'error');
     });
 }
 

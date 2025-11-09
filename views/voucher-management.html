@@ -63,6 +63,7 @@
             margin-top: 1rem;
         }
     </style>
+    <script src="/assets/js/loading-state-helper.js"></script>
 </head>
 <body class="sb-nav-fixed">
     <%- include('../partials/nav.ejs') %>
@@ -267,6 +268,8 @@
     </div>
 
     <%- include('../partials/scripts.ejs') %>
+        <script src="/assets/js/global-error-handler.js"></script>
+    <script src="/assets/js/retry-helper.js"></script>
     <script src="/assets/js/apiClient.js"></script>
     <script src="/assets/js/voucherManagement.js"></script>
 </body>

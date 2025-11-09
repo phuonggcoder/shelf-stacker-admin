@@ -108,6 +108,14 @@ function setupEventListeners() {
                     }
                     data.roles = [data.roles];
                     
+                    // Disable save button
+                    const saveBtn = modal.querySelector('.btn-primary');
+                    if (saveBtn) {
+                        saveBtn.disabled = true;
+                        saveBtn.textContent = 'Đang lưu...';
+                        saveBtn.style.opacity = '0.6';
+                    }
+                    
                     try {
                         AdminUIComponents.showLoading('Đang lưu...');
                         await window.AdminServices.createUser(data);
@@ -118,6 +126,14 @@ function setupEventListeners() {
                         showToast(error.message || 'Không thể tạo người dùng', 'error');
                     } finally {
                         AdminUIComponents.hideLoading();
+                        // Re-enable button
+                        if (saveBtn && !modal.parentNode) {
+                            // Modal was removed
+                        } else if (saveBtn) {
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = 'Lưu';
+                            saveBtn.style.opacity = '1';
+                        }
                     }
                 });
             }

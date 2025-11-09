@@ -1,0 +1,272 @@
+{
+  "timestamp": "2025-11-09T11:04:48.604Z",
+  "summary": {
+    "totalFiles": 10,
+    "totalIssues": 7,
+    "totalRecommendations": 58
+  },
+  "issues": [
+    {
+      "file": "admin-dashboard.js",
+      "issue": "Too many console.log (8) - should be removed in production"
+    },
+    {
+      "file": "admin-products.js",
+      "issue": "Too many console.log (27) - should be removed in production"
+    },
+    {
+      "file": "admin-orders.js",
+      "issue": "Too many console.log (28) - should be removed in production"
+    },
+    {
+      "file": "admin-users.js",
+      "issue": "Too many console.log (9) - should be removed in production"
+    },
+    {
+      "file": "admin-categories.js",
+      "issue": "Too many console.log (21) - should be removed in production"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "issue": "Too many console.log (19) - should be removed in production"
+    },
+    {
+      "file": "admin-settings.js",
+      "issue": "Too many console.log (18) - should be removed in production"
+    }
+  ],
+  "recommendations": [
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "Few success messages (0) for 13 CRUD operations"
+    },
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "Form submission without validation"
+    },
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-dashboard.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-products.js",
+      "recommendation": "Few success messages (3) for 33 CRUD operations"
+    },
+    {
+      "file": "admin-products.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-products.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-products.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-products.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-orders.js",
+      "recommendation": "Few success messages (1) for 23 CRUD operations"
+    },
+    {
+      "file": "admin-orders.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-orders.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-orders.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-orders.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "Few success messages (2) for 13 CRUD operations"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "Form submission without validation"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-users.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "Filter/search should reset pagination to page 1"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "Few success messages (5) for 29 CRUD operations"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "Form submission without validation"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-categories.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "Few success messages (3) for 23 CRUD operations"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "Form submission without validation"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-vouchers.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-notifications.js",
+      "recommendation": "Filter/search should reset pagination to page 1"
+    },
+    {
+      "file": "admin-notifications.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-notifications.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-notifications.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-notifications.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "Search/filter without debounce - may cause performance issues"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "Filter/search should reset pagination to page 1"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "Few success messages (4) for 23 CRUD operations"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-settings.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "Few loading indicators (5) for 11 API calls"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "Few success messages (0) for 2 CRUD operations"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "Form submission without validation"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "Event listeners without cleanup - may cause memory leaks"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "Many API calls but no global error handling"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    },
+    {
+      "file": "admin-reports.js",
+      "recommendation": "No retry logic for failed API requests"
+    },
+    {
+      "file": "campaigns.js",
+      "recommendation": "1 promise chain(s) might be missing return statements"
+    },
+    {
+      "file": "campaigns.js",
+      "recommendation": "Filter/search should reset pagination to page 1"
+    },
+    {
+      "file": "campaigns.js",
+      "recommendation": "Few success messages (6) for 60 CRUD operations"
+    },
+    {
+      "file": "campaigns.js",
+      "recommendation": "No ARIA attributes - may have accessibility issues"
+    }
+  ]
+}

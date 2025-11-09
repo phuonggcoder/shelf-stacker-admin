@@ -29,9 +29,10 @@ class AdminUIComponents {
                 </div>
                 ${showFooter ? `
                     <div class="admin-modal-footer">
-                        ${buttons.map(btn => `
+                        ${buttons.map((btn, idx) => `
                             <button class="btn ${btn.class || 'btn-secondary'}" 
-                                    onclick="${btn.onClick || 'this.closest(\'.admin-modal-overlay\').remove()'}">
+                                    ${btn.onClick ? `onclick="${btn.onClick}"` : ''}
+                                    data-btn-index="${idx}">
                                 ${btn.icon ? `<i class="${btn.icon}"></i> ` : ''}${btn.text}
                             </button>
                         `).join('')}
@@ -163,6 +164,14 @@ class AdminUIComponents {
                 icon = 'fas fa-exclamation-triangle'
             } = options;
 
+            let resolved = false;
+            const resolveOnce = (value) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(value);
+                }
+            };
+
             const modal = this.createModal({
                 title,
                 size: 'small',
@@ -175,24 +184,45 @@ class AdminUIComponents {
                 buttons: [
                     {
                         text: cancelText,
-                        class: 'btn-secondary',
-                        onClick: 'this.closest(\'.admin-modal-overlay\').remove(); window.__confirmResult = false;'
+                        class: 'btn-secondary'
+                        // No onClick - attach handler manually
                     },
                     {
                         text: confirmText,
-                        class: confirmClass,
-                        onClick: 'this.closest(\'.admin-modal-overlay\').remove(); window.__confirmResult = true;'
+                        class: confirmClass
+                        // No onClick - attach handler manually
                     }
                 ],
                 onClose: () => {
-                    if (window.__confirmResult === undefined) {
-                        resolve(false);
-                    } else {
-                        resolve(window.__confirmResult);
-                        delete window.__confirmResult;
+                    // If closed without clicking buttons, resolve as false
+                    if (!resolved) {
+                        resolveOnce(false);
                     }
                 }
             });
+
+            // Attach handlers manually
+            const modalFooter = modal.querySelector('.admin-modal-footer');
+            if (modalFooter) {
+                const cancelBtn = modalFooter.querySelector('.btn-secondary');
+                const confirmBtn = modalFooter.querySelector('.' + confirmClass);
+
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        resolveOnce(false);
+                        modal.remove();
+                    });
+                }
+
+                if (confirmBtn) {
+                    confirmBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        resolveOnce(true);
+                        modal.remove();
+                    });
+                }
+            }
         });
     }
 

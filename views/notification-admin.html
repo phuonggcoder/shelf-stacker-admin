@@ -1,580 +1,682 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Notification Management - Shelf Stacker Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/assets/css/components.css">
-    <link rel="stylesheet" href="/assets/css/notification-admin.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/assets/css/components.css" />
+    <link rel="stylesheet" href="/assets/css/notification-admin.css" />
+      <script src="/assets/js/loading-state-helper.js"></script>
 </head>
-<body>
+  <body>
     <!-- Sidebar Navigation -->
     <nav class="sidebar">
-        <div class="sidebar-header">
-            <div class="profile">
-                <img src="/assets/img/default.jpg" alt="Admin" id="admin-avatar">
-                <h3 id="admin-name">Admin</h3>
-                <p id="admin-role">Notification Manager</p>
-            </div>
+      <div class="sidebar-header">
+        <div class="profile">
+          <img src="/assets/img/default.jpg" alt="Admin" id="admin-avatar" />
+          <h3 id="admin-name">Admin</h3>
+          <p id="admin-role">Notification Manager</p>
         </div>
-        
-        <div class="sidebar-nav">
-            <div class="nav-item active" data-section="dashboard">
-                <i class="fas fa-tachometer-alt"></i>
-                <span>Dashboard</span>
-            </div>
-            
-            <div class="nav-item" data-section="templates">
-                <i class="fas fa-file-alt"></i>
-                <span>Template Management</span>
-            </div>
-            
-            <div class="nav-item" data-section="send">
-                <i class="fas fa-paper-plane"></i>
-                <span>Send Notifications</span>
-            </div>
-            
-            <div class="nav-item" data-section="scheduled">
-                <i class="fas fa-clock"></i>
-                <span>Scheduled Notifications</span>
-            </div>
-            
-            <div class="nav-item" data-section="history">
-                <i class="fas fa-history"></i>
-                <span>Notification History</span>
-            </div>
-            
-            <div class="nav-item" data-section="analytics">
-                <i class="fas fa-chart-bar"></i>
-                <span>Analytics & Reports</span>
-            </div>
+      </div>
+
+      <div class="sidebar-nav">
+        <div class="nav-item active" data-section="dashboard">
+          <i class="fas fa-tachometer-alt"></i>
+          <span>Dashboard</span>
         </div>
-        
-        <div class="sidebar-footer">
-            <button class="btn-logout" onclick="logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                <span>Logout</span>
-            </button>
+
+        <div class="nav-item" data-section="templates">
+          <i class="fas fa-file-alt"></i>
+          <span>Template Management</span>
         </div>
+
+        <div class="nav-item" data-section="send">
+          <i class="fas fa-paper-plane"></i>
+          <span>Send Notifications</span>
+        </div>
+
+        <div class="nav-item" data-section="scheduled">
+          <i class="fas fa-clock"></i>
+          <span>Scheduled Notifications</span>
+        </div>
+
+        <div class="nav-item" data-section="history">
+          <i class="fas fa-history"></i>
+          <span>Notification History</span>
+        </div>
+
+        <div class="nav-item" data-section="analytics">
+          <i class="fas fa-chart-bar"></i>
+          <span>Analytics & Reports</span>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span>Logout</span>
+        </button>
+      </div>
     </nav>
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Dashboard Section -->
-        <section id="dashboard" class="content-section active">
-            <div class="section-header">
-                <h1><i class="fas fa-tachometer-alt"></i> Notification Dashboard</h1>
-                <p>Overview of notification system performance</p>
-            </div>
-            
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon urgent">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="urgent-count">0</h3>
-                        <p>Urgent Sent Today</p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon scheduled">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="scheduled-count">0</h3>
-                        <p>Scheduled Active</p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon template">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="template-count">0</h3>
-                        <p>Active Templates</p>
-                    </div>
-                </div>
-                
-                <div class="stat-card">
-                    <div class="stat-icon success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
-                    <div class="stat-content">
-                        <h3 id="success-rate">0%</h3>
-                        <p>Success Rate</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="dashboard-charts">
-                <div class="chart-container">
-                    <h3>Notification Activity (Last 7 Days)</h3>
-                    <canvas id="activityChart"></canvas>
-                </div>
-                
-                <div class="chart-container">
-                    <h3>Notification Types Distribution</h3>
-                    <canvas id="typeChart"></canvas>
-                </div>
-            </div>
-        </section>
+      <!-- Dashboard Section -->
+      <section id="dashboard" class="content-section active">
+        <div class="section-header">
+          <h1><i class="fas fa-tachometer-alt"></i> Notification Dashboard</h1>
+          <p>Overview of notification system performance</p>
+        </div>
 
-        <!-- Template Management Section -->
-        <section id="templates" class="content-section">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon urgent">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="urgent-count">0</h3>
+              <p>Urgent Sent Today</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon scheduled">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="scheduled-count">0</h3>
+              <p>Scheduled Active</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon template">
+              <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="template-count">0</h3>
+              <p>Active Templates</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon success">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="success-rate">0%</h3>
+              <p>Success Rate</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-charts">
+          <div class="chart-container">
+            <h3>Notification Activity (Last 7 Days)</h3>
+            <canvas id="activityChart"></canvas>
+          </div>
+
+          <div class="chart-container">
+            <h3>Notification Types Distribution</h3>
+            <canvas id="typeChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- Template Management Section -->
+      <section id="templates" class="content-section">
+        <div class="section-header">
+          <h1><i class="fas fa-file-alt"></i> Template Management</h1>
+          <button class="btn-primary" onclick="openTemplateModal()">
+            <i class="fas fa-plus"></i> Add New Template
+          </button>
+        </div>
+
+        <div class="template-filters">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              id="template-search"
+              placeholder="Search templates..."
+            />
+          </div>
+
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="order">Order</button>
+            <button class="filter-btn" data-filter="payment">Payment</button>
+            <button class="filter-btn" data-filter="delivery">Delivery</button>
+            <button class="filter-btn" data-filter="custom">Custom</button>
+          </div>
+        </div>
+
+        <div class="templates-grid" id="templates-grid">
+          <!-- Templates will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Send Notifications Section -->
+      <section id="send" class="content-section">
+        <div class="section-header">
+          <h1><i class="fas fa-paper-plane"></i> Send Notifications</h1>
+          <p>Send urgent notifications or use templates</p>
+        </div>
+
+        <div class="notification-type-selector">
+          <div class="type-card active" data-type="urgent">
+            <div class="type-icon urgent">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Urgent Notification</h3>
+            <p>Send immediately to users</p>
+          </div>
+
+          <div class="type-card" data-type="template">
+            <div class="type-icon template">
+              <i class="fas fa-file-alt"></i>
+            </div>
+            <h3>Template Notification</h3>
+            <p>Use predefined templates</p>
+          </div>
+
+          <div class="type-card" data-type="scheduled">
+            <div class="type-icon scheduled">
+              <i class="fas fa-clock"></i>
+            </div>
+            <h3>Scheduled Notification</h3>
+            <p>Schedule for later delivery</p>
+          </div>
+        </div>
+
+        <div class="notification-form-container">
+          <!-- Urgent Notification Form -->
+          <form id="urgent-form" class="notification-form active">
+            <div class="form-section">
+              <h3>Recipients</h3>
+              <div class="recipient-selector">
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="recipient-type"
+                    value="specific"
+                    checked
+                  />
+                  <span>Specific User</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="recipient-type" value="multiple" />
+                  <span>Multiple Users</span>
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="recipient-type" value="all" />
+                  <span>All Users</span>
+                </label>
+              </div>
+
+              <div id="user-selector" class="user-selector">
+                <input type="text" id="user-id" placeholder="Enter user ID" />
+              </div>
+
+              <div id="multiple-users" class="user-selector hidden">
+                <textarea
+                  id="user-ids"
+                  placeholder="Enter user IDs (comma separated)"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3>Notification Content</h3>
+              <div class="form-group">
+                <label for="urgent-title">Title</label>
+                <input type="text" id="urgent-title" required />
+              </div>
+
+              <div class="form-group">
+                <label for="urgent-message">Message</label>
+                <textarea id="urgent-message" rows="4" required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="urgent-image">Image (Optional)</label>
+                <input type="file" id="urgent-image" accept="image/*" />
+                <div id="urgent-image-preview" class="image-preview"></div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Send Now
+              </button>
+            </div>
+          </form>
+
+          <!-- Template Management Section -->
+          <div class="template-management-section">
             <div class="section-header">
-                <h1><i class="fas fa-file-alt"></i> Template Management</h1>
-                <button class="btn-primary" onclick="openTemplateModal()">
-                    <i class="fas fa-plus"></i> Add New Template
+              <h3>Template Management</h3>
+              <div class="template-actions">
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  onclick="createSampleTemplates()"
+                >
+                  <i class="fas fa-plus"></i> Create All Sample Templates
                 </button>
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  onclick="createUserSampleTemplates()"
+                >
+                  <i class="fas fa-user"></i> Create User Templates
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  onclick="createShipperSampleTemplates()"
+                >
+                  <i class="fas fa-truck"></i> Create Shipper Templates
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary"
+                  onclick="createMissingSampleTemplates()"
+                >
+                  <i class="fas fa-sync"></i> Create Missing Templates
+                </button>
+              </div>
             </div>
-            
-            <div class="template-filters">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="template-search" placeholder="Search templates...">
-                </div>
-                
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="order">Order</button>
-                    <button class="filter-btn" data-filter="payment">Payment</button>
-                    <button class="filter-btn" data-filter="delivery">Delivery</button>
-                    <button class="filter-btn" data-filter="custom">Custom</button>
-                </div>
+
+            <div class="template-stats">
+              <div class="stat-card">
+                <h4>User Templates</h4>
+                <span class="stat-number" id="user-template-count">0</span>
+              </div>
+              <div class="stat-card">
+                <h4>Shipper Templates</h4>
+                <span class="stat-number" id="shipper-template-count">0</span>
+              </div>
+              <div class="stat-card">
+                <h4>Total Templates</h4>
+                <span class="stat-number" id="total-template-count">0</span>
+              </div>
             </div>
-            
-            <div class="templates-grid" id="templates-grid">
+          </div>
+
+          <!-- Template Notification Form -->
+          <form id="template-form" class="notification-form">
+            <div class="form-section">
+              <h3>Select Template</h3>
+              <div class="template-selector" id="template-selector">
                 <!-- Templates will be loaded here -->
+              </div>
             </div>
-        </section>
 
-        <!-- Send Notifications Section -->
-        <section id="send" class="content-section">
-            <div class="section-header">
-                <h1><i class="fas fa-paper-plane"></i> Send Notifications</h1>
-                <p>Send urgent notifications or use templates</p>
+            <div class="form-section">
+              <h3>Template Variables</h3>
+              <div id="template-variables" class="variables-container">
+                <!-- Variables will be loaded based on selected template -->
+              </div>
             </div>
-            
-            <div class="notification-type-selector">
-                <div class="type-card active" data-type="urgent">
-                    <div class="type-icon urgent">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h3>Urgent Notification</h3>
-                    <p>Send immediately to users</p>
-                </div>
-                
-                <div class="type-card" data-type="template">
-                    <div class="type-icon template">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
-                    <h3>Template Notification</h3>
-                    <p>Use predefined templates</p>
-                </div>
-                
-                <div class="type-card" data-type="scheduled">
-                    <div class="type-icon scheduled">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <h3>Scheduled Notification</h3>
-                    <p>Schedule for later delivery</p>
-                </div>
-            </div>
-            
-            <div class="notification-form-container">
-                <!-- Urgent Notification Form -->
-                <form id="urgent-form" class="notification-form active">
-                    <div class="form-section">
-                        <h3>Recipients</h3>
-                        <div class="recipient-selector">
-                            <label class="radio-label">
-                                <input type="radio" name="recipient-type" value="specific" checked>
-                                <span>Specific User</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="recipient-type" value="multiple">
-                                <span>Multiple Users</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="recipient-type" value="all">
-                                <span>All Users</span>
-                            </label>
-                        </div>
-                        
-                        <div id="user-selector" class="user-selector">
-                            <input type="text" id="user-id" placeholder="Enter user ID">
-                        </div>
-                        
-                        <div id="multiple-users" class="user-selector hidden">
-                            <textarea id="user-ids" placeholder="Enter user IDs (comma separated)"></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h3>Notification Content</h3>
-                        <div class="form-group">
-                            <label for="urgent-title">Title</label>
-                            <input type="text" id="urgent-title" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="urgent-message">Message</label>
-                            <textarea id="urgent-message" rows="4" required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="urgent-image">Image (Optional)</label>
-                            <input type="file" id="urgent-image" accept="image/*">
-                            <div id="urgent-image-preview" class="image-preview"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-paper-plane"></i> Send Now
-                        </button>
-                    </div>
-                </form>
-                
-                <!-- Template Management Section -->
-                <div class="template-management-section">
-                    <div class="section-header">
-                        <h3>Template Management</h3>
-                        <div class="template-actions">
-                            <button type="button" class="btn-secondary" onclick="createSampleTemplates()">
-                                <i class="fas fa-plus"></i> Create All Sample Templates
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="createUserSampleTemplates()">
-                                <i class="fas fa-user"></i> Create User Templates
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="createShipperSampleTemplates()">
-                                <i class="fas fa-truck"></i> Create Shipper Templates
-                            </button>
-                            <button type="button" class="btn-secondary" onclick="createMissingSampleTemplates()">
-                                <i class="fas fa-sync"></i> Create Missing Templates
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="template-stats">
-                        <div class="stat-card">
-                            <h4>User Templates</h4>
-                            <span class="stat-number" id="user-template-count">0</span>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Shipper Templates</h4>
-                            <span class="stat-number" id="shipper-template-count">0</span>
-                        </div>
-                        <div class="stat-card">
-                            <h4>Total Templates</h4>
-                            <span class="stat-number" id="total-template-count">0</span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Template Notification Form -->
-                <form id="template-form" class="notification-form">
-                    <div class="form-section">
-                        <h3>Select Template</h3>
-                        <div class="template-selector" id="template-selector">
-                            <!-- Templates will be loaded here -->
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h3>Template Variables</h3>
-                        <div id="template-variables" class="variables-container">
-                            <!-- Variables will be loaded based on selected template -->
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h3>Recipients</h3>
-                        <div class="recipient-selector">
-                            <label class="radio-label">
-                                <input type="radio" name="template-recipient-type" value="specific" checked>
-                                <span>Specific User</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="template-recipient-type" value="multiple">
-                                <span>Multiple Users</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="template-recipient-type" value="all">
-                                <span>All Users</span>
-                            </label>
-                        </div>
-                        
-                        <div id="template-user-selector" class="user-selector">
-                            <input type="text" id="template-user-id" placeholder="Enter user ID">
-                        </div>
-                        
-                        <div id="template-multiple-users" class="user-selector hidden">
-                            <textarea id="template-user-ids" placeholder="Enter user IDs (comma separated)"></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-paper-plane"></i> Send Template
-                        </button>
-                    </div>
-                </form>
-                
-                <!-- Scheduled Notification Form -->
-                <form id="scheduled-form" class="notification-form">
-                    <div class="form-section">
-                        <h3>Schedule Details</h3>
-                        <div class="form-group">
-                            <label for="schedule-date">Date</label>
-                            <input type="date" id="schedule-date" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="schedule-time">Time</label>
-                            <input type="time" id="schedule-time" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h3>Notification Content</h3>
-                        <div class="form-group">
-                            <label for="scheduled-title">Title</label>
-                            <input type="text" id="scheduled-title" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="scheduled-message">Message</label>
-                            <textarea id="scheduled-message" rows="4" required></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="scheduled-image">Image (Optional)</label>
-                            <input type="file" id="scheduled-image" accept="image/*">
-                            <div id="scheduled-image-preview" class="image-preview"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="form-section">
-                        <h3>Recipients</h3>
-                        <div class="recipient-selector">
-                            <label class="radio-label">
-                                <input type="radio" name="scheduled-recipient-type" value="specific" checked>
-                                <span>Specific User</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="scheduled-recipient-type" value="multiple">
-                                <span>Multiple Users</span>
-                            </label>
-                            <label class="radio-label">
-                                <input type="radio" name="scheduled-recipient-type" value="all">
-                                <span>All Users</span>
-                            </label>
-                        </div>
-                        
-                        <div id="scheduled-user-selector" class="user-selector">
-                            <input type="text" id="scheduled-user-id" placeholder="Enter user ID">
-                        </div>
-                        
-                        <div id="scheduled-multiple-users" class="user-selector hidden">
-                            <textarea id="scheduled-user-ids" placeholder="Enter user IDs (comma separated)"></textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="form-actions">
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-clock"></i> Schedule Notification
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </section>
+            <div class="form-section">
+              <h3>Recipients</h3>
+              <div class="recipient-selector">
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="template-recipient-type"
+                    value="specific"
+                    checked
+                  />
+                  <span>Specific User</span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="template-recipient-type"
+                    value="multiple"
+                  />
+                  <span>Multiple Users</span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="template-recipient-type"
+                    value="all"
+                  />
+                  <span>All Users</span>
+                </label>
+              </div>
 
-        <!-- Scheduled Notifications Section -->
-        <section id="scheduled" class="content-section">
-            <div class="section-header">
-                <h1><i class="fas fa-clock"></i> Scheduled Notifications</h1>
-                <p>Manage scheduled notifications</p>
-            </div>
-            
-            <div class="scheduled-filters">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="scheduled-search" placeholder="Search scheduled notifications...">
-                </div>
-                
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="pending">Pending</button>
-                    <button class="filter-btn" data-filter="sent">Sent</button>
-                    <button class="filter-btn" data-filter="cancelled">Cancelled</button>
-                </div>
-            </div>
-            
-            <div class="scheduled-list" id="scheduled-list">
-                <!-- Scheduled notifications will be loaded here -->
-            </div>
-        </section>
+              <div id="template-user-selector" class="user-selector">
+                <input
+                  type="text"
+                  id="template-user-id"
+                  placeholder="Enter user ID"
+                />
+              </div>
 
-        <!-- Notification History Section -->
-        <section id="history" class="content-section">
-            <div class="section-header">
-                <h1><i class="fas fa-history"></i> Notification History</h1>
-                <p>View sent notifications and statistics</p>
+              <div id="template-multiple-users" class="user-selector hidden">
+                <textarea
+                  id="template-user-ids"
+                  placeholder="Enter user IDs (comma separated)"
+                ></textarea>
+              </div>
             </div>
-            
-            <div class="history-filters">
-                <div class="filter-row">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" id="history-search" placeholder="Search notifications...">
-                    </div>
-                    
-                    <div class="date-filters">
-                        <input type="date" id="start-date" placeholder="Start Date">
-                        <input type="date" id="end-date" placeholder="End Date">
-                        <button class="btn-secondary" onclick="applyDateFilter()">Apply</button>
-                    </div>
-                </div>
-                
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="all">All</button>
-                    <button class="filter-btn" data-filter="urgent">Urgent</button>
-                    <button class="filter-btn" data-filter="template">Template</button>
-                    <button class="filter-btn" data-filter="scheduled">Scheduled</button>
-                </div>
-            </div>
-            
-            <div class="history-stats">
-                <div class="stat-item">
-                    <span class="stat-label">Total Sent:</span>
-                    <span class="stat-value" id="total-sent">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Success Rate:</span>
-                    <span class="stat-value" id="history-success-rate">0%</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Failed:</span>
-                    <span class="stat-value" id="total-failed">0</span>
-                </div>
-            </div>
-            
-            <div class="history-list" id="history-list">
-                <!-- Notification history will be loaded here -->
-            </div>
-            
-            <div class="pagination" id="history-pagination">
-                <!-- Pagination will be generated here -->
-            </div>
-        </section>
 
-        <!-- Analytics Section -->
-        <section id="analytics" class="content-section">
-            <div class="section-header">
-                <h1><i class="fas fa-chart-bar"></i> Analytics & Reports</h1>
-                <p>Detailed analytics and performance reports</p>
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-paper-plane"></i> Send Template
+              </button>
             </div>
-            
-            <div class="analytics-grid">
-                <div class="analytics-card">
-                    <h3>Notification Performance</h3>
-                    <canvas id="performanceChart"></canvas>
-                </div>
-                
-                <div class="analytics-card">
-                    <h3>User Engagement</h3>
-                    <canvas id="engagementChart"></canvas>
-                </div>
-                
-                <div class="analytics-card">
-                    <h3>Template Usage</h3>
-                    <canvas id="templateUsageChart"></canvas>
-                </div>
-                
-                <div class="analytics-card">
-                    <h3>Delivery Times</h3>
-                    <canvas id="deliveryChart"></canvas>
-                </div>
+          </form>
+
+          <!-- Scheduled Notification Form -->
+          <form id="scheduled-form" class="notification-form">
+            <div class="form-section">
+              <h3>Schedule Details</h3>
+              <div class="form-group">
+                <label for="schedule-date">Date</label>
+                <input type="date" id="schedule-date" required />
+              </div>
+
+              <div class="form-group">
+                <label for="schedule-time">Time</label>
+                <input type="time" id="schedule-time" required />
+              </div>
             </div>
-            
-            <div class="reports-section">
-                <h3>Generate Reports</h3>
-                <div class="report-options">
-                    <button class="btn-secondary" onclick="generateReport('daily')">
-                        <i class="fas fa-download"></i> Daily Report
-                    </button>
-                    <button class="btn-secondary" onclick="generateReport('weekly')">
-                        <i class="fas fa-download"></i> Weekly Report
-                    </button>
-                    <button class="btn-secondary" onclick="generateReport('monthly')">
-                        <i class="fas fa-download"></i> Monthly Report
-                    </button>
-                </div>
+
+            <div class="form-section">
+              <h3>Notification Content</h3>
+              <div class="form-group">
+                <label for="scheduled-title">Title</label>
+                <input type="text" id="scheduled-title" required />
+              </div>
+
+              <div class="form-group">
+                <label for="scheduled-message">Message</label>
+                <textarea id="scheduled-message" rows="4" required></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="scheduled-image">Image (Optional)</label>
+                <input type="file" id="scheduled-image" accept="image/*" />
+                <div id="scheduled-image-preview" class="image-preview"></div>
+              </div>
             </div>
-        </section>
+
+            <div class="form-section">
+              <h3>Recipients</h3>
+              <div class="recipient-selector">
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="scheduled-recipient-type"
+                    value="specific"
+                    checked
+                  />
+                  <span>Specific User</span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="scheduled-recipient-type"
+                    value="multiple"
+                  />
+                  <span>Multiple Users</span>
+                </label>
+                <label class="radio-label">
+                  <input
+                    type="radio"
+                    name="scheduled-recipient-type"
+                    value="all"
+                  />
+                  <span>All Users</span>
+                </label>
+              </div>
+
+              <div id="scheduled-user-selector" class="user-selector">
+                <input
+                  type="text"
+                  id="scheduled-user-id"
+                  placeholder="Enter user ID"
+                />
+              </div>
+
+              <div id="scheduled-multiple-users" class="user-selector hidden">
+                <textarea
+                  id="scheduled-user-ids"
+                  placeholder="Enter user IDs (comma separated)"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary">
+                <i class="fas fa-clock"></i> Schedule Notification
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Scheduled Notifications Section -->
+      <section id="scheduled" class="content-section">
+        <div class="section-header">
+          <h1><i class="fas fa-clock"></i> Scheduled Notifications</h1>
+          <p>Manage scheduled notifications</p>
+        </div>
+
+        <div class="scheduled-filters">
+          <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input
+              type="text"
+              id="scheduled-search"
+              placeholder="Search scheduled notifications..."
+            />
+          </div>
+
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="pending">Pending</button>
+            <button class="filter-btn" data-filter="sent">Sent</button>
+            <button class="filter-btn" data-filter="cancelled">
+              Cancelled
+            </button>
+          </div>
+        </div>
+
+        <div class="scheduled-list" id="scheduled-list">
+          <!-- Scheduled notifications will be loaded here -->
+        </div>
+      </section>
+
+      <!-- Notification History Section -->
+      <section id="history" class="content-section">
+        <div class="section-header">
+          <h1><i class="fas fa-history"></i> Notification History</h1>
+          <p>View sent notifications and statistics</p>
+        </div>
+
+        <div class="history-filters">
+          <div class="filter-row">
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="history-search"
+                placeholder="Search notifications..."
+              />
+            </div>
+
+            <div class="date-filters">
+              <input type="date" id="start-date" placeholder="Start Date" />
+              <input type="date" id="end-date" placeholder="End Date" />
+              <button class="btn-secondary" onclick="applyDateFilter()">
+                Apply
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="urgent">Urgent</button>
+            <button class="filter-btn" data-filter="template">Template</button>
+            <button class="filter-btn" data-filter="scheduled">
+              Scheduled
+            </button>
+          </div>
+        </div>
+
+        <div class="history-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Sent:</span>
+            <span class="stat-value" id="total-sent">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Success Rate:</span>
+            <span class="stat-value" id="history-success-rate">0%</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Failed:</span>
+            <span class="stat-value" id="total-failed">0</span>
+          </div>
+        </div>
+
+        <div class="history-list" id="history-list">
+          <!-- Notification history will be loaded here -->
+        </div>
+
+        <div class="pagination" id="history-pagination">
+          <!-- Pagination will be generated here -->
+        </div>
+      </section>
+
+      <!-- Analytics Section -->
+      <section id="analytics" class="content-section">
+        <div class="section-header">
+          <h1><i class="fas fa-chart-bar"></i> Analytics & Reports</h1>
+          <p>Detailed analytics and performance reports</p>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="analytics-card">
+            <h3>Notification Performance</h3>
+            <canvas id="performanceChart"></canvas>
+          </div>
+
+          <div class="analytics-card">
+            <h3>User Engagement</h3>
+            <canvas id="engagementChart"></canvas>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Template Usage</h3>
+            <canvas id="templateUsageChart"></canvas>
+          </div>
+
+          <div class="analytics-card">
+            <h3>Delivery Times</h3>
+            <canvas id="deliveryChart"></canvas>
+          </div>
+        </div>
+
+        <div class="reports-section">
+          <h3>Generate Reports</h3>
+          <div class="report-options">
+            <button class="btn-secondary" onclick="generateReport('daily')">
+              <i class="fas fa-download"></i> Daily Report
+            </button>
+            <button class="btn-secondary" onclick="generateReport('weekly')">
+              <i class="fas fa-download"></i> Weekly Report
+            </button>
+            <button class="btn-secondary" onclick="generateReport('monthly')">
+              <i class="fas fa-download"></i> Monthly Report
+            </button>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Template Modal -->
     <div id="template-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="template-modal-title">Add New Template</h3>
-                <span class="close" onclick="closeTemplateModal()">&times;</span>
-            </div>
-            
-            <form id="template-form-modal">
-                <div class="form-group">
-                    <label for="template-name">Template Name</label>
-                    <input type="text" id="template-name" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template-event">Event Type</label>
-                    <select id="template-event" required>
-                        <option value="">Select Event Type</option>
-                        <option value="order_success">Order Success</option>
-                        <option value="payment_success">Payment Success</option>
-                        <option value="delivery_success">Delivery Success</option>
-                        <option value="order_cancelled">Order Cancelled</option>
-                        <option value="payment_failed">Payment Failed</option>
-                        <option value="custom">Custom Event</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template-title">Title Template</label>
-                    <input type="text" id="template-title" placeholder="Order {{orderId}} completed!" required>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template-message">Message Template</label>
-                    <textarea id="template-message" rows="4" placeholder="Your order {{orderId}} has been completed successfully!" required></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template-image">Image (Optional)</label>
-                    <input type="file" id="template-image" accept="image/*">
-                    <div id="template-image-preview" class="image-preview"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="template-variables">Available Variables</label>
-                    <div id="template-variables-help" class="variables-help">
-                        <!-- Variables help will be shown here -->
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Save Template</button>
-                    <button type="button" class="btn-secondary" onclick="closeTemplateModal()">Cancel</button>
-                </div>
-            </form>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="template-modal-title">Add New Template</h3>
+          <span class="close" onclick="closeTemplateModal()">&times;</span>
         </div>
+
+        <form id="template-form-modal">
+          <div class="form-group">
+            <label for="template-name">Template Name</label>
+            <input type="text" id="template-name" required />
+          </div>
+
+          <div class="form-group">
+            <label for="template-event">Event Type</label>
+            <select id="template-event" required>
+              <option value="">Select Event Type</option>
+              <option value="order_success">Order Success</option>
+              <option value="payment_success">Payment Success</option>
+              <option value="delivery_success">Delivery Success</option>
+              <option value="order_cancelled">Order Cancelled</option>
+              <option value="payment_failed">Payment Failed</option>
+              <option value="custom">Custom Event</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="template-title">Title Template</label>
+            <input
+              type="text"
+              id="template-title"
+              placeholder="Order {{orderId}} completed!"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="template-message">Message Template</label>
+            <textarea
+              id="template-message"
+              rows="4"
+              placeholder="Your order {{orderId}} has been completed successfully!"
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="template-image">Image (Optional)</label>
+            <input type="file" id="template-image" accept="image/*" />
+            <div id="template-image-preview" class="image-preview"></div>
+          </div>
+
+          <div class="form-group">
+            <label for="template-variables">Available Variables</label>
+            <div id="template-variables-help" class="variables-help">
+              <!-- Variables help will be shown here -->
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary">Save Template</button>
+            <button
+              type="button"
+              class="btn-secondary"
+              onclick="closeTemplateModal()"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Success/Error Messages -->
@@ -582,13 +684,16 @@
 
     <!-- Loading Overlay -->
     <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Loading...</p>
-        </div>
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Loading...</p>
+      </div>
     </div>
 
+    <script src="/AdminServices.js"></script>
+    <script src="/assets/js/global-error-handler.js"></script>
+    <script src="/assets/js/retry-helper.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/assets/js/notification-admin.js"></script>
-</body>
+  </body>
 </html>

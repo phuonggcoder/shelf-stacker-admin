@@ -139,12 +139,7 @@ async function fetchCategories() {
   const tbody = document.getElementById('category-table-body'); 
   tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>';
   try {
-    const res = await fetch(`${BASE_URL}/api/categories`, {
-      headers: {
-        'Authorization': 'Bearer ' + getToken()
-      }
-    });
-    const data = await res.json();
+    const data = await AdminServices.getCategories();
     categories = Array.isArray(data) ? data : [];
     const sortOrder = document.getElementById('sort-order').value;
     const customLetter = document.getElementById('custom-sort-letter').value.trim();
@@ -152,6 +147,7 @@ async function fetchCategories() {
     renderCategoriesWithPagination(filtered, 1);
   } catch (err) {
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Lỗi tải dữ liệu</td></tr>';
+    showNotification('error', 'Không thể tải danh mục: ' + err.message);
   }
 }
 
@@ -362,17 +358,7 @@ document.addEventListener('click', async function(e) {
     const id = e.target.getAttribute('data-id');
     if (await showConfirmDeleteDialog()) {
       try {
-        const token = getToken();
-        if (!token) {
-          showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
-          return;
-        }
-        await fetch(`${BASE_URL}/api/categories/${id}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': 'Bearer ' + token
-          }
-        });
+        await AdminServices.deleteCategory(id);
         showSuccessDeletebook();
         fetchCategories();
       } catch (err) {
@@ -411,29 +397,7 @@ document.addEventListener('click', async function(e) {
     if (!id) return;
     
     try {
-      const token = getToken();
-      if (!token) {
-        showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
-        return;
-      }
-      const res = await fetch(`${BASE_URL}/api/categories/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify({ isVisible: !currentVisible })
-      });
-      
-      if (!res.ok) {
-        const err = await res.json();
-        if (res.status === 401) {
-          showErrorDialog('Lỗi xác thực!', 'Token không hợp lệ. Vui lòng đăng nhập lại.');
-        } else {
-          showErrorDialog('Cập nhật trạng thái thất bại!', err.message || 'Lỗi không xác định!');
-        }
-        return;
-      }
+      await AdminServices.updateCategory(id, { isVisible: !currentVisible });
       showUpdateBookSuccessDialog();
       fetchCategories();
     } catch (err) {
@@ -582,6 +546,23 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
     return;
   }
 
+  // Disable button to prevent double submission
+  const submitBtn = document.getElementById('save-category-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Đang lưu...';
+    submitBtn.style.opacity = '0.6';
+    submitBtn.style.cursor = 'not-allowed';
+  }
+
+  // Disable button to prevent double submission
+  const submitBtn = document.getElementById('save-category-btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Đang lưu...';
+    submitBtn.style.opacity = '0.6';
+  }
+
   try {
     const file = document.getElementById('cat-upload').files[0];
     const formData = new FormData();
@@ -594,32 +575,29 @@ document.getElementById('add-category-form').addEventListener('submit', async fu
       formData.append('image', file);
     }
 
-    const token = getToken();
-    if (!token) {
-      showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
-      return;
-    }
-
-    const res = await fetch(`${BASE_URL}/api/categories`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token
-      },
-      body: formData
-    });
-
-    const result = await res.json();
-    if (res.ok) {
-      showAddBookSuccessDialog();
-      document.getElementById('add-category-modal').style.display = 'none';
-      this.reset();
-      document.getElementById('preview-image').style.display = 'none';
-      fetchCategories();
-    } else {
-      showErrorDialog('Thêm thất bại!', result.message || 'Lỗi không xác định!');
-    }
+    await AdminServices.createCategory(formData);
+    showAddBookSuccessDialog();
+    document.getElementById('add-category-modal').style.display = 'none';
+    this.reset();
+    document.getElementById('preview-image').style.display = 'none';
+    fetchCategories();
   } catch (err) {
-    showErrorDialog('Lỗi!', 'Lỗi kết nối hoặc server không phản hồi');
+    // Re-enable button on error
+    const submitBtn = document.getElementById('save-category-btn');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Lưu';
+      submitBtn.style.opacity = '1';
+    }
+    showErrorDialog('Lỗi!', err.message || 'Lỗi kết nối hoặc server không phản hồi');
+  } finally {
+    // Always re-enable button
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Lưu';
+      submitBtn.style.opacity = '1';
+      submitBtn.style.cursor = 'pointer';
+    }
   }
 });
 
@@ -639,6 +617,14 @@ document.getElementById('update-category-btn').addEventListener('click', async f
     return;
   }
 
+  // Disable button to prevent double submission
+  const updateBtn = document.getElementById('update-category-btn');
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.textContent = 'Đang cập nhật...';
+    updateBtn.style.opacity = '0.6';
+  }
+
   try {
     const file = document.getElementById('cat-upload').files[0];
     const formData = new FormData();
@@ -651,44 +637,29 @@ document.getElementById('update-category-btn').addEventListener('click', async f
       formData.append('image', file);
     }
 
-    const token = getToken();
-    if (!token) {
-      showErrorDialog('Lỗi xác thực!', 'Vui lòng đăng nhập để thực hiện hành động này.');
-      return;
+    const result = await AdminServices.updateCategory(editingCategoryId, formData);
+    showUpdateBookSuccessDialog();
+    
+    const idx = categories.findIndex(cat => cat._id === editingCategoryId);
+    if (idx !== -1) {
+      categories[idx] = { ...categories[idx], ...result };
     }
-
-    const res = await fetch(`${BASE_URL}/api/categories/${editingCategoryId}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': 'Bearer ' + token
-      },
-      body: formData
-    });
-
-    if (res.ok) {
-      const result = await res.json();
-      showUpdateBookSuccessDialog();
-      
-      const idx = categories.findIndex(cat => cat._id === editingCategoryId);
-      if (idx !== -1) {
-        categories[idx] = { ...categories[idx], ...result };
-      }
-      
-      const sortOrder = document.getElementById('sort-order').value;
-      const customLetter = document.getElementById('custom-sort-letter').value.trim();
-      const filtered = filterCategories(categories, '', '', sortOrder, customLetter);
-      renderCategoriesWithPagination(filtered, catCurrentPage);
-      resetCategoryForm();
-    } else {
-      const err = await res.json();
-      if (res.status === 401) {
-        showErrorDialog('Lỗi xác thực!', 'Token không hợp lệ. Vui lòng đăng nhập lại.');
-      } else {
-        showErrorDialog('Cập nhật thất bại!', err.message || 'Lỗi không xác định!');
-      }
-    }
+    
+    const sortOrder = document.getElementById('sort-order').value;
+    const customLetter = document.getElementById('custom-sort-letter').value.trim();
+    const filtered = filterCategories(categories, '', '', sortOrder, customLetter);
+    renderCategoriesWithPagination(filtered, catCurrentPage);
+    resetCategoryForm();
   } catch (err) {
-    showErrorDialog('Lỗi!', 'Lỗi kết nối!');
+    showErrorDialog('Lỗi!', err.message || 'Lỗi kết nối!');
+  } finally {
+    // Always re-enable button
+    if (updateBtn) {
+      updateBtn.disabled = false;
+      updateBtn.textContent = 'Cập nhật';
+      updateBtn.style.opacity = '1';
+      updateBtn.style.cursor = 'pointer';
+    }
   }
 });
 

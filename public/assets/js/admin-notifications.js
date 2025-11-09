@@ -287,29 +287,106 @@ function renderHistory(history) {
 }
 
 async function sendInstantNotification() {
-    const title = document.getElementById('sendTitle').value;
-    const message = document.getElementById('sendMessage').value;
-    const recipients = document.getElementById('sendRecipients').value.split(',').map(r => r.trim()).filter(r => r);
-
-    if (!title || !message || recipients.length === 0) {
-        showToast('Vui lòng điền đầy đủ thông tin', 'error');
-        return;
-    }
-
     try {
-        showLoading();
-        await window.AdminServices.sendInstantNotification({
+        // Get form values
+        const title = document.getElementById('sendTitle')?.value?.trim();
+        const message = document.getElementById('sendMessage')?.value?.trim();
+        const recipientsInput = document.getElementById('sendRecipients')?.value?.trim();
+        const sendToAllCheckbox = document.getElementById('sendToAll');
+        const imageInput = document.getElementById('sendImage')?.value?.trim();
+        const notificationType = document.getElementById('notificationType')?.value || 'push';
+        
+        // Validate
+        if (!title || !message) {
+            showToast('Vui lòng điền đầy đủ tiêu đề và nội dung', 'error');
+            return;
+        }
+        
+        // Prepare request data according to API format
+        // API format: { title, message, type, userId, userIds, sendToAll, image, data }
+        const requestData = {
             title,
             message,
-            recipients
-        });
-        showToast('Gửi thông báo thành công', 'success');
-        document.getElementById('sendNotificationForm').reset();
+            type: notificationType || 'push'
+        };
+        
+        // Handle recipients
+        const sendToAll = sendToAllCheckbox?.checked || false;
+        if (sendToAll) {
+            requestData.sendToAll = true;
+        } else if (recipientsInput) {
+            // Parse recipients - could be comma-separated user IDs
+            const recipients = recipientsInput.split(',').map(r => r.trim()).filter(r => r);
+            if (recipients.length === 0) {
+                showToast('Vui lòng nhập ít nhất một người nhận hoặc chọn gửi cho tất cả', 'error');
+                return;
+            }
+            if (recipients.length === 1) {
+                requestData.userId = recipients[0];
+            } else {
+                requestData.userIds = recipients;
+            }
+        } else {
+            showToast('Vui lòng chọn người nhận hoặc chọn gửi cho tất cả', 'error');
+            return;
+        }
+        
+        // Add image if provided
+        if (imageInput) {
+            requestData.image = imageInput;
+        }
+        
+        // Add custom data if needed
+        requestData.data = {};
+        
+        console.log('📢 Sending instant notification with data:', requestData);
+        
+        // Disable send button
+        const sendBtn = document.getElementById('send-notification-btn') || 
+                        document.querySelector('#sendNotificationForm button[type="submit"]');
+        if (sendBtn) {
+            sendBtn.disabled = true;
+            sendBtn.textContent = 'Đang gửi...';
+            sendBtn.style.opacity = '0.6';
+        }
+        
+        showLoading();
+        const result = await window.AdminServices.sendInstantNotification(requestData);
+        console.log('📢 Notification sent successfully:', result);
+        
+        // Show success message with details
+        const sentCount = result?.result?.sent_count || result?.sent_count || 0;
+        const failedCount = result?.result?.failed_count || result?.failed_count || 0;
+        let message = 'Gửi thông báo thành công';
+        if (sentCount > 0 || failedCount > 0) {
+            message += ` (Đã gửi: ${sentCount}, Thất bại: ${failedCount})`;
+        }
+        showToast(message, 'success');
+        
+        // Reset form
+        const form = document.getElementById('sendNotificationForm');
+        if (form) {
+            form.reset();
+        }
     } catch (error) {
-        console.error('Error sending notification:', error);
-        showToast('Không thể gửi thông báo', 'error');
+        console.error('❌ Error sending notification:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        const errorMessage = error.message || 'Không thể gửi thông báo';
+        showToast('❌ ' + errorMessage, 'error');
     } finally {
         hideLoading();
+        // Re-enable button
+        const sendBtn = document.getElementById('send-notification-btn') || 
+                        document.querySelector('#sendNotificationForm button[type="submit"]');
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Gửi thông báo';
+            sendBtn.style.opacity = '1';
+        }
     }
 }
 

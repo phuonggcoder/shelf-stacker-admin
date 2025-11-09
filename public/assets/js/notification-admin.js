@@ -68,18 +68,7 @@ async function loadDashboardStats() {
 // Send Notification
 async function sendNotification(formData) {
   try {
-    const response = await fetch(API_ENDPOINTS.notifications.send, {
-      method: 'POST',
-      headers: getAuthHeader(),
-      body: JSON.stringify(formData)
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Không thể gửi thông báo');
-    }
-
-    const result = await response.json();
+    const result = await AdminServices.sendInstantNotification(formData);
     showToast('Gửi thông báo thành công', 'success');
     return result;
   } catch (error) {
@@ -895,20 +884,11 @@ function selectNotificationType(type) {
 // Load dashboard data
 async function loadDashboardData() {
     try {
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.STATS}`, {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        
-        if (response.ok) {
-            const stats = await response.json();
-            updateDashboardStats(stats);
-        } else {
-            throw new Error('Failed to load dashboard stats');
-        }
+        const stats = await AdminServices.getNotificationStats();
+        updateDashboardStats(stats);
     } catch (error) {
         console.error('Error loading dashboard data:', error);
+        showMessage('Không thể tải dữ liệu dashboard: ' + error.message, 'error');
         // Use sample data for demo
         updateDashboardStats(getSampleStats());
     }
@@ -925,20 +905,11 @@ function updateDashboardStats(stats) {
 // Load templates
 async function loadTemplates() {
     try {
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.TEMPLATES}`, {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            templates = data.templates || data;
-        } else {
-            throw new Error('Failed to load templates');
-        }
+        const data = await AdminServices.getNotificationTemplates();
+        templates = data.templates || data;
     } catch (error) {
         console.error('Error loading templates:', error);
+        showMessage('Không thể tải templates: ' + error.message, 'error');
         templates = getSampleTemplates();
     }
     
@@ -1078,20 +1049,11 @@ function renderFilteredTemplates(filteredTemplates) {
 // Load scheduled notifications
 async function loadScheduledNotifications() {
     try {
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.SCHEDULED}`, {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            scheduledNotifications = data.scheduledNotifications || data;
-        } else {
-            throw new Error('Failed to load scheduled notifications');
-        }
+        const data = await AdminServices.getScheduledNotifications();
+        scheduledNotifications = data.scheduledNotifications || data;
     } catch (error) {
         console.error('Error loading scheduled notifications:', error);
+        showMessage('Không thể tải scheduled notifications: ' + error.message, 'error');
         scheduledNotifications = getSampleScheduledNotifications();
     }
     
@@ -1137,32 +1099,17 @@ function renderScheduledNotifications() {
 // Load notification history
 async function loadNotificationHistory(page = 1, filters = {}) {
     try {
-        const queryParams = new URLSearchParams({
-            page: page,
-            limit: 20,
-            ...filters
-        });
+        const data = await AdminServices.getNotificationHistory({ page: page, limit: 20, ...filters });
+        notificationHistory = data.notifications || [];
+        currentPage = page;
+        totalPages = Math.ceil(data.total / data.limit);
         
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.HISTORY}?${queryParams}`, {
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            }
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            notificationHistory = data.notifications || [];
-            currentPage = page;
-            totalPages = Math.ceil(data.total / data.limit);
-            
-            updateHistoryStats(data);
-            renderNotificationHistory();
-            renderPagination();
-        } else {
-            throw new Error('Failed to load notification history');
-        }
+        updateHistoryStats(data);
+        renderNotificationHistory();
+        renderPagination();
     } catch (error) {
         console.error('Error loading notification history:', error);
+        showMessage('Không thể tải notification history: ' + error.message, 'error');
         notificationHistory = getSampleNotificationHistory();
         renderNotificationHistory();
     }
@@ -1272,45 +1219,32 @@ async function handleUrgentNotificationSubmit(e) {
     try {
         showLoading(true);
         
-        const formData = new FormData();
-        formData.append('title', document.getElementById('urgent-title').value);
-        formData.append('message', document.getElementById('urgent-message').value);
-        formData.append('type', 'urgent');
+        const notificationData = {
+            title: document.getElementById('urgent-title').value,
+            message: document.getElementById('urgent-message').value,
+            type: 'urgent'
+        };
         
         const recipientType = document.querySelector('input[name="recipient-type"]:checked').value;
         
         if (recipientType === 'specific') {
-            formData.append('userId', document.getElementById('user-id').value);
+            notificationData.userId = document.getElementById('user-id').value;
         } else if (recipientType === 'multiple') {
-            formData.append('userIds', document.getElementById('user-ids').value);
-        } else {
-            formData.append('all', 'true');
+            notificationData.userIds = document.getElementById('user-ids').value.split(',').map(id => id.trim());
         }
         
         const imageFile = document.getElementById('urgent-image').files[0];
         if (imageFile) {
-            formData.append('imageFile', imageFile);
+            notificationData.imageFile = imageFile;
         }
         
-        const response = await fetch('/api/noti/send', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: formData
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            showMessage('Urgent notification sent successfully!', 'success');
-            e.target.reset();
-            document.getElementById('urgent-image-preview').innerHTML = '';
-        } else {
-            throw new Error('Failed to send urgent notification');
-        }
+        await AdminServices.sendInstantNotification(notificationData);
+        showMessage('Gửi thông báo thành công!', 'success');
+        e.target.reset();
+        document.getElementById('urgent-image-preview').innerHTML = '';
     } catch (error) {
         console.error('Error sending urgent notification:', error);
-        showMessage('Error sending urgent notification', 'error');
+        showMessage('Lỗi gửi thông báo: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -1381,51 +1315,38 @@ async function handleScheduledNotificationSubmit(e) {
     try {
         showLoading(true);
         
-        const formData = new FormData();
-        formData.append('title', document.getElementById('scheduled-title').value);
-        formData.append('message', document.getElementById('scheduled-message').value);
-        formData.append('type', 'scheduled');
-        
         const date = document.getElementById('schedule-date').value;
         const time = document.getElementById('schedule-time').value;
         const scheduledAt = new Date(`${date}T${time}`).toISOString();
-        formData.append('scheduledAt', scheduledAt);
+        
+        const notificationData = {
+            title: document.getElementById('scheduled-title').value,
+            message: document.getElementById('scheduled-message').value,
+            type: 'scheduled',
+            scheduledAt: scheduledAt
+        };
         
         const recipientType = document.querySelector('input[name="scheduled-recipient-type"]:checked').value;
         
         if (recipientType === 'specific') {
-            formData.append('userId', document.getElementById('scheduled-user-id').value);
+            notificationData.userId = document.getElementById('scheduled-user-id').value;
         } else if (recipientType === 'multiple') {
-            formData.append('userIds', document.getElementById('scheduled-user-ids').value);
-        } else {
-            formData.append('all', 'true');
+            notificationData.userIds = document.getElementById('scheduled-user-ids').value.split(',').map(id => id.trim());
         }
         
         const imageFile = document.getElementById('scheduled-image').files[0];
         if (imageFile) {
-            formData.append('imageFile', imageFile);
+            notificationData.imageFile = imageFile;
         }
         
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.SCHEDULE}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${getAuthToken()}`
-            },
-            body: formData
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            showMessage('Notification scheduled successfully!', 'success');
-            e.target.reset();
-            document.getElementById('scheduled-image-preview').innerHTML = '';
-            loadScheduledNotifications();
-        } else {
-            throw new Error('Failed to schedule notification');
-        }
+        await AdminServices.createScheduledNotification(notificationData);
+        showMessage('Đã lên lịch thông báo thành công!', 'success');
+        e.target.reset();
+        document.getElementById('scheduled-image-preview').innerHTML = '';
+        loadScheduledNotifications();
     } catch (error) {
         console.error('Error scheduling notification:', error);
-        showMessage('Error scheduling notification', 'error');
+        showMessage('Lỗi lên lịch thông báo: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }
@@ -1728,33 +1649,26 @@ async function handleTemplateSubmit(e) {
     try {
         showLoading(true);
         
-        const formData = new FormData();
-        formData.append('name', document.getElementById('template-name').value);
-        formData.append('event', document.getElementById('template-event').value);
-        formData.append('title', document.getElementById('template-title').value);
-        formData.append('message', document.getElementById('template-message').value);
+        const templateData = {
+            name: document.getElementById('template-name').value,
+            event: document.getElementById('template-event').value,
+            title: document.getElementById('template-title').value,
+            message: document.getElementById('template-message').value,
+            active: true
+        };
         
         const imageFile = document.getElementById('template-image').files[0];
         if (imageFile) {
-            formData.append('imageFile', imageFile);
+            templateData.imageFile = imageFile;
         }
         
-        const response = await fetch(`${API_BASE_URL}${API_ENDPOINTS.TEMPLATES}`, {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            showMessage('Template created successfully!', 'success');
-            closeTemplateModal();
-            loadTemplates();
-        } else {
-            throw new Error('Failed to create template');
-        }
+        await AdminServices.createNotificationTemplate(templateData);
+        showMessage('Tạo template thành công!', 'success');
+        closeTemplateModal();
+        loadTemplates();
     } catch (error) {
         console.error('Error creating template:', error);
-        showMessage('Error creating template', 'error');
+        showMessage('Lỗi tạo template: ' + error.message, 'error');
     } finally {
         showLoading(false);
     }

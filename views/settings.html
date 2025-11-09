@@ -10,7 +10,8 @@
     />
     <link rel="stylesheet" href="/assets/css/admin-main.css" />
     <link rel="stylesheet" href="/assets/css/admin-ui-components.css" />
-  </head>
+      <script src="/assets/js/loading-state-helper.js"></script>
+</head>
   <body>
     <aside class="admin-sidebar" id="adminSidebar">
       <div class="sidebar-header">
@@ -157,7 +158,11 @@
                   placeholder="Số điện thoại"
                 />
               </div>
-              <button class="btn btn-primary" onclick="saveGeneralSettings()">
+              <button
+                class="btn btn-primary"
+                id="saveGeneralBtn"
+                onclick="saveGeneralSettings()"
+              >
                 <i class="fas fa-save"></i> Lưu cài đặt
               </button>
             </div>
@@ -205,7 +210,11 @@
                   Bật ghi log hoạt động
                 </label>
               </div>
-              <button class="btn btn-primary" onclick="saveSecuritySettings()">
+              <button
+                class="btn btn-primary"
+                id="saveSecurityBtn"
+                onclick="saveSecuritySettings()"
+              >
                 <i class="fas fa-save"></i> Lưu cài đặt
               </button>
             </div>
@@ -253,6 +262,7 @@
               </div>
               <button
                 class="btn btn-primary"
+                id="saveNotificationBtn"
                 onclick="saveNotificationSettings()"
               >
                 <i class="fas fa-save"></i> Lưu cài đặt
@@ -290,7 +300,11 @@
                   >Hoạt động</span
                 >
               </div>
-              <button class="btn btn-secondary" onclick="checkSystemStatus()">
+              <button
+                class="btn btn-secondary"
+                id="checkSystemBtn"
+                onclick="checkSystemStatus()"
+              >
                 <i class="fas fa-sync"></i> Kiểm tra hệ thống
               </button>
             </div>
@@ -306,8 +320,11 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script src="/AdminServices.js"></script>
+    <script src="/assets/js/retry-helper.js"></script>
+    <script src="/assets/js/global-error-handler.js"></script>
     <script src="/assets/js/admin-layout.js"></script>
     <script src="/assets/js/admin-ui-components.js"></script>
+    <script src="/assets/js/api-response-helpers.js"></script>
     <script src="/assets/js/admin-settings.js"></script>
   </body>
 </html>

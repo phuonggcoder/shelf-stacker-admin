@@ -58,33 +58,35 @@ function renderCampaigns(data) {
   });
 }
 
-function loadCampaigns() {
-  fetch(apiURL, { headers: { 'Authorization': token } })
-    .then(res => res.json())
-    .then(renderCampaigns)
-    .catch(err => {
-      console.error('❌ Lỗi tải dữ liệu:', err);
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Lỗi tải dữ liệu.</td></tr>`;
-    });
+async function loadCampaigns() {
+  try {
+    const campaigns = await AdminServices.getCampaigns();
+    renderCampaigns(campaigns);
+  } catch (err) {
+    console.error('❌ Lỗi tải dữ liệu:', err);
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Lỗi tải dữ liệu.</td></tr>`;
+    showNotification('error', 'Không thể tải chiến dịch: ' + err.message);
+  }
 }
 
-function loadBooksForSearch(selectedIds = []) {
-  fetch(bookAllAPI, { headers: { 'Authorization': token } })
-    .then(res => res.json())
-    .then(books => {
-      window.allBooks = books;
-      const select = document.getElementById('campaign-books');
-      select.innerHTML = '';
-      books.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b._id;
-        opt.textContent = b.title || b.name || 'Không tên';
-        if (selectedIds.includes(b._id)) opt.selected = true;
-        select.appendChild(opt);
-      });
-      renderBookSearchList(books, selectedIds);
-    })
-    .catch(err => console.error('❌ Lỗi tải sách:', err));
+async function loadBooksForSearch(selectedIds = []) {
+  try {
+    const books = await AdminServices.getBooks();
+    window.allBooks = books;
+    const select = document.getElementById('campaign-books');
+    select.innerHTML = '';
+    books.forEach(b => {
+      const opt = document.createElement('option');
+      opt.value = b._id;
+      opt.textContent = b.title || b.name || 'Không tên';
+      if (selectedIds.includes(b._id)) opt.selected = true;
+      select.appendChild(opt);
+    });
+    renderBookSearchList(books, selectedIds);
+  } catch (err) {
+    console.error('❌ Lỗi tải sách:', err);
+    showNotification('error', 'Không thể tải danh sách sách: ' + err.message);
+  }
 }
 
 function renderBookSearchList(books, selectedIds = []) {
@@ -133,29 +135,27 @@ document.getElementById('book-search-input').addEventListener('input', function(
   renderBookSearchList(filtered, Array.from(select.options).filter(opt => opt.selected).map(opt => opt.value));
 });
 
-function loadBooks() {
-  fetch(bookAllAPI, { headers: { 'Authorization': token } })
-    .then(res => res.json())
-    .then(books => {
-      console.log('✅ Danh sách sách:', books);
-      const select = document.getElementById('campaign-books');
-      if (!select) {
-        console.warn('Không tìm thấy thẻ select #campaign-books');
-        return;
-      }
-      select.innerHTML = '';
-      books.forEach(book => {
-        const option = document.createElement('option');
-        option.value = book._id;
-        option.textContent = book.title || book.name || 'Không tên';
-        select.appendChild(option);
-      });
-    })
-    .catch(err => {
-      console.error('❌ Không thể tải danh sách sách:', err);
-      const select = document.getElementById('campaign-books');
-      if (select) select.innerHTML = `<option disabled>Không tải được dữ liệu</option>`;
+async function loadBooks() {
+  try {
+    const books = await AdminServices.getBooks();
+    console.log('✅ Danh sách sách:', books);
+    const select = document.getElementById('campaign-books');
+    if (!select) {
+      console.warn('Không tìm thấy thẻ select #campaign-books');
+      return;
+    }
+    select.innerHTML = '';
+    books.forEach(book => {
+      const option = document.createElement('option');
+      option.value = book._id;
+      option.textContent = book.title || book.name || 'Không tên';
+      select.appendChild(option);
     });
+  } catch (err) {
+    console.error('❌ Không thể tải danh sách sách:', err);
+    const select = document.getElementById('campaign-books');
+    if (select) select.innerHTML = `<option disabled>Không tải được dữ liệu</option>`;
+  }
 }
 
 function getSelectedBooks() {
@@ -578,7 +578,7 @@ document.getElementById('campaign-image').addEventListener('change', function(e)
   }
 });
 
-document.getElementById('save-campaign-btn').addEventListener('click', function(e) {
+document.getElementById('save-campaign-btn').addEventListener('click', async function(e) {
   e.preventDefault();
   const name = document.getElementById('campaign-name').value.trim();
   const description = editorInstance.getData();
@@ -592,71 +592,80 @@ document.getElementById('save-campaign-btn').addEventListener('click', function(
     return;
   }
 
-  const formData = new FormData();
-  formData.append('name', name);
-  formData.append('description', description);
-  formData.append('startDate', startDate);
-  formData.append('endDate', endDate);
-  formData.append('type', type);
-  // Sửa lại books gửi lên BE
-  formData.append('bookIds', JSON.stringify(books));
-  newImageFiles.forEach(file => formData.append('imageFile', file));
+  // Disable button to prevent double submission
+  const saveBtn = document.getElementById('save-campaign-btn');
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Đang lưu...';
+    saveBtn.style.opacity = '0.6';
+    saveBtn.style.cursor = 'not-allowed';
+  }
 
-  fetch(apiURL, {
-    method: 'POST',
-    headers: { 'Authorization': token },
-    body: formData
-  })
-    .then(res => res.ok ? res.json() : res.json().then(err => { throw new Error(err.error || err.message || 'Lỗi khi tạo chiến dịch'); }))
-    .then(campaign => Promise.all(books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
-      method: 'PUT',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaigns: [campaign._id] })
-    }))).then(() => campaign))
-    .then(() => {
-      showSuccessAddCampaignDialog();
-      document.getElementById('campaign-modal').style.display = 'none';
-      document.getElementById('image-preview-container').innerHTML = '';
-      document.getElementById('campaign-image').value = '';
-      newImageFiles = [];
-      loadCampaigns();
-    })
-    .catch(err => {
-      console.error('❌ Lỗi khi thêm chiến dịch:', err);
-      showNotification('error', `Lỗi khi thêm chiến dịch: ${err.message}`);
-    });
+  try {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+    formData.append('type', type);
+    formData.append('bookIds', JSON.stringify(books));
+    newImageFiles.forEach(file => formData.append('imageFile', file));
+
+    const campaign = await AdminServices.createCampaign(formData);
+    
+    // Update books with campaign ID
+    await Promise.all(books.map(bookId => 
+      AdminServices.updateBook(bookId, { campaigns: [campaign._id] })
+    ));
+
+    showSuccessAddCampaignDialog();
+    document.getElementById('campaign-modal').style.display = 'none';
+    document.getElementById('image-preview-container').innerHTML = '';
+    document.getElementById('campaign-image').value = '';
+    newImageFiles = [];
+    loadCampaigns();
+  } catch (err) {
+    console.error('❌ Lỗi khi thêm chiến dịch:', err);
+    showNotification('error', `Lỗi khi thêm chiến dịch: ${err.message}`);
+  } finally {
+    // Always re-enable button
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Lưu';
+      saveBtn.style.opacity = '1';
+      saveBtn.style.cursor = 'pointer';
+    }
+  }
 });
 
-function editCampaign(id) {
-  fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } })
-    .then(res => res.ok ? res.json() : Promise.reject(new Error('Không tải được dữ liệu chiến dịch')))
-    .then(c => {
-      editingId = id;
-      document.getElementById('campaign-name').value = c.name;
-      document.getElementById('campaign-start').value = c.startDate?.split('T')[0] || '';
-      document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
-      document.getElementById('campaign-type').value = c.type;
-      document.getElementById('campaign-status').value = (typeof c.status !== 'undefined' ? c.status.toString() : 'true');
-      editorInstance.setData(c.description || '');
-      const select = document.getElementById('campaign-books');
-      const selectedBooks = Array.isArray(c.books) ? c.books.map(b => typeof b === 'object' ? b._id : b) : [];
-      Array.from(select.options).forEach(opt => opt.selected = selectedBooks.includes(opt.value));
-      existingImages = Array.isArray(c.image) ? c.image : [];
-      newImageFiles = [];
-      deletedImageUrls = [];
-      renderImagePreviews();
-      loadBooksForSearch(selectedBooks);
-      document.getElementById('save-campaign-btn').style.display = 'none';
-      document.getElementById('update-campaign-btn').style.display = 'block';
-      document.getElementById('campaign-modal').style.display = 'flex';
-    })
-    .catch(err => {
-      console.error('❌ Không tải được dữ liệu chiến dịch:', err);
-      showNotification('error', 'Không thể chỉnh sửa chiến dịch này: ' + err.message);
-    });
+async function editCampaign(id) {
+  try {
+    const c = await AdminServices.getCampaign(id);
+    editingId = id;
+    document.getElementById('campaign-name').value = c.name;
+    document.getElementById('campaign-start').value = c.startDate?.split('T')[0] || '';
+    document.getElementById('campaign-end').value = c.endDate?.split('T')[0] || '';
+    document.getElementById('campaign-type').value = c.type;
+    document.getElementById('campaign-status').value = (typeof c.status !== 'undefined' ? c.status.toString() : 'true');
+    editorInstance.setData(c.description || '');
+    const select = document.getElementById('campaign-books');
+    const selectedBooks = Array.isArray(c.books) ? c.books.map(b => typeof b === 'object' ? b._id : b) : [];
+    Array.from(select.options).forEach(opt => opt.selected = selectedBooks.includes(opt.value));
+    existingImages = Array.isArray(c.image) ? c.image : [];
+    newImageFiles = [];
+    deletedImageUrls = [];
+    renderImagePreviews();
+    loadBooksForSearch(selectedBooks);
+    document.getElementById('save-campaign-btn').style.display = 'none';
+    document.getElementById('update-campaign-btn').style.display = 'block';
+    document.getElementById('campaign-modal').style.display = 'flex';
+  } catch (err) {
+    console.error('❌ Không tải được dữ liệu chiến dịch:', err);
+    showNotification('error', 'Không thể chỉnh sửa chiến dịch này: ' + err.message);
+  }
 }
 
-document.getElementById('update-campaign-btn').addEventListener('click', function(e) {
+document.getElementById('update-campaign-btn').addEventListener('click', async function(e) {
   e.preventDefault();
   const name = document.getElementById('campaign-name').value.trim();
   const description = editorInstance.getData();
@@ -671,51 +680,58 @@ document.getElementById('update-campaign-btn').addEventListener('click', functio
     return;
   }
 
-  const formData = new FormData();
-  formData.append('name', name);
-  formData.append('description', description);
-  formData.append('status', status);
-  formData.append('startDate', startDate);
-  formData.append('endDate', endDate);
-  formData.append('type', type);
-  // Sửa lại books gửi lên BE
-  formData.append('books', JSON.stringify(books));
-  newImageFiles.forEach(file => formData.append('imageFile', file));
+  // Disable button to prevent double submission
+  const updateBtn = document.getElementById('update-campaign-btn');
+  if (updateBtn) {
+    updateBtn.disabled = true;
+    updateBtn.textContent = 'Đang cập nhật...';
+    updateBtn.style.opacity = '0.6';
+    updateBtn.style.cursor = 'not-allowed';
+  }
 
-  fetch(`${apiURL}/${editingId}`, {
-    method: 'PUT',
-    headers: { 'Authorization': token },
-    body: formData
-  })
-    .then(res => res.ok ? res.json() : res.json().then(err => { throw new Error(err.error || err.message || 'Lỗi khi cập nhật chiến dịch'); }))
-    .then(() => Promise.all(books.map(bookId => fetch(`${bookAPI}/${bookId}`, {
-      method: 'PUT',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ campaigns: [editingId] })
-    }))))
-    .then(() => {
-      showSuccessUpdateCampaignDialog();
-      document.getElementById('campaign-modal').style.display = 'none';
-      document.getElementById('image-preview-container').innerHTML = '';
-      document.getElementById('campaign-image').value = '';
-      existingImages = [];
-      newImageFiles = [];
-      deletedImageUrls = [];
-      loadCampaigns();
-    })
-    .catch(err => {
-      console.error(err);
-      showNotification('error', 'Lỗi khi cập nhật chiến dịch: ' + err.message);
-    });
+  try {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('description', description);
+    formData.append('status', status);
+    formData.append('startDate', startDate);
+    formData.append('endDate', endDate);
+    formData.append('type', type);
+    formData.append('books', JSON.stringify(books));
+    newImageFiles.forEach(file => formData.append('imageFile', file));
+
+    await AdminServices.updateCampaign(editingId, formData);
+    
+    // Update books with campaign ID
+    await Promise.all(books.map(bookId =>
+      AdminServices.updateBook(bookId, { campaigns: [editingId] })
+    ));
+
+    showSuccessUpdateCampaignDialog();
+    document.getElementById('campaign-modal').style.display = 'none';
+    document.getElementById('image-preview-container').innerHTML = '';
+    document.getElementById('campaign-image').value = '';
+    existingImages = [];
+    newImageFiles = [];
+    deletedImageUrls = [];
+    loadCampaigns();
+  } catch (err) {
+    console.error(err);
+    showNotification('error', 'Lỗi khi cập nhật chiến dịch: ' + err.message);
+  } finally {
+    // Always re-enable button
+    if (updateBtn) {
+      updateBtn.disabled = false;
+      updateBtn.textContent = 'Cập nhật';
+      updateBtn.style.opacity = '1';
+      updateBtn.style.cursor = 'pointer';
+    }
+  }
 });
 
 async function deleteCampaign(id) {
   try {
-    const res = await fetch(`${apiURL}/${id}`, { headers: { 'Authorization': token } });
-    if (!res.ok) {
-      throw new Error('Không thể tải dữ liệu chiến dịch để xóa');
-    }
-    const campaign = await res.json();
+    const campaign = await AdminServices.getCampaign(id);
 
     showConfirmDeleteCampaignDialog();
 
@@ -729,40 +745,13 @@ async function deleteCampaign(id) {
         confirmBtn.addEventListener('click', async () => {
           dialog.remove();
           try {
-            if (Array.isArray(campaign.image) && campaign.image.length > 0) {
-              const deleteImagesRes = await fetch(`${apiURL}/clear-images/${id}`, {
-                method: 'DELETE',
-                headers: {
-                  'Authorization': token,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ imageUrls: campaign.image })
-              });
-              const deleteImagesData = await deleteImagesRes.json();
-              if (!deleteImagesData.success) {
-                throw new Error(deleteImagesData.message || 'Xóa ảnh thất bại');
-              }
-            }
+            await AdminServices.deleteCampaign(id);
 
-            const deleteCampaignRes = await fetch(`${apiURL}/${id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': token }
-            });
-            if (!deleteCampaignRes.ok) {
-              throw new Error('Xóa chiến dịch thất bại');
-            }
-
+            // Update books to remove campaign reference
             if (Array.isArray(campaign.books) && campaign.books.length > 0) {
               await Promise.all(campaign.books.map(book => {
                 const bookId = typeof book === 'object' ? book._id : book;
-                return fetch(`${bookAPI}/${bookId}`, {
-                  method: 'PUT',
-                  headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ campaigns: [] })
-                });
+                return AdminServices.updateBook(bookId, { campaigns: [] });
               }));
             }
 
@@ -783,23 +772,25 @@ async function deleteCampaign(id) {
   }
 }
 
-document.getElementById('btn-search').addEventListener('click', function() {
+// Export deleteCampaign function
+window.deleteCampaign = deleteCampaign;
+
+document.getElementById('btn-search').addEventListener('click', async function() {
   const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
-  fetch(apiURL, { headers: { 'Authorization': token } })
-    .then(res => res.json())
-    .then(data => {
-      const filtered = data.filter(c => c.name.toLowerCase().includes(keyword));
-      if (filtered.length === 0) {
-        showNotFoundCampaignDialog();
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không tìm thấy chiến dịch nào.</td></tr>`;
-      } else {
-        renderCampaigns(filtered);
-      }
-    })
-    .catch(err => {
-      console.error('❌ Lỗi tìm kiếm:', err);
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
-    });
+  try {
+    const data = await AdminServices.getCampaigns();
+    const filtered = data.filter(c => c.name.toLowerCase().includes(keyword));
+    if (filtered.length === 0) {
+      showNotFoundCampaignDialog();
+      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không tìm thấy chiến dịch nào.</td></tr>`;
+    } else {
+      renderCampaigns(filtered);
+    }
+  } catch (err) {
+    console.error('❌ Lỗi tìm kiếm:', err);
+    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
+    showNotification('error', 'Không thể tìm kiếm: ' + err.message);
+  }
 });
 
 document.getElementById('search-campaign').addEventListener('keydown', function(e) {

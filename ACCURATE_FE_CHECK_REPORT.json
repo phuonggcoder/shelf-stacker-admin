@@ -1,0 +1,255 @@
+{
+  "timestamp": "2025-11-09T11:03:47.614Z",
+  "summary": {
+    "total": 10,
+    "fullyImplemented": 10,
+    "partiallyImplemented": 0,
+    "notImplemented": 0,
+    "uiIssues": [],
+    "overallCoverage": "100.00%"
+  },
+  "pages": [
+    {
+      "name": "Dashboard",
+      "html": "views/home.html",
+      "priority": "HIGH",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/api-response-helpers.js",
+        "/assets/js/admin-dashboard.js"
+      ],
+      "apiCoverage": {
+        "found": 3,
+        "total": 3,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getDashboardStats",
+        "getOrderStats",
+        "getRevenueByTime"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Orders",
+      "html": "views/orders.html",
+      "priority": "HIGH",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/api-response-helpers.js",
+        "/assets/js/admin-orders.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getOrders",
+        "getOrder",
+        "updateOrderStatus",
+        "cancelOrder"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Books",
+      "html": "views/products.html",
+      "priority": "HIGH",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/admin-crud-forms.js",
+        "/assets/js/api-response-helpers.js",
+        "/assets/js/admin-products.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getBooks",
+        "createBook",
+        "updateBook",
+        "deleteBook"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Categories",
+      "html": "views/quanlydanhmuc.html",
+      "priority": "HIGH",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/assets/js/quanlydanhmuc.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getCategories",
+        "createCategory",
+        "updateCategory",
+        "deleteCategory"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Users",
+      "html": "views/users.html",
+      "priority": "MEDIUM",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/admin-crud-forms.js",
+        "/assets/js/admin-users.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getUsers",
+        "createUser",
+        "lockUser",
+        "deleteUser"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Vouchers",
+      "html": "views/voucher-management.html",
+      "priority": "MEDIUM",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/assets/js/apiClient.js",
+        "/assets/js/voucherManagement.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getVouchers",
+        "createVoucher",
+        "updateVoucher",
+        "deleteVoucher"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Campaigns",
+      "html": "views/campaigns.html",
+      "priority": "MEDIUM",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/assets/js/includes.js",
+        "/assets/js/campaigns.js"
+      ],
+      "apiCoverage": {
+        "found": 4,
+        "total": 4,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getCampaigns",
+        "createCampaign",
+        "updateCampaign",
+        "deleteCampaign"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Notifications",
+      "html": "views/notification-admin.html",
+      "priority": "MEDIUM",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/assets/js/notification-admin.js"
+      ],
+      "apiCoverage": {
+        "found": 3,
+        "total": 3,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getNotificationTemplates",
+        "sendInstantNotification",
+        "getRecipientsUsers"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Settings",
+      "html": "views/settings.html",
+      "priority": "LOW",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/api-response-helpers.js",
+        "/assets/js/admin-settings.js"
+      ],
+      "apiCoverage": {
+        "found": 3,
+        "total": 3,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getSettings",
+        "updateSetting",
+        "updateSettingsBulk"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    },
+    {
+      "name": "Reports",
+      "html": "views/reports.html",
+      "priority": "LOW",
+      "status": "fully_implemented",
+      "jsFiles": [
+        "/AdminServices.js",
+        "/assets/js/admin-layout.js",
+        "/assets/js/admin-ui-components.js",
+        "/assets/js/admin-reports.js"
+      ],
+      "apiCoverage": {
+        "found": 3,
+        "total": 3,
+        "percentage": "100.00"
+      },
+      "foundAPIs": [
+        "getSalesReport",
+        "getOrderStatistics",
+        "getRevenueByCategory"
+      ],
+      "missingAPIs": [],
+      "uiIssues": []
+    }
+  ]
+}

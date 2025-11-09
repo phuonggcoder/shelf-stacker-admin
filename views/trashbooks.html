@@ -396,6 +396,7 @@
       to { opacity: 0; }
     }
   </style>
+    <script src="/assets/js/loading-state-helper.js"></script>
 </head>
 <body>
   <header class="header">
@@ -501,7 +502,9 @@
     <button id="cancelButton" class="btn-danger" style="margin-top: 10px;">Đóng</button>
   </dialog>
 
-  <script src="/public/config.js"></script>
+      <script src="/assets/js/global-error-handler.js"></script>
+    <script src="/assets/js/retry-helper.js"></script>
+    <script src="/public/config.js"></script>
   <script src="/assets/js/sanphamdaxoa.js"></script>
   <script>
     function toggleMenu(id) {

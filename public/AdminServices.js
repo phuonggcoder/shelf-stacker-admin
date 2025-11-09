@@ -90,12 +90,18 @@ class AdminServices {
                 throw new Error(data.message || data.msg || `HTTP ${response.status}: ${response.statusText}`);
             }
 
-            // Tự động extract data nếu response có format { success: true, data: {...} }
-            // Hoặc { success: true, data: [...] }
+            // Chỉ tự động extract data nếu response có format { success: true, data: {...} }
+            // KHÔNG extract nếu có success: true nhưng không có data field (ví dụ: { success: true, vouchers: [...] })
             if (data && typeof data === 'object' && data.success === true && 'data' in data) {
                 return data.data;
             }
 
+            // Trả về toàn bộ response để frontend xử lý
+            // Các format có thể:
+            // - { orders: [...], total, page, limit, pages }
+            // - { books: [...], pagination: {...} }
+            // - { success: true, vouchers: [...], pagination: {...} }
+            // - { success: true, data: {...} } (đã extract ở trên)
             return data;
         } catch (error) {
             if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
@@ -154,8 +160,26 @@ class AdminServices {
     }
 
     // ==================== Books Management ====================
+    /**
+     * Lấy danh sách sách (Admin) với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.category - ID category để lọc
+     * @param {string} params.status - in_stock (còn hàng) hoặc out_of_stock (hết hàng)
+     * @param {string} params.search - Tìm kiếm theo title, author, hoặc description (case-insensitive)
+     * @returns {Promise<Object>} { books: [...], pagination: { page, limit, total, pages } }
+     */
     async getBooks(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        // Set defaults
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.category && { category: params.category }),
+            ...(params.status && { status: params.status }),
+            ...(params.search && { search: params.search })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/books/admin${query ? '?' + query : ''}`);
     }
 
@@ -178,8 +202,20 @@ class AdminServices {
                 body: data
             });
             if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.message || 'Create book failed');
+                let errorMessage = 'Create book failed';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || error.msg || error.error || errorMessage;
+                } catch (e) {
+                    // If response is not JSON, try to get text
+                    try {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    } catch (e2) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                }
+                throw new Error(errorMessage);
             }
             const result = await response.json();
             // Auto-extract data if response has { success: true, data: {...} }
@@ -211,8 +247,20 @@ class AdminServices {
                 body: data
             });
             if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.message || 'Update book failed');
+                let errorMessage = 'Update book failed';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || error.msg || error.error || errorMessage;
+                } catch (e) {
+                    // If response is not JSON, try to get text
+                    try {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    } catch (e2) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                }
+                throw new Error(errorMessage);
             }
             const result = await response.json();
             // Auto-extract data if response has { success: true, data: {...} }
@@ -282,8 +330,26 @@ class AdminServices {
     }
 
     // ==================== Orders Management ====================
+    /**
+     * Lấy tất cả đơn hàng với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.status - Trạng thái: Pending, AwaitingPickup, OutForDelivery, Delivered, Returned, Cancelled, Refunded
+     * @param {string} params.user_id - ID người dùng (ObjectId)
+     * @param {string} params.shipper_id - ID shipper (ObjectId)
+     * @returns {Promise<Object>} { orders: [...], total, page, limit, pages }
+     */
     async getOrders(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        // Set defaults
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.status && { status: params.status }),
+            ...(params.user_id && { user_id: params.user_id }),
+            ...(params.shipper_id && { shipper_id: params.shipper_id })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/orders${query ? '?' + query : ''}`);
     }
 
@@ -337,8 +403,23 @@ class AdminServices {
         });
     }
 
+    /**
+     * Lấy đơn hàng theo phương thức thanh toán
+     * @param {Object} params - Query parameters
+     * @param {string} params.payment_method - Required: COD, BANK_TRANSFER, MOMO, ZALOPAY, VNPAY, PAYOS
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     */
     async getOrdersByPaymentMethod(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        if (!params.payment_method) {
+            throw new Error('payment_method is required');
+        }
+        const queryParams = {
+            payment_method: params.payment_method,
+            page: params.page || 1,
+            limit: params.limit || 20
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/orders/by-payment-method${query ? '?' + query : ''}`);
     }
 
@@ -346,13 +427,37 @@ class AdminServices {
         return this.request(`/api/orders/${id}/shipper-details`);
     }
 
+    /**
+     * Lấy Shipper Assignments với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.status - Trạng thái đơn hàng
+     */
     async getShipperAssignments(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/orders/shipper-assignments${query ? '?' + query : ''}`);
     }
 
+    /**
+     * Thống kê hiệu suất Shipper
+     * @param {Object} params - Query parameters
+     * @param {string} params.shipper_id - ID shipper
+     * @param {string} params.start_date - YYYY-MM-DD
+     * @param {string} params.end_date - YYYY-MM-DD
+     */
     async getShipperPerformance(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            ...(params.shipper_id && { shipper_id: params.shipper_id }),
+            ...(params.start_date && { start_date: params.start_date }),
+            ...(params.end_date && { end_date: params.end_date })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/orders/shipper-performance${query ? '?' + query : ''}`);
     }
 
@@ -405,8 +510,23 @@ class AdminServices {
         });
     }
 
+    /**
+     * Lấy danh sách Shipper với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1, min: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 50, min: 1, max: 100)
+     * @param {boolean} params.verified - true hoặc false để lọc theo shipper_verified
+     * @param {boolean} params.isActive - true hoặc false để lọc theo isActive
+     * @returns {Promise<Object>} { success: true, total, page, limit, users: [...] }
+     */
     async getShippers(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 50,
+            ...(params.verified !== undefined && { verified: params.verified }),
+            ...(params.isActive !== undefined && { isActive: params.isActive })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/users/shippers${query ? '?' + query : ''}`);
     }
 
@@ -424,8 +544,17 @@ class AdminServices {
     }
 
     // ==================== Categories Management ====================
+    /**
+     * Lấy danh sách danh mục với filter
+     * @param {Object} params - Query parameters
+     * @param {string} params.visible - "true" hoặc "false" để lọc theo isVisible
+     * @returns {Promise<Array>} Array of categories
+     */
     async getCategories(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            ...(params.visible && { visible: params.visible })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/categories${query ? '?' + query : ''}`);
     }
 
@@ -447,8 +576,19 @@ class AdminServices {
                 body: data
             });
             if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.message || 'Create category failed');
+                let errorMessage = 'Create category failed';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || error.msg || error.error || errorMessage;
+                } catch (e) {
+                    try {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    } catch (e2) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                }
+                throw new Error(errorMessage);
             }
             const result = await response.json();
             if (result && typeof result === 'object' && result.success === true && 'data' in result) {
@@ -477,8 +617,19 @@ class AdminServices {
                 body: data
             });
             if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(error.message || 'Update category failed');
+                let errorMessage = 'Update category failed';
+                try {
+                    const error = await response.json();
+                    errorMessage = error.message || error.msg || error.error || errorMessage;
+                } catch (e) {
+                    try {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    } catch (e2) {
+                        errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                }
+                throw new Error(errorMessage);
             }
             const result = await response.json();
             if (result && typeof result === 'object' && result.success === true && 'data' in result) {
@@ -516,8 +667,25 @@ class AdminServices {
     }
 
     // ==================== Vouchers Management ====================
+    /**
+     * Lấy danh sách Voucher với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @param {string} params.search - Tìm kiếm theo voucher_id (case-insensitive)
+     * @param {string} params.voucher_type - discount hoặc shipping
+     * @param {string} params.status - active (is_active = true) hoặc inactive (is_active = false)
+     * @returns {Promise<Object>} { success: true, vouchers: [...], pagination: { page, limit, total, pages } }
+     */
     async getVouchers(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10,
+            ...(params.search && { search: params.search }),
+            ...(params.voucher_type && { voucher_type: params.voucher_type }),
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/vouchers${query ? '?' + query : ''}`);
     }
 
@@ -675,19 +843,57 @@ class AdminServices {
     }
 
     // ==================== Shipper Management ====================
+    /**
+     * Lấy danh sách Shipper (Admin Router) với pagination
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @returns {Promise<Object>} { shippers: [...], pagination: { page, limit, total, pages } }
+     */
     async getShippersList(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/admin/shippers${query ? '?' + query : ''}`);
     }
 
+    /**
+     * Lấy đơn hàng theo Shipper (Admin)
+     * @param {string} shipperId - ID shipper
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.status - Trạng thái đơn hàng
+     * @returns {Promise<Object>} { shipper: {...}, orders: [...], pagination: {...}, stats: [...] }
+     */
     async getShipperOrders(shipperId, params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/admin/shipper/${shipperId}/orders${query ? '?' + query : ''}`);
     }
 
     // ==================== Refund Management ====================
+    /**
+     * Lấy danh sách đơn hàng cần hoàn tiền với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.status - Trạng thái hoàn tiền: pending, processing, completed, failed
+     * @returns {Promise<Object>} { orders: [...], pagination: { page, limit, total, pages } }
+     */
     async getRefundRequests(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/admin/refund-requests${query ? '?' + query : ''}`);
     }
 
@@ -708,6 +914,60 @@ class AdminServices {
     }
 
     // ==================== Reviews Management ====================
+    /**
+     * Lấy đánh giá của sản phẩm với pagination, filter và sort
+     * @param {string} productId - ID sản phẩm (required)
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @param {string} params.sort - latest, highest, lowest (default: latest)
+     * @param {boolean} params.hasImage - true để chỉ lấy đánh giá có hình ảnh
+     * @returns {Promise<Object>} { reviews: [...], pagination: {...}, summary: {...} }
+     */
+    async getProductReviews(productId, params = {}) {
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10,
+            sort: params.sort || 'latest',
+            ...(params.hasImage !== undefined && { hasImage: params.hasImage })
+        };
+        const query = new URLSearchParams(queryParams).toString();
+        return this.request(`/api/v1/review/product/${productId}${query ? '?' + query : ''}`);
+    }
+
+    /**
+     * Lấy đánh giá của User với pagination
+     * @param {string} userId - ID người dùng (required)
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @returns {Promise<Object>} { reviews: [...], pagination: {...} }
+     */
+    async getUserReviews(userId, params = {}) {
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10
+        };
+        const query = new URLSearchParams(queryParams).toString();
+        return this.request(`/api/v1/review/user/${userId}${query ? '?' + query : ''}`);
+    }
+
+    /**
+     * Lấy đánh giá của Current User với pagination
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @returns {Promise<Object>} { reviews: [...], pagination: {...} }
+     */
+    async getMyReviews(params = {}) {
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10
+        };
+        const query = new URLSearchParams(queryParams).toString();
+        return this.request(`/api/v1/review/user/me${query ? '?' + query : ''}`);
+    }
+
     async deleteReview(reviewId) {
         return this.request(`/api/v1/review/${reviewId}`, {
             method: 'DELETE'
@@ -751,8 +1011,23 @@ class AdminServices {
     }
 
     // ==================== Notifications Management ====================
+    /**
+     * Lấy danh sách Notification Templates với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @param {string} params.type - Loại template
+     * @param {string} params.event - Sự kiện
+     * @returns {Promise<Object>} { success: true, templates: [...], pagination: { page, limit, total, pages } }
+     */
     async getNotificationTemplates(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10,
+            ...(params.type && { type: params.type }),
+            ...(params.event && { event: params.event })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/v1/admin/notification-templates${query ? '?' + query : ''}`);
     }
 
@@ -784,8 +1059,27 @@ class AdminServices {
     }
 
     // Scheduled Notifications (Section 14 - different from admin scheduled notifications)
+    /**
+     * Lấy danh sách Scheduled Notifications (Public) với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.status - Trạng thái
+     * @param {string} params.type - Loại
+     * @param {string} params.startDate - YYYY-MM-DD
+     * @param {string} params.endDate - YYYY-MM-DD
+     * @returns {Promise<Object>} { scheduledNotifications: [...], total, page, limit }
+     */
     async getScheduledNotifications(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.status && { status: params.status }),
+            ...(params.type && { type: params.type }),
+            ...(params.startDate && { startDate: params.startDate }),
+            ...(params.endDate && { endDate: params.endDate })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/scheduled-notifications${query ? '?' + query : ''}`);
     }
 
@@ -860,8 +1154,23 @@ class AdminServices {
     }
 
     // Admin Scheduled Notifications (Section 11.3 - different from Section 14)
+    /**
+     * Lấy danh sách Scheduled Notifications (Admin) với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @param {string} params.type - Loại notification
+     * @param {string} params.status - Trạng thái: pending, sent, cancelled, failed
+     * @returns {Promise<Object>} { success: true, notifications: [...], pagination: { page, limit, total, pages } }
+     */
     async getAdminScheduledNotifications(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10,
+            ...(params.type && { type: params.type }),
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/v1/admin/scheduled-notifications${query ? '?' + query : ''}`);
     }
 
@@ -885,8 +1194,23 @@ class AdminServices {
         });
     }
 
+    /**
+     * Lấy danh sách Instant Notifications với pagination và filter
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 10)
+     * @param {string} params.type - Loại notification
+     * @param {string} params.status - Trạng thái
+     * @returns {Promise<Object>} { success: true, notifications: [...], pagination: { page, limit, total, pages } }
+     */
     async getInstantNotifications(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 10,
+            ...(params.type && { type: params.type }),
+            ...(params.status && { status: params.status })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/v1/admin/instant-notifications${query ? '?' + query : ''}`);
     }
 
@@ -897,13 +1221,39 @@ class AdminServices {
         });
     }
 
+    /**
+     * Lấy danh sách Users có Device Tokens với pagination và search
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.search - Tìm kiếm theo username, email, hoặc full_name (case-insensitive)
+     * @returns {Promise<Object>} { success: true, users: [...], pagination: { page, limit, total, pages } }
+     */
     async getRecipientsUsers(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.search && { search: params.search })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/v1/admin/recipients/users${query ? '?' + query : ''}`);
     }
 
+    /**
+     * Lấy danh sách Shippers có Device Tokens với pagination và search
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.search - Tìm kiếm theo username, email, hoặc full_name (case-insensitive)
+     * @returns {Promise<Object>} { success: true, shippers: [...], pagination: { page, limit, total, pages } }
+     */
     async getRecipientsShippers(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.search && { search: params.search })
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/v1/admin/recipients/shippers${query ? '?' + query : ''}`);
     }
 
@@ -958,8 +1308,37 @@ class AdminServices {
     }
 
     // Notification History
+    /**
+     * Lấy lịch sử thông báo với pagination, filter và sort
+     * @param {Object} params - Query parameters
+     * @param {number} params.page - Số trang (default: 1)
+     * @param {number} params.limit - Số lượng mỗi trang (default: 20)
+     * @param {string} params.recipientType - Loại người nhận: user, shipper, admin
+     * @param {string} params.recipientId - ID người nhận
+     * @param {string} params.status - Trạng thái: sent, delivered, read, failed
+     * @param {string} params.type - Loại thông báo: push, email, sms
+     * @param {string} params.category - Danh mục
+     * @param {string} params.startDate - Ngày bắt đầu (YYYY-MM-DD)
+     * @param {string} params.endDate - Ngày kết thúc (YYYY-MM-DD)
+     * @param {string} params.sortBy - Trường sắp xếp (default: sentAt)
+     * @param {string} params.sortOrder - Thứ tự: asc hoặc desc (default: desc)
+     * @returns {Promise<Object>} { success: true, data: [...], pagination: { page, limit, total, totalPages } }
+     */
     async getNotificationHistory(params = {}) {
-        const query = new URLSearchParams(params).toString();
+        const queryParams = {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            ...(params.recipientType && { recipientType: params.recipientType }),
+            ...(params.recipientId && { recipientId: params.recipientId }),
+            ...(params.status && { status: params.status }),
+            ...(params.type && { type: params.type }),
+            ...(params.category && { category: params.category }),
+            ...(params.startDate && { startDate: params.startDate }),
+            ...(params.endDate && { endDate: params.endDate }),
+            sortBy: params.sortBy || 'sentAt',
+            sortOrder: params.sortOrder || 'desc'
+        };
+        const query = new URLSearchParams(queryParams).toString();
         return this.request(`/api/notification-history${query ? '?' + query : ''}`);
     }
 
@@ -1018,6 +1397,131 @@ class AdminServices {
     async getRevenueByTime(params = {}) {
         const query = new URLSearchParams(params).toString();
         return this.request(`/api/admin/statistics/revenue/time${query ? '?' + query : ''}`);
+    }
+
+    async getSalesReport(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/api/admin/statistics/sales-report${query ? '?' + query : ''}`);
+    }
+
+    async getOrderStatisticsDetail(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/api/admin/statistics/orders/detail${query ? '?' + query : ''}`);
+    }
+
+    // ==================== System Settings ====================
+    /**
+     * Lấy tất cả settings (Admin)
+     * @param {string} category - Optional: Filter theo category
+     * @returns {Promise<Object>} { success: true, settings: [...] }
+     */
+    async getSettings(category = null) {
+        const url = category 
+            ? `${this.baseUrl}/api/admin/settings?category=${category}`
+            : `${this.baseUrl}/api/admin/settings`;
+        return this.request(url);
+    }
+
+    /**
+     * Lấy setting theo key (Admin)
+     * @param {string} key - Setting key
+     * @returns {Promise<Object>} { success: true, setting: {...} }
+     */
+    async getSetting(key) {
+        return this.request(`/api/admin/settings/${key}`);
+    }
+
+    /**
+     * Cập nhật setting (Admin)
+     * @param {string} key - Setting key
+     * @param {*} value - Setting value
+     * @returns {Promise<Object>} { success: true, setting: {...} }
+     */
+    async updateSetting(key, value) {
+        return this.request(`/api/admin/settings/${key}`, {
+            method: 'PUT',
+            body: JSON.stringify({ value })
+        });
+    }
+
+    /**
+     * Cập nhật nhiều settings (Admin)
+     * @param {Array} settings - Array of { key, value }
+     * @returns {Promise<Object>} { success: true, updated: number, settings: [...] }
+     */
+    async updateSettingsBulk(settings) {
+        return this.request('/api/admin/settings/bulk', {
+            method: 'PUT',
+            body: JSON.stringify({ settings })
+        });
+    }
+
+    /**
+     * Tạo setting mới (Admin)
+     * @param {Object} setting - { key, value, type, category, description, isPublic }
+     * @returns {Promise<Object>} { success: true, setting: {...} }
+     */
+    async createSetting(setting) {
+        return this.request('/api/admin/settings', {
+            method: 'POST',
+            body: JSON.stringify(setting)
+        });
+    }
+
+    /**
+     * Lấy public settings (không cần auth)
+     * @returns {Promise<Object>} { success: true, settings: {...} }
+     */
+    async getPublicSettings() {
+        return this.request('/api/settings/public');
+    }
+
+    // ==================== System Management ====================
+    /**
+     * Lấy thông tin hệ thống (Admin)
+     * @returns {Promise<Object>} { success: true, system: {...} }
+     */
+    async getSystemInfo() {
+        return this.request('/api/admin/system/info');
+    }
+
+    /**
+     * Lấy system logs (Admin)
+     * @param {Object} params - { page, limit, level, start_date, end_date }
+     * @returns {Promise<Object>} { success: true, logs: [...], pagination: {...} }
+     */
+    async getSystemLogs(params = {}) {
+        const query = new URLSearchParams(params).toString();
+        return this.request(`/api/admin/system/logs${query ? '?' + query : ''}`);
+    }
+
+    /**
+     * Tạo backup (Admin)
+     * @returns {Promise<Object>} { success: true, backup: {...} }
+     */
+    async createBackup() {
+        return this.request('/api/admin/system/backup', {
+            method: 'POST'
+        });
+    }
+
+    /**
+     * Lấy danh sách backups (Admin)
+     * @returns {Promise<Object>} { success: true, backups: [...] }
+     */
+    async getBackups() {
+        return this.request('/api/admin/system/backups');
+    }
+
+    /**
+     * Restore từ backup (Admin)
+     * @param {string} backupId - Backup ID
+     * @returns {Promise<Object>} { success: true, message: '...' }
+     */
+    async restoreBackup(backupId) {
+        return this.request(`/api/admin/system/restore/${backupId}`, {
+            method: 'POST'
+        });
     }
 
     // ==================== Payment Management ====================

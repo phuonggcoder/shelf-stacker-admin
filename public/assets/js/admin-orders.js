@@ -178,46 +178,147 @@ async function loadOrders() {
         console.log('📦 Loading orders with params:', params);
         const response = await window.AdminServices.getOrders(params);
         console.log('📦 Orders response received:', response);
+        console.log('📦 Response type:', typeof response);
+        console.log('📦 Response keys:', response ? Object.keys(response) : 'null');
         
-        // API trả về { orders: [...], total, page, limit, pages } hoặc { orders: [...], pagination: {...} }
-        const orders = response.orders || response.data || (Array.isArray(response) ? response : []);
-        
-        // Đảm bảo chỉ render số đơn hàng trong trang hiện tại
-        if (Array.isArray(orders) && orders.length > 0) {
-            renderOrders(orders);
-            
-            // Xử lý pagination từ response
-            let paginationData;
-            if (response.pagination) {
-                paginationData = response.pagination;
-            } else {
-                const total = response.total || response.pagination?.total || orders.length;
-                const limit = response.limit || response.pagination?.limit || pageSize;
-                const page = response.page || response.pagination?.page || currentPage;
-                const pages = response.pages || response.pagination?.pages || response.pagination?.totalPages || Math.ceil(total / limit);
-                
-                paginationData = {
-                    page: page,
-                    limit: limit,
-                    total: total,
-                    pages: pages,
-                    totalPages: pages
-                };
-                
-                if (response.page) {
-                    currentPage = response.page;
+        // Use helper functions from api-response-helpers.js
+        // Ensure helper functions are available (fallback if not loaded)
+        const extractData = window.extractData || function(resp, key) {
+            if (!resp) {
+                console.warn('⚠️ Response is null or undefined');
+                return [];
+            }
+            // Nếu là array trực tiếp
+            if (Array.isArray(resp)) {
+                console.log('📦 Response is array, length:', resp.length);
+                return resp;
+            }
+            // Nếu có key cụ thể (orders, books, vouchers, etc.)
+            if (key && resp[key]) {
+                const data = Array.isArray(resp[key]) ? resp[key] : [];
+                console.log(`📦 Found data in response.${key}, length:`, data.length);
+                return data;
+            }
+            // Nếu có data field
+            if (resp.data) {
+                // data có thể là array hoặc object có orders field
+                if (Array.isArray(resp.data)) {
+                    console.log('📦 Found data array, length:', resp.data.length);
+                    return resp.data;
+                }
+                if (resp.data[key]) {
+                    const data = Array.isArray(resp.data[key]) ? resp.data[key] : [];
+                    console.log(`📦 Found data.data.${key}, length:`, data.length);
+                    return data;
                 }
             }
+            // Nếu response có success và data
+            if (resp.success && resp.data) {
+                if (Array.isArray(resp.data)) {
+                    console.log('📦 Found success.data array, length:', resp.data.length);
+                    return resp.data;
+                }
+                if (resp.data[key]) {
+                    const data = Array.isArray(resp.data[key]) ? resp.data[key] : [];
+                    console.log(`📦 Found success.data.${key}, length:`, data.length);
+                    return data;
+                }
+            }
+            console.warn('⚠️ Could not extract data from response:', resp);
+            return [];
+        };
+        
+        // Use helper functions from api-response-helpers.js
+        const extractPagination = window.extractPagination || function(resp, defaultPage, defaultLimit) {
+            if (!resp) {
+                console.warn('⚠️ Response is null, using defaults');
+                return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
+            }
             
-            updatePagination(paginationData);
-        } else {
-            renderOrders([]);
-            updatePagination({ page: 1, limit: pageSize, total: 0, pages: 1, totalPages: 1 });
+            // Format 1: { pagination: { page, limit, total, pages, totalPages } }
+            if (resp.pagination) {
+                const pagination = {
+                    page: resp.pagination.page || defaultPage,
+                    limit: resp.pagination.limit || defaultLimit,
+                    total: resp.pagination.total || 0,
+                    pages: resp.pagination.pages || resp.pagination.totalPages || 1,
+                    totalPages: resp.pagination.totalPages || resp.pagination.pages || 1
+                };
+                console.log('📦 Extracted pagination from resp.pagination:', pagination);
+                return pagination;
+            }
+            
+            // Format 2: { page, limit, total, pages, totalPages } (trực tiếp)
+            if (resp.page !== undefined || resp.total !== undefined) {
+                const total = resp.total || 0;
+                const limit = resp.limit || defaultLimit;
+                const page = resp.page || defaultPage;
+                const pages = resp.pages || resp.totalPages || Math.ceil(total / limit) || 1;
+                const pagination = { page, limit, total, pages, totalPages: pages };
+                console.log('📦 Extracted pagination from resp directly:', pagination);
+                return pagination;
+            }
+            
+            // Format 3: { data: { pagination: {...} } }
+            if (resp.data && resp.data.pagination) {
+                const pagination = {
+                    page: resp.data.pagination.page || defaultPage,
+                    limit: resp.data.pagination.limit || defaultLimit,
+                    total: resp.data.pagination.total || 0,
+                    pages: resp.data.pagination.pages || resp.data.pagination.totalPages || 1,
+                    totalPages: resp.data.pagination.totalPages || resp.data.pagination.pages || 1
+                };
+                console.log('📦 Extracted pagination from resp.data.pagination:', pagination);
+                return pagination;
+            }
+            
+            // Format 4: { success: true, data: { pagination: {...} } }
+            if (resp.success && resp.data && resp.data.pagination) {
+                const pagination = {
+                    page: resp.data.pagination.page || defaultPage,
+                    limit: resp.data.pagination.limit || defaultLimit,
+                    total: resp.data.pagination.total || 0,
+                    pages: resp.data.pagination.pages || resp.data.pagination.totalPages || 1,
+                    totalPages: resp.data.pagination.totalPages || resp.data.pagination.pages || 1
+                };
+                console.log('📦 Extracted pagination from resp.success.data.pagination:', pagination);
+                return pagination;
+            }
+            
+            console.warn('⚠️ Could not extract pagination, using defaults');
+            return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
+        };
+        
+        // Extract orders và pagination
+        const orders = extractData(response, 'orders');
+        const paginationData = extractPagination(response, currentPage, pageSize);
+        
+        console.log('📦 Extracted orders:', orders.length);
+        console.log('📦 Extracted pagination:', paginationData);
+        
+        // Cập nhật currentPage từ pagination
+        if (paginationData.page) {
+            currentPage = paginationData.page;
+        }
+        
+        // Render orders và pagination
+        renderOrders(orders);
+        updatePagination(paginationData);
+        
+        // Show message nếu không có orders
+        if (orders.length === 0 && paginationData.total === 0) {
+            console.log('📦 No orders found');
         }
     } catch (error) {
-        console.error('Error loading orders:', error);
-        showToast('Không thể tải danh sách đơn hàng', 'error');
+        console.error('❌ Error loading orders:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        showToast('Không thể tải danh sách đơn hàng: ' + (error.message || 'Unknown error'), 'error');
         renderOrders([]);
+        updatePagination({ page: currentPage, limit: pageSize, total: 0, pages: 1, totalPages: 1 });
     } finally {
         hideLoading();
     }
@@ -245,57 +346,137 @@ function renderOrders(orders) {
     }
 
     tbody.innerHTML = orders.map(order => {
-        const statusColor = getStatusColor(order.status);
-        const statusBgColors = {
-            'warning': '#fef3c7',
-            'info': '#dbeafe',
-            'primary': '#dbeafe',
-            'success': '#d1fae5',
-            'danger': '#fee2e2',
-            'secondary': '#f3f4f6'
-        };
-        const statusTextColors = {
-            'warning': '#92400e',
-            'info': '#1e40af',
-            'primary': '#1e40af',
-            'success': '#065f46',
-            'danger': '#991b1b',
-            'secondary': '#374151'
-        };
-        const bgColor = statusBgColors[statusColor] || '#f3f4f6';
-        const textColor = statusTextColors[statusColor] || '#374151';
-        
-        return `
-        <tr style="transition: background-color 0.2s;">
-            <td style="vertical-align: middle;"><strong style="color: #1f2937;">#${order.order_id || order._id?.substring(0, 8) || 'N/A'}</strong></td>
-            <td style="vertical-align: middle;">
-                <div style="color: #1f2937; font-weight: 500;">${order.user?.email || order.user?.username || 'N/A'}</div>
-                ${order.shipping_address?.phone ? `<small style="color: #6b7280; font-size: 0.85rem;">${order.shipping_address.phone}</small>` : ''}
-            </td>
-            <td style="vertical-align: middle;">
-                <div style="color: #1f2937; font-weight: 500;">${order.items?.length || 0} sản phẩm</div>
-                ${order.items?.[0]?.book?.title ? `<small style="color: #6b7280; font-size: 0.85rem; display: block; margin-top: 0.25rem;">${order.items[0].book.title}${order.items.length > 1 ? '...' : ''}</small>` : ''}
-            </td>
-            <td style="vertical-align: middle;"><strong style="color: #dc2626; font-size: 1rem;">${window.AdminServices ? window.AdminServices.formatCurrency(order.total_amount || 0) : (order.total_amount || 0).toLocaleString('vi-VN') + ' ₫'}</strong></td>
-            <td style="vertical-align: middle; color: #4b5563;">${getPaymentMethodText(order.payment_method)}</td>
-            <td style="vertical-align: middle;">
-                <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; background: ${bgColor}; color: ${textColor};">
-                    ${getStatusText(order.status)}
-                </span>
-            </td>
-            <td style="vertical-align: middle; color: #4b5563; font-size: 0.9rem;">${window.AdminServices ? window.AdminServices.formatDate(order.createdAt) : new Date(order.createdAt).toLocaleString('vi-VN')}</td>
-            <td style="vertical-align: middle;">
-                <div style="display: flex; gap: 0.5rem; justify-content: center;">
-                    <button class="btn btn-sm btn-primary" onclick="viewOrder('${order._id}')" title="Xem chi tiết" style="padding: 0.5rem; min-width: 36px;">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="btn btn-sm btn-secondary" onclick="updateOrderStatus('${order._id}')" title="Cập nhật trạng thái" style="padding: 0.5rem; min-width: 36px;">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    `;
+        try {
+            // Extract order data - xử lý nhiều format
+            const orderId = order.order_id || order._id?.substring(0, 8) || order._id || 'N/A';
+            const orderStatus = order.order_status || order.status || 'Pending';
+            
+            // Extract user info - có thể là object hoặc ID
+            let userEmail = 'N/A';
+            let userName = 'N/A';
+            let userPhone = '';
+            if (order.user_id) {
+                if (typeof order.user_id === 'object') {
+                    userEmail = order.user_id.email || order.user_id.username || 'N/A';
+                    userName = order.user_id.full_name || order.user_id.username || 'N/A';
+                    userPhone = order.user_id.phone_number || '';
+                }
+            }
+            if (order.user) {
+                userEmail = order.user.email || order.user.username || userEmail;
+                userName = order.user.full_name || order.user.username || userName;
+                userPhone = order.user.phone_number || userPhone;
+            }
+            
+            // Extract shipping address
+            let shippingPhone = userPhone;
+            if (order.shipping_address_snapshot) {
+                shippingPhone = order.shipping_address_snapshot.phone_number || shippingPhone;
+                userName = order.shipping_address_snapshot.receiver_name || userName;
+            }
+            if (order.shipping_address) {
+                shippingPhone = order.shipping_address.phone || order.shipping_address.phone_number || shippingPhone;
+                userName = order.shipping_address.receiver_name || order.shipping_address.name || userName;
+            }
+            
+            // Extract order items
+            const orderItems = order.order_items || order.items || [];
+            const itemCount = orderItems.length;
+            let firstItemTitle = '';
+            if (itemCount > 0) {
+                const firstItem = orderItems[0];
+                if (firstItem.book_id) {
+                    firstItemTitle = typeof firstItem.book_id === 'object' 
+                        ? (firstItem.book_id.title || 'N/A')
+                        : 'N/A';
+                } else if (firstItem.book) {
+                    firstItemTitle = typeof firstItem.book === 'object'
+                        ? (firstItem.book.title || 'N/A')
+                        : 'N/A';
+                }
+            }
+            
+            // Extract payment method
+            const paymentMethod = order.payment_id?.payment_method 
+                || order.payment_method 
+                || 'N/A';
+            
+            // Extract total amount
+            const totalAmount = order.total_amount || 0;
+            
+            // Extract date
+            const createdAt = order.order_date || order.createdAt || new Date();
+            
+            const statusColor = getStatusColor(orderStatus);
+            const statusBgColors = {
+                'warning': '#fef3c7',
+                'info': '#dbeafe',
+                'primary': '#dbeafe',
+                'success': '#d1fae5',
+                'danger': '#fee2e2',
+                'secondary': '#f3f4f6'
+            };
+            const statusTextColors = {
+                'warning': '#92400e',
+                'info': '#1e40af',
+                'primary': '#1e40af',
+                'success': '#065f46',
+                'danger': '#991b1b',
+                'secondary': '#374151'
+            };
+            const bgColor = statusBgColors[statusColor] || '#f3f4f6';
+            const textColor = statusTextColors[statusColor] || '#374151';
+            
+            // Escape HTML để tránh XSS
+            const safeOrderId = escapeHtml(orderId);
+            const safeUserEmail = escapeHtml(userEmail);
+            const safeUserName = escapeHtml(userName);
+            const safeShippingPhone = escapeHtml(shippingPhone);
+            const safeFirstItemTitle = escapeHtml(firstItemTitle);
+            const safePaymentMethod = escapeHtml(paymentMethod);
+            const safeOrderStatus = escapeHtml(orderStatus);
+            
+            return `
+            <tr style="transition: background-color 0.2s;">
+                <td style="vertical-align: middle;"><strong style="color: #1f2937;">#${safeOrderId}</strong></td>
+                <td style="vertical-align: middle;">
+                    <div style="color: #1f2937; font-weight: 500;">${safeUserEmail}</div>
+                    ${safeShippingPhone ? `<small style="color: #6b7280; font-size: 0.85rem;">${safeShippingPhone}</small>` : ''}
+                </td>
+                <td style="vertical-align: middle;">
+                    <div style="color: #1f2937; font-weight: 500;">${itemCount} sản phẩm</div>
+                    ${safeFirstItemTitle ? `<small style="color: #6b7280; font-size: 0.85rem; display: block; margin-top: 0.25rem;">${safeFirstItemTitle}${itemCount > 1 ? '...' : ''}</small>` : ''}
+                </td>
+                <td style="vertical-align: middle;"><strong style="color: #dc2626; font-size: 1rem;">${window.AdminServices ? window.AdminServices.formatCurrency(totalAmount) : totalAmount.toLocaleString('vi-VN') + ' ₫'}</strong></td>
+                <td style="vertical-align: middle; color: #4b5563;">${getPaymentMethodText(paymentMethod)}</td>
+                <td style="vertical-align: middle;">
+                    <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; background: ${bgColor}; color: ${textColor};">
+                        ${getStatusText(orderStatus)}
+                    </span>
+                </td>
+                <td style="vertical-align: middle; color: #4b5563; font-size: 0.9rem;">${window.AdminServices ? window.AdminServices.formatDate(createdAt) : new Date(createdAt).toLocaleString('vi-VN')}</td>
+                <td style="vertical-align: middle;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button class="btn btn-sm btn-primary" onclick="viewOrder('${order._id || orderId}')" title="Xem chi tiết" style="padding: 0.5rem; min-width: 36px;">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-secondary" onclick="updateOrderStatus('${order._id || orderId}')" title="Cập nhật trạng thái" style="padding: 0.5rem; min-width: 36px;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+        } catch (error) {
+            console.error('❌ Error rendering order:', error, order);
+            return `
+                <tr>
+                    <td colspan="8" style="text-align: center; color: #dc2626;">
+                        Lỗi hiển thị đơn hàng: ${error.message}
+                    </td>
+                </tr>
+            `;
+        }
     }).join('');
 
     const countEl = document.getElementById('ordersCount');
@@ -543,6 +724,14 @@ async function updateOrderStatus(id) {
             const status = formData.get('status');
             const note = formData.get('note') || '';
 
+            // Disable update button
+            const updateBtn = modal.querySelector('.btn-primary');
+            if (updateBtn) {
+                updateBtn.disabled = true;
+                updateBtn.textContent = 'Đang cập nhật...';
+                updateBtn.style.opacity = '0.6';
+            }
+
             try {
                 showLoading();
                 await window.AdminServices.updateOrderStatus(id, status, note);
@@ -554,6 +743,14 @@ async function updateOrderStatus(id) {
                 showToast('Không thể cập nhật trạng thái', 'error');
             } finally {
                 hideLoading();
+                // Re-enable button
+                if (updateBtn && !modal.parentNode) {
+                    // Modal was removed, don't re-enable
+                } else if (updateBtn) {
+                    updateBtn.disabled = false;
+                    updateBtn.textContent = 'Cập nhật';
+                    updateBtn.style.opacity = '1';
+                }
             }
         });
     }

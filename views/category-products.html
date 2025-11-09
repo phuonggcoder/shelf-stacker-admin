@@ -386,6 +386,7 @@
       .header { left: 200px; }
     }
   </style>
+    <script src="/assets/js/loading-state-helper.js"></script>
 </head>
 <body>
   <header class="header">
@@ -529,18 +530,24 @@
     const cancelButton = document.getElementById('cancelButton');
     const sidebarAvatar = document.getElementById('sidebarAvatar');
 
-    sidebarAvatar.onclick = () => {
-      uploadDialog.showModal();
-      resetUploadDialog();
-    };
+    if (sidebarAvatar) {
+      sidebarAvatar.onclick = () => {
+        uploadDialog.showModal();
+        resetUploadDialog();
+      };
+    }
 
-    cancelButton.onclick = () => {
-      uploadDialog.close();
-    };
+    if (cancelButton) {
+      cancelButton.onclick = () => {
+        uploadDialog.close();
+      };
+    }
 
-    uploadDialog.addEventListener('close', () => {
-      resetUploadDialog();
-    });
+    if (uploadDialog) {
+      uploadDialog.addEventListener('close', () => {
+        resetUploadDialog();
+      });
+    }
 
     function resetUploadDialog() {
       document.getElementById('avatarUpload').value = '';
@@ -551,7 +558,8 @@
       uploadButton.textContent = 'Tải lên';
     }
 
-    uploadButton.onclick = async () => {
+    if (uploadButton) {
+      uploadButton.onclick = async () => {
       const fileInput = document.getElementById('avatarUpload');
       const file = fileInput.files[0];
 
@@ -634,6 +642,7 @@
         uploadButton.textContent = 'Tải lên';
       }
     };
+    }
   </script>
 </body>
 </html>

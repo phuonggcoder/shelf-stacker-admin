@@ -109,35 +109,97 @@ function setupEventListeners() {
                     e.preventDefault();
                     const formData = new FormData(formElement);
                     const data = {};
+                    
+                    // Extract all form values
                     for (let [key, value] of formData.entries()) {
+                        // Skip empty values (except for optional fields)
+                        if (value === '' && !['usage_limit', 'max_discount_value', 'description'].includes(key)) {
+                            continue;
+                        }
                         data[key] = value;
                     }
                     
                     // Convert data types
-                    if (data.min_order_value) data.min_order_value = parseFloat(data.min_order_value);
-                    if (data.usage_limit) data.usage_limit = parseInt(data.usage_limit);
-                    if (data.max_per_user) data.max_per_user = parseInt(data.max_per_user);
-                    
-                    if (data.voucher_type === 'discount') {
-                        if (data.discount_value) data.discount_value = parseFloat(data.discount_value);
-                        if (data.max_discount_value) data.max_discount_value = parseFloat(data.max_discount_value);
-                    } else {
-                        if (data.shipping_discount) data.shipping_discount = parseFloat(data.shipping_discount);
+                    if (data.min_order_value) {
+                        const val = parseFloat(data.min_order_value);
+                        if (!isNaN(val)) data.min_order_value = val;
+                    }
+                    if (data.usage_limit) {
+                        const val = parseInt(data.usage_limit);
+                        if (!isNaN(val)) data.usage_limit = val;
+                    }
+                    if (data.max_per_user) {
+                        const val = parseInt(data.max_per_user);
+                        if (!isNaN(val)) data.max_per_user = val;
                     }
                     
-                    // Convert datetime
-                    if (data.start_date) data.start_date = new Date(data.start_date).toISOString();
-                    if (data.end_date) data.end_date = new Date(data.end_date).toISOString();
+                    if (data.voucher_type === 'discount') {
+                        if (data.discount_value) {
+                            const val = parseFloat(data.discount_value);
+                            if (!isNaN(val)) data.discount_value = val;
+                        }
+                        if (data.max_discount_value) {
+                            const val = parseFloat(data.max_discount_value);
+                            if (!isNaN(val)) data.max_discount_value = val;
+                        }
+                    } else {
+                        if (data.shipping_discount) {
+                            const val = parseFloat(data.shipping_discount);
+                            if (!isNaN(val)) data.shipping_discount = val;
+                        }
+                    }
+                    
+                    // Convert datetime to ISO string
+                    if (data.start_date) {
+                        try {
+                            data.start_date = new Date(data.start_date).toISOString();
+                        } catch (e) {
+                            console.error('Invalid start_date:', data.start_date);
+                        }
+                    }
+                    if (data.end_date) {
+                        try {
+                            data.end_date = new Date(data.end_date).toISOString();
+                        } catch (e) {
+                            console.error('Invalid end_date:', data.end_date);
+                        }
+                    }
+                    
+                    // Debug: Log data before sending
+                    console.log('🎫 Creating voucher with data:', data);
+                    
+                    // Disable save button
+                    const saveBtn = modal.querySelector('.btn-primary');
+                    if (saveBtn) {
+                        saveBtn.disabled = true;
+                        saveBtn.textContent = 'Đang lưu...';
+                        saveBtn.style.opacity = '0.6';
+                    }
                     
                     try {
                         AdminUIComponents.showLoading('Đang lưu...');
-                        await window.AdminServices.createVoucher(data);
-                        showToast('Tạo voucher thành công', 'success');
+                        const result = await window.AdminServices.createVoucher(data);
+                        console.log('🎫 Voucher created successfully:', result);
+                        showToast('✅ Tạo voucher thành công', 'success');
                         modal.remove();
                         loadVouchers();
                     } catch (error) {
-                        showToast(error.message || 'Không thể tạo voucher', 'error');
+                        console.error('❌ Error creating voucher:', error);
+                        console.error('Error details:', {
+                            message: error.message,
+                            stack: error.stack,
+                            data: data
+                        });
+                        showToast('❌ ' + (error.message || 'Không thể tạo voucher'), 'error');
                     } finally {
+                        // Re-enable button
+                        if (saveBtn && !modal.parentNode) {
+                            // Modal was removed
+                        } else if (saveBtn) {
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = 'Lưu';
+                            saveBtn.style.opacity = '1';
+                        }
                         AdminUIComponents.hideLoading();
                     }
                 });
@@ -177,40 +239,60 @@ async function loadVouchers() {
         console.log('🎫 Loading vouchers with params:', params);
         const response = await window.AdminServices.getVouchers(params);
         console.log('🎫 Vouchers response received:', response);
+        console.log('🎫 Response type:', typeof response);
+        console.log('🎫 Response keys:', response ? Object.keys(response) : 'null');
         
-        // API có thể trả về { vouchers: [...] } hoặc { data: [...] } hoặc array trực tiếp
-        const vouchers = response.vouchers || response.data || (Array.isArray(response) ? response : []);
+        // Use helper functions from api-response-helpers.js
+        // Ensure helper functions are available (fallback if not loaded)
+        const extractDataFunc = window.extractData || function(resp, key) {
+            if (!resp) return [];
+            if (Array.isArray(resp)) return resp;
+            if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+            if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+            return [];
+        };
         
-        if (Array.isArray(vouchers) && vouchers.length > 0) {
-            renderVouchers(vouchers);
-            
-            // Xử lý pagination
-            let paginationData;
-            if (response.pagination) {
-                paginationData = response.pagination;
-            } else {
-                const total = response.total || response.pagination?.total || vouchers.length;
-                const limit = response.limit || response.pagination?.limit || pageSize;
-                const page = response.page || response.pagination?.page || currentPage;
-                const pages = response.pages || response.pagination?.pages || response.pagination?.totalPages || Math.ceil(total / limit);
-                
-                paginationData = {
-                    page: page,
-                    limit: limit,
-                    total: total,
-                    pages: pages,
-                    totalPages: pages
-                };
-                
-                if (response.page) {
-                    currentPage = response.page;
-                }
+        const extractPaginationFunc = window.extractPagination || function(resp, defaultPage, defaultLimit) {
+            if (!resp) {
+                return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
             }
-            
+            if (resp.pagination) {
+                return {
+                    page: resp.pagination.page || defaultPage,
+                    limit: resp.pagination.limit || defaultLimit,
+                    total: resp.pagination.total || 0,
+                    pages: resp.pagination.pages || resp.pagination.totalPages || 1,
+                    totalPages: resp.pagination.totalPages || resp.pagination.pages || 1
+                };
+            }
+            if (resp.page || resp.total) {
+                const total = resp.total || 0;
+                const limit = resp.limit || defaultLimit;
+                const page = resp.page || defaultPage;
+                const pages = resp.pages || resp.totalPages || Math.ceil(total / limit);
+                return { page, limit, total, pages, totalPages: pages };
+            }
+            return { page: defaultPage, limit: defaultLimit, total: 0, pages: 1, totalPages: 1 };
+        };
+        
+        // Extract vouchers và pagination using helper functions
+        const vouchers = extractDataFunc(response, 'vouchers');
+        const paginationData = extractPaginationFunc(response, currentPage, pageSize);
+        
+        console.log('🎫 Extracted vouchers:', vouchers.length);
+        console.log('🎫 Extracted pagination:', paginationData);
+        
+        // Cập nhật currentPage từ pagination
+        if (paginationData.page) {
+            currentPage = paginationData.page;
+        }
+        
+        if (vouchers.length > 0) {
+            renderVouchers(vouchers);
             updatePagination(paginationData);
         } else {
             renderVouchers([]);
-            updatePagination({ page: 1, limit: pageSize, total: 0, pages: 1, totalPages: 1 });
+            updatePagination(paginationData);
         }
     } catch (error) {
         console.error('Error loading vouchers:', error);
@@ -439,35 +521,97 @@ async function editVoucher(id) {
                 e.preventDefault();
                 const formData = new FormData(formElement);
                 const data = {};
+                
+                // Extract all form values
                 for (let [key, value] of formData.entries()) {
+                    // Skip empty values (except for optional fields)
+                    if (value === '' && !['usage_limit', 'max_discount_value', 'description'].includes(key)) {
+                        continue;
+                    }
                     data[key] = value;
                 }
                 
                 // Convert data types
-                if (data.min_order_value) data.min_order_value = parseFloat(data.min_order_value);
-                if (data.usage_limit) data.usage_limit = parseInt(data.usage_limit);
-                if (data.max_per_user) data.max_per_user = parseInt(data.max_per_user);
-                
-                if (data.voucher_type === 'discount') {
-                    if (data.discount_value) data.discount_value = parseFloat(data.discount_value);
-                    if (data.max_discount_value) data.max_discount_value = parseFloat(data.max_discount_value);
-                } else {
-                    if (data.shipping_discount) data.shipping_discount = parseFloat(data.shipping_discount);
+                if (data.min_order_value) {
+                    const val = parseFloat(data.min_order_value);
+                    if (!isNaN(val)) data.min_order_value = val;
+                }
+                if (data.usage_limit) {
+                    const val = parseInt(data.usage_limit);
+                    if (!isNaN(val)) data.usage_limit = val;
+                }
+                if (data.max_per_user) {
+                    const val = parseInt(data.max_per_user);
+                    if (!isNaN(val)) data.max_per_user = val;
                 }
                 
-                // Convert datetime
-                if (data.start_date) data.start_date = new Date(data.start_date).toISOString();
-                if (data.end_date) data.end_date = new Date(data.end_date).toISOString();
+                if (data.voucher_type === 'discount') {
+                    if (data.discount_value) {
+                        const val = parseFloat(data.discount_value);
+                        if (!isNaN(val)) data.discount_value = val;
+                    }
+                    if (data.max_discount_value) {
+                        const val = parseFloat(data.max_discount_value);
+                        if (!isNaN(val)) data.max_discount_value = val;
+                    }
+                } else {
+                    if (data.shipping_discount) {
+                        const val = parseFloat(data.shipping_discount);
+                        if (!isNaN(val)) data.shipping_discount = val;
+                    }
+                }
+                
+                // Convert datetime to ISO string
+                if (data.start_date) {
+                    try {
+                        data.start_date = new Date(data.start_date).toISOString();
+                    } catch (e) {
+                        console.error('Invalid start_date:', data.start_date);
+                    }
+                }
+                if (data.end_date) {
+                    try {
+                        data.end_date = new Date(data.end_date).toISOString();
+                    } catch (e) {
+                        console.error('Invalid end_date:', data.end_date);
+                    }
+                }
+                
+                // Debug: Log data before sending
+                console.log('🎫 Updating voucher with data:', data);
+                
+                // Disable update button
+                const updateBtn = modal.querySelector('.btn-primary');
+                if (updateBtn) {
+                    updateBtn.disabled = true;
+                    updateBtn.textContent = 'Đang cập nhật...';
+                    updateBtn.style.opacity = '0.6';
+                }
                 
                 try {
-                    AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.updateVoucher(id, data);
-                    showToast('Cập nhật voucher thành công', 'success');
+                    AdminUIComponents.showLoading('Đang cập nhật...');
+                    const result = await window.AdminServices.updateVoucher(id, data);
+                    console.log('🎫 Voucher updated successfully:', result);
+                    showToast('✅ Cập nhật voucher thành công', 'success');
                     modal.remove();
                     loadVouchers();
                 } catch (error) {
-                    showToast(error.message || 'Không thể cập nhật voucher', 'error');
+                    console.error('❌ Error updating voucher:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        data: data
+                    });
+                    showToast('❌ ' + (error.message || 'Không thể cập nhật voucher'), 'error');
                 } finally {
+                    // Re-enable button
+                    if (updateBtn && !modal.parentNode) {
+                        // Modal was removed
+                    } else if (updateBtn) {
+                        updateBtn.disabled = false;
+                        updateBtn.textContent = 'Cập nhật';
+                        updateBtn.style.opacity = '1';
+                    }
                     AdminUIComponents.hideLoading();
                 }
             });
@@ -479,6 +623,8 @@ async function editVoucher(id) {
 }
 
 async function deleteVoucher(id) {
+    console.log('🎫 deleteVoucher called with id:', id);
+    
     const confirmed = await AdminUIComponents.confirm({
         title: 'Xóa voucher',
         message: 'Bạn có chắc chắn muốn xóa voucher này? Hành động này có thể khôi phục.',
@@ -487,16 +633,27 @@ async function deleteVoucher(id) {
         confirmClass: 'btn-danger'
     });
 
-    if (!confirmed) return;
+    console.log('🎫 Confirm dialog result:', confirmed);
+    
+    if (!confirmed) {
+        console.log('🎫 Delete cancelled by user');
+        return;
+    }
 
     try {
         showLoading();
+        console.log('🎫 Deleting voucher:', id);
         await window.AdminServices.deleteVoucher(id);
-        showToast('Xóa voucher thành công', 'success');
+        console.log('🎫 Voucher deleted successfully');
+        showToast('✅ Xóa voucher thành công', 'success');
         loadVouchers();
     } catch (error) {
-        console.error('Error deleting voucher:', error);
-        showToast('Không thể xóa voucher', 'error');
+        console.error('❌ Error deleting voucher:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
+        showToast('❌ ' + (error.message || 'Không thể xóa voucher'), 'error');
     } finally {
         hideLoading();
     }

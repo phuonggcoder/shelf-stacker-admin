@@ -74,8 +74,26 @@ document.addEventListener('DOMContentLoaded', () => {
       method = 'PUT';
   url = `${API_BASE}/api/vouchers/${form.dataset.editId}`;
     }
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(apiData) });
-    if (res.ok) { closeModal(); fetchVouchers(); } else { const txt = await res.text(); alert('Failed to save voucher: ' + txt); }
+    
+    // Disable submit button
+    const submitBtn = document.getElementById('btn-save-voucher') || form.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = method === 'PUT' ? 'Đang cập nhật...' : 'Đang lưu...';
+      submitBtn.style.opacity = '0.6';
+    }
+    
+    try {
+      const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify(apiData) });
+      if (res.ok) { closeModal(); fetchVouchers(); } else { const txt = await res.text(); alert('Failed to save voucher: ' + txt); }
+    } finally {
+      // Re-enable button
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = method === 'PUT' ? 'Cập nhật' : 'Lưu';
+        submitBtn.style.opacity = '1';
+      }
+    }
   });
   document.querySelector('#voucher-table tbody').addEventListener('click', async (e) => {
     const id = e.target.dataset.id;

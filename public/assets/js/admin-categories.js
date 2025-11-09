@@ -326,9 +326,9 @@ async function editCategory(id) {
                 e.preventDefault();
                 const formData = new FormData(formElement);
                 
-                // Handle checkbox
+                // Handle checkbox - FormData needs string values
                 const isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
-                formData.set('isVisible', isVisible);
+                formData.set('isVisible', isVisible ? 'true' : 'false');
                 
                 // Remove categoryBook_id if empty
                 const categoryBookId = formData.get('categoryBook_id');
@@ -336,17 +336,42 @@ async function editCategory(id) {
                     formData.delete('categoryBook_id');
                 }
                 
+                // Debug: Log FormData contents
+                console.log('📁 FormData contents (update category):', Array.from(formData.entries()));
+                
+                // Disable save button
+                const saveBtn = modal.querySelector('.btn-primary');
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Đang cập nhật...';
+                    saveBtn.style.opacity = '0.6';
+                }
+                
                 try {
-                    AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.updateCategory(id, formData);
-                    showToast('Cập nhật danh mục thành công', 'success');
+                    AdminUIComponents.showLoading('Đang cập nhật...');
+                    console.log('📁 Updating category with FormData...');
+                    const result = await window.AdminServices.updateCategory(id, formData);
+                    console.log('📁 Category updated successfully:', result);
+                    showToast('✅ Cập nhật danh mục thành công', 'success');
                     modal.remove();
                     loadCategories();
                 } catch (error) {
-                    console.error('Error updating category:', error);
-                    showToast(error.message || 'Không thể cập nhật danh mục', 'error');
+                    console.error('❌ Error updating category:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
+                    showToast('❌ ' + (error.message || 'Không thể cập nhật danh mục'), 'error');
                 } finally {
                     AdminUIComponents.hideLoading();
+                    // Re-enable button
+                    if (saveBtn && !modal.parentNode) {
+                        // Modal removed
+                    } else if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Lưu';
+                        saveBtn.style.opacity = '1';
+                    }
                 }
             });
         }
@@ -374,6 +399,8 @@ function viewCategory(id) {
 }
 
 async function deleteCategory(id) {
+    console.log('📁 deleteCategory called with id:', id);
+    
     const confirmed = await AdminUIComponents.confirm({
         title: 'Xóa danh mục',
         message: 'Bạn có chắc chắn muốn xóa danh mục này? Hành động này có thể khôi phục.',
@@ -382,16 +409,27 @@ async function deleteCategory(id) {
         confirmClass: 'btn-danger'
     });
 
-    if (!confirmed) return;
+    console.log('📁 Confirm dialog result:', confirmed);
+    
+    if (!confirmed) {
+        console.log('📁 Delete cancelled by user');
+        return;
+    }
 
     try {
         showLoading();
+        console.log('📁 Deleting category:', id);
         await window.AdminServices.deleteCategory(id);
-        showToast('Xóa danh mục thành công', 'success');
+        console.log('📁 Category deleted successfully');
+        showToast('✅ Xóa danh mục thành công', 'success');
         loadCategories();
     } catch (error) {
-        console.error('Error deleting category:', error);
-        showToast('Không thể xóa danh mục', 'error');
+        console.error('❌ Error deleting category:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack
+        });
+        showToast('❌ ' + (error.message || 'Không thể xóa danh mục'), 'error');
     } finally {
         hideLoading();
     }
@@ -429,9 +467,9 @@ async function showAddCategoryModal() {
                 e.preventDefault();
                 const formData = new FormData(formElement);
                 
-                // Handle checkbox
+                // Handle checkbox - FormData needs string values
                 const isVisible = formElement.querySelector('[name="isVisible"]')?.checked || false;
-                formData.set('isVisible', isVisible);
+                formData.set('isVisible', isVisible ? 'true' : 'false');
                 
                 // Remove categoryBook_id if empty
                 const categoryBookId = formData.get('categoryBook_id');
@@ -439,17 +477,42 @@ async function showAddCategoryModal() {
                     formData.delete('categoryBook_id');
                 }
                 
+                // Debug: Log FormData contents
+                console.log('📁 FormData contents (create category):', Array.from(formData.entries()));
+                
+                // Disable save button
+                const saveBtn = modal.querySelector('.btn-primary');
+                if (saveBtn) {
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'Đang lưu...';
+                    saveBtn.style.opacity = '0.6';
+                }
+                
                 try {
                     AdminUIComponents.showLoading('Đang lưu...');
-                    await window.AdminServices.createCategory(formData);
-                    showToast('Tạo danh mục thành công', 'success');
+                    console.log('📁 Creating category with FormData...');
+                    const result = await window.AdminServices.createCategory(formData);
+                    console.log('📁 Category created successfully:', result);
+                    showToast('✅ Tạo danh mục thành công', 'success');
                     modal.remove();
                     loadCategories();
                 } catch (error) {
-                    console.error('Error creating category:', error);
-                    showToast(error.message || 'Không thể tạo danh mục', 'error');
+                    console.error('❌ Error creating category:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
+                    showToast('❌ ' + (error.message || 'Không thể tạo danh mục'), 'error');
                 } finally {
                     AdminUIComponents.hideLoading();
+                    // Re-enable button
+                    if (saveBtn && !modal.parentNode) {
+                        // Modal removed
+                    } else if (saveBtn) {
+                        saveBtn.disabled = false;
+                        saveBtn.textContent = 'Lưu';
+                        saveBtn.style.opacity = '1';
+                    }
                 }
             });
         }

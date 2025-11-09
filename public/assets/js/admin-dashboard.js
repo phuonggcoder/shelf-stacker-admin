@@ -78,8 +78,14 @@ async function loadDashboardStats() {
         const stats = await window.AdminServices.getDashboardStats();
         console.log('📊 Dashboard stats received:', stats);
         
-        if (!stats) {
-            console.warn('⚠️ Stats is null or undefined');
+        // Stats có thể là object trực tiếp hoặc đã được extract từ { success: true, data: {...} }
+        // AdminServices.request() đã extract data nếu có format { success: true, data: {...} }
+        const statsData = stats && typeof stats === 'object' && !Array.isArray(stats) 
+            ? stats 
+            : { totalOrders: 0, totalRevenue: 0, activeUsers: 0, pendingOrders: 0 };
+        
+        if (!statsData || Object.keys(statsData).length === 0) {
+            console.warn('⚠️ Stats is null, undefined, or empty');
             updateStatsCards({
                 totalOrders: 0,
                 totalRevenue: 0,
@@ -89,7 +95,7 @@ async function loadDashboardStats() {
             return;
         }
         
-        updateStatsCards(stats);
+        updateStatsCards(statsData);
     } catch (error) {
         console.error('❌ Error loading stats:', error);
         console.error('Error details:', {
@@ -173,8 +179,18 @@ async function loadRecentOrders() {
         
         const container = document.getElementById('recentOrdersList');
         if (container) {
+            // Use helper functions from api-response-helpers.js
+            // Ensure helper functions are available (fallback if not loaded)
+            const extractDataFunc = window.extractData || function(resp, key) {
+                if (!resp) return [];
+                if (Array.isArray(resp)) return resp;
+                if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+                if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+                return [];
+            };
+            
             // API trả về { orders: [...], total, page, limit }
-            const ordersList = orders.orders || orders.data || (Array.isArray(orders) ? orders : []);
+            const ordersList = extractDataFunc(orders, 'orders');
             if (ordersList.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: #6b7280;">
@@ -224,8 +240,17 @@ async function loadRecentActivities() {
         
         const container = document.getElementById('recentActivitiesList');
         if (container) {
+            // Use helper functions from api-response-helpers.js
+            const extractDataFunc = window.extractData || function(resp, key) {
+                if (!resp) return [];
+                if (Array.isArray(resp)) return resp;
+                if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+                if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+                return [];
+            };
+            
             // API trả về { orders: [...], total, page, limit }
-            const activitiesList = activities.orders || activities.data || (Array.isArray(activities) ? activities : []);
+            const activitiesList = extractDataFunc(activities, 'orders');
             if (activitiesList.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 2rem; color: #6b7280;">
