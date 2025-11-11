@@ -1,675 +1,438 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quản Lý Chiến Dịch</title>
-  <link rel="stylesheet" href="/assets/css/campaigns.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
-      <script src="/AdminServices.js"></script>
-      <script src="/assets/js/global-error-handler.js"></script>
-    <script src="/assets/js/retry-helper.js"></script>
-    <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
-  <script src="/assets/js/includes.js"></script>
-  <style>
-    :root {
-      --theme: #6c63ff;
-      --danger: #ff4d4f;
-      --success: #28a745;
-      --warning: #ffc107;
-      --white: #fff;
-      --gray: #f8f9fa;
-      --border: #e0e0e0;
-      --text: #333;
-    }
-
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', 'Roboto', Arial, sans-serif;
-      background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-      color: #222;
-      min-height: 100vh;
-      overflow-x: hidden;
-      display: flex;
-    }
-
-    .sidebar {
-      width: 260px;
-      height: 100vh;
-      background: linear-gradient(135deg, #0ea5e9 50%, #38bdf8 100%);
-      color: #fff;
-      padding: 80px 0 20px;
-      position: fixed;
-      top: 0;
-      left: 0;
-      overflow-y: auto;
-      transition: transform 0.3s ease;
-      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-      z-index: 1001;
-    }
-
-    .sidebar.hidden {
-      transform: translateX(-100%);
-    }
-
-    .sidebar .profile {
-      text-align: center;
-      padding: 0 20px;
-      margin-bottom: 20px;
-    }
-
-    .sidebar .profile img {
-      width: 80px;
-      height: 80px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 3px solid #fff;
-      margin-bottom: 8px;
-      cursor: pointer;
-    }
-
-    .sidebar .profile h3 {
-      margin: 4px 0;
-      font-size: 18px;
-      font-weight: 600;
-    }
-
-    .sidebar nav ul {
-      list-style: none;
-      padding: 0 20px;
-      margin: 0;
-    }
-
-    .sidebar nav ul li {
-      margin-bottom: 15px;
-    }
-
-    .sidebar nav ul li a,
-    .sidebar nav ul li button {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      color: #e0f2fe;
-      text-decoration: none;
-      background: none;
-      border: none;
-      text-align: left;
-      border-radius: 8px;
-      transition: all 0.2s;
-      font-weight: 500;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .sidebar nav ul li a:hover,
-    .sidebar nav ul li button:hover {
-      background: #fff;
-      color: #0ea5e9;
-    }
-
-    .header {
-      position: fixed;
-      top: 0;
-      left: 260px;
-      right: 0;
-      height: 60px;
-      background: #fff;
-      border-bottom: 2px solid #bae6fd;
-      box-shadow: 0 4px 24px #bae6fd33;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 40px;
-      z-index: 1000;
-    }
-
-    .logo {
-      font-weight: bold;
-      font-size: 20px;
-      color: #0ea5e9;
-    }
-
-    .user {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .user input {
-      padding: 7px 14px;
-      border: 1.5px solid #bae6fd;
-      border-radius: 20px;
-      background: #f0f9ff;
-      font-size: 14px;
-    }
-
-    .avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      border: 2px solid #0ea5e9;
-      object-fit: cover;
-    }
-
-    .notification-bell {
-      position: relative;
-      display: inline-block;
-      cursor: pointer;
-    }
-
-    .notification-bell .fa-bell {
-      font-size: 18px;
-      color: #0ea5e9;
-    }
-
-    .notification-bell .badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background-color: #ff4d4f;
-      color: white;
-      border-radius: 50%;
-      padding: 2px 6px;
-      font-size: 12px;
-      font-weight: bold;
-      min-width: 16px;
-      text-align: center;
-      display: none;
-    }
-
-    .notification-dropdown {
-      display: none;
-      position: absolute;
-      top: 40px;
-      right: 0;
-      width: 300px;
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      z-index: 10000;
-      padding: 10px;
-      color: #333;
-      max-height: 400px;
-      overflow-y: auto;
-      box-sizing: border-box;
-    }
-
-    .notification-dropdown.active {
-      display: block;
-    }
-
-    .notification-item {
-      padding: 14px 10px;
-      border-bottom: 1px solid #eee;
-      border-radius: 8px;
-      margin-bottom: 8px;
-      background: #f8f9fa;
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .notification-item:hover {
-      background: #f0f9ff;
-    }
-
-    .notification-item div {
-      flex: 1;
-      font-size: 15px;
-      color: #0ea5e9;
-      font-weight: 500;
-    }
-
-    .main {
-      margin-left: 260px;
-      padding: 100px 20px 40px;
-      width: calc(100% - 260px);
-    }
-
-    .btn-action {
-      display: inline-block;
-      padding: 6px 12px;
-      font-size: 14px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      color: #fff;
-    }
-
-    .btn-edit {
-      background-color: #ffc107;
-    }
-
-    .btn-delete {
-      background-color: #dc3545;
-    }
-
-    .btn-edit:hover {
-      background-color: #e0a800;
-    }
-
-    .btn-delete:hover {
-      background-color: #c82333;
-    }
-
-    #book-search-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 12px;
-      margin-top: 10px;
-      max-height: 320px;
-      overflow-y: auto;
-    }
-
-    #campaign-form {
-      background: #fff;
-      padding: 32px;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 640px;
-      max-height: 90vh;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      overflow-y: auto;
-    }
-
-    .form-select {
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 14px;
-      background: #fff;
-    }
-
-    .btn-primary {
-      background-color: #0ea5e9;
-      color: white;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background-color: #38bdf8;
-    }
-
-    .btn-primary:disabled {
-      background-color: #9ecffb;
-      cursor: not-allowed;
-    }
-
-    .btn-success {
-      background-color: #28a745;
-      color: white;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-
-    .btn-success:hover {
-      background-color: #218838;
-    }
-
-    .btn-secondary {
-      background-color: #6c757d;
-      color: white;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-
-    .btn-secondary:hover {
-      background-color: #5a6268;
-    }
-
-    .btn-danger {
-      background-color: #ff4d4f;
-      color: white;
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background-color 0.3s ease;
-    }
-
-    .btn-danger:hover {
-      background-color: #ff7875;
-    }
-
-    #campaign-modal {
-      display: none;
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 100vw;
-      height: 100vh;
-      background: linear-gradient(135deg, rgba(224, 242, 254, 0.5) 0%, rgba(240, 249, 255, 0.5) 100%);
-      z-index: 1000;
-      overflow-y: auto;
-      padding: 40px 0;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .image-preview-container {
-      margin-top: 10px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .image-preview {
-      max-width: 100px;
-      max-height: 100px;
-      object-fit: contain;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      display: block;
-    }
-
-    .image-preview.thumbnail {
-      border: 2px solid #0ea5e9;
-    }
-
-    .image-preview-wrapper {
-      position: relative;
-      display: inline-block;
-    }
-
-    .image-actions {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      display: flex;
-      gap: 5px;
-    }
-
-    .edit-image-btn,
-    .replace-image-btn {
-      background: rgba(0, 0, 0, 0.6);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 4px 8px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-
-    .edit-image-btn:hover,
-    .replace-image-btn:hover {
-      background: rgba(0, 0, 0, 0.8);
-    }
-
-    dialog {
-      border: none;
-      border-radius: 12px;
-      padding: 20px;
-      width: 300px;
-      max-width: 90%;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
-      font-family: Arial, sans-serif;
-      z-index: 1002;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    dialog::backdrop {
-      background: rgba(0, 0, 0, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .notification {
-      background-color: #f0f9ff;
-      border: 1px solid var(--success);
-      border-radius: 8px;
-      padding: 10px;
-      margin-top: 10px;
-      display: none;
-      font-size: 14px;
-      color: var(--success);
-    }
-
-    .notification.error-message {
-      background-color: #fff0f0;
-      border-color: var(--danger);
-      color: var(--danger);
-    }
-
-    .menu-parent {
-      background: none;
-      border: none;
-      color: #e0f2fe;
-      width: 100%;
-      text-align: left;
-      padding: 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    .menu-parent:hover {
-      background: #fff;
-      color: #0ea5e9;
-    }
-
-    .menu-child {
-      list-style: none;
-      padding-left: 18px;
-      margin: 0;
-    }
-
-    .menu-child li a {
-      padding-left: 18px;
-      font-size: 13px;
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(100%); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-  </style>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý Chiến dịch - Shelf Stacker Admin</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/assets/css/admin-main.css" />
+    <link rel="stylesheet" href="/assets/css/admin-ui-components.css" />
     <script src="/assets/js/loading-state-helper.js"></script>
-</head>
-<body>
-  <header class="header">
-    <h1 class="logo">SleekAdmin</h1>
-    <div class="user">
-      <img id="" class="avatar" src="/assets/images/image.png" alt="User Avatar" />
-      <span class="notification-bell" style="margin-left:20px; position:relative; cursor:pointer;">
-        <i class="fas fa-bell"></i>
-        <span id="notificationBadge" class="badge">0</span>
-        <div id="notificationDropdown" class="notification-dropdown"></div>
-      </span>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i class="fas fa-book"></i>
+          <span class="logo-text">Shelf Stacker</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="/home" class="nav-link" data-page="dashboard">
+              <i class="fas fa-home"></i>
+              <span>Dashboard</span>
+            </a>
+          </li>
+          <li class="nav-item has-submenu active">
+            <a href="#" class="nav-link">
+              <i class="fas fa-box"></i>
+              <span>Sản phẩm</span>
+              <i class="fas fa-chevron-down submenu-icon"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a href="/products" data-page="products">Danh sách sản phẩm</a>
+              </li>
+              <li>
+                <a href="/categories" data-page="categories">Cây danh mục</a>
+              </li>
+              <li>
+                <a href="/campaigns" data-page="campaigns" class="active">Chiến dịch</a>
+              </li>
+              <li>
+                <a href="/trashbooks" data-page="trash">Sản phẩm đã xóa</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a href="/orders" class="nav-link" data-page="orders">
+              <i class="fas fa-shopping-cart"></i>
+              <span>Đơn hàng</span>
+            </a>
+          </li>
+          <li class="nav-item has-submenu">
+            <a href="#" class="nav-link">
+              <i class="fas fa-ticket-alt"></i>
+              <span>Vouchers</span>
+              <i class="fas fa-chevron-down submenu-icon"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a href="/vouchers" data-page="vouchers">Danh sách vouchers</a>
+              </li>
+              <li>
+                <a href="/vouchers-trash" data-page="vouchers-trash">Vouchers đã xóa</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item has-submenu">
+            <a href="#" class="nav-link">
+              <i class="fas fa-tags"></i>
+              <span>Danh mục</span>
+              <i class="fas fa-chevron-down submenu-icon"></i>
+            </a>
+            <ul class="submenu">
+              <li>
+                <a href="/categories" data-page="categories">Cây danh mục</a>
+              </li>
+              <li>
+                <a href="/danhmucdaxoa" data-page="categories-trash">Danh mục đã xóa</a>
+              </li>
+            </ul>
+          </li>
+          <li class="nav-item">
+            <a href="/users" class="nav-link" data-page="users">
+              <i class="fas fa-users"></i>
+              <span>Người dùng</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/notifications" class="nav-link" data-page="notifications">
+              <i class="fas fa-bell"></i>
+              <span>Thông báo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/reports" class="nav-link" data-page="reports">
+              <i class="fas fa-chart-bar"></i>
+              <span>Báo cáo</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="/settings" class="nav-link" data-page="settings">
+              <i class="fas fa-cog"></i>
+              <span>Cài đặt</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="user-details">
+            <span class="user-name" id="userName">Admin</span>
+            <span class="user-email" id="userEmail">admin@email.com</span>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutBtn">
+          <i class="fas fa-sign-out-alt"></i><span>Đăng xuất</span>
+        </button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <header class="admin-header">
+        <div class="header-left">
+          <button class="mobile-menu-toggle" id="mobileMenuToggle">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="breadcrumb">
+            <i class="fas fa-home"></i><span>Chiến dịch</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="user-menu">
+            <div class="user-avatar-small" id="userAvatarSmall">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="user-menu-dropdown">
+              <a href="/settings" class="dropdown-item"
+                ><i class="fas fa-cog"></i><span>Cài đặt</span></a
+              >
+              <a href="#" class="dropdown-item" id="logoutMenuItem"
+                ><i class="fas fa-sign-out-alt"></i><span>Đăng xuất</span></a
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-header">
+          <h1 class="page-title">Quản lý Chiến dịch</h1>
+          <p class="page-description">
+            Quản lý các chiến dịch khuyến mãi, sự kiện và quảng cáo
+          </p>
+        </div>
+
+        <!-- Filters and Actions -->
+        <div class="card" style="margin-bottom: 1.5rem">
+          <div
+            style="
+              display: flex;
+              gap: 1rem;
+              align-items: center;
+              flex-wrap: wrap;
+            "
+          >
+            <div
+              style="flex: 1; min-width: 250px; position: relative; z-index: 1"
+            >
+              <input
+                type="text"
+                id="search-campaign"
+                class="form-input"
+                placeholder="Tìm kiếm chiến dịch..."
+                autocomplete="off"
+              />
+              <button
+                id="clearSearchBtn"
+                class="btn btn-sm btn-secondary"
+                style="
+                  position: absolute;
+                  right: 5px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  padding: 0.25rem 0.5rem;
+                  display: none;
+                  z-index: 20;
+                "
+                title="Xóa tìm kiếm"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <select
+              id="campaignTypeFilter"
+              class="form-select"
+              style="width: 180px"
+            >
+              <option value="">Tất cả loại</option>
+              <option value="promotion">Khuyến mãi</option>
+              <option value="event">Sự kiện</option>
+              <option value="advertisement">Quảng cáo</option>
+              <option value="special_offer">Ưu đãi đặc biệt</option>
+              <option value="community_event">Sự kiện cộng đồng</option>
+            </select>
+            <select
+              id="campaignStatusFilter"
+              class="form-select"
+              style="width: 150px"
+            >
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="upcoming">Sắp diễn ra</option>
+              <option value="ended">Đã kết thúc</option>
+            </select>
+            <button class="btn btn-primary" id="btn-add-campaign">
+              <i class="fas fa-plus"></i> Thêm chiến dịch
+            </button>
+            <button class="btn btn-secondary" id="refreshBtn">
+              <i class="fas fa-sync"></i>
+            </button>
+          </div>
+
+          <!-- Active Filters Display -->
+          <div
+            id="activeFiltersContainer"
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.5rem;
+              margin-top: 1rem;
+              align-items: center;
+            "
+          >
+            <!-- Active filters will be displayed here -->
+          </div>
+        </div>
+
+        <!-- Campaigns Table -->
+        <div class="card">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 80px">Hình ảnh</th>
+                  <th>Tên chiến dịch</th>
+                  <th style="width: 120px">Loại</th>
+                  <th style="width: 120px">Ngày bắt đầu</th>
+                  <th style="width: 120px">Ngày kết thúc</th>
+                  <th style="width: 100px">Trạng thái</th>
+                  <th style="width: 100px">Số sách</th>
+                  <th style="width: 180px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="campaign-table-body">
+                <tr>
+                  <td colspan="8" style="text-align: center; padding: 3rem">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination-container" id="paginationContainer"></div>
+      </div>
+    </main>
+
+    <div class="loading-overlay" id="loadingOverlay">
+      <div class="spinner"></div>
+      <p>Đang tải...</p>
     </div>
-  </header>
+    <div class="toast-container" id="toastContainer"></div>
 
-  <div data-include="/partials/sidebar.html">
+    <!-- Campaign Modal -->
+    <div id="campaign-modal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto">
+        <div class="modal-header">
+          <h2 class="modal-title">Thêm / Cập nhật Chiến dịch</h2>
+          <button class="modal-close" id="closeCampaignModal">
+            <i class="fas fa-times"></i>
           </button>
-          <ul class="menu-child" id="storeMenu" style="display:none;">
-            <li><a href="voucher-new"><i class="fas fa-ticket-alt"></i> Quản lý voucher</a></li>
-            <li><a href="khoiphucvoucher"><i class="fas fa-history"></i> Voucher xóa gần đây</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('categoryMenu')">
-            <i class="fas fa-th-list"></i> Quản lý danh mục <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="categoryMenu" style="display:none;">
-            <li><a href="quanlydanhmuc"><i class="fas fa-th-list"></i> Danh mục</a></li>
-            <li><a href="danhmucdaxoa"><i class="fas fa-trash"></i> Danh mục đã xóa</a></li>
-            <li><a href="category-products"><i class="fas fa-eye"></i> Xem danh sách danh mục</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('productMenu')">
-            <i class="fas fa-book"></i> Sản phẩm <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="productMenu" style="display:none;">
-            <li><a href="danhgiasanpham"><i class="fas fa-book"></i> Danh sách truyện tranh</a></li>
-            <li><a href="trashbooks"><i class="fas fa-book-dead"></i> Sản phẩm xóa gần đây</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('managementMenu')">
-            <i class="fas fa-cogs"></i> Quản lý <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="managementMenu" style="display:none;">
-            <li><a href="quanlynguoidung"><i class="fas fa-users-cog"></i> Quản lý người dùng</a></li>
-            <li><a href="campaigns"><i class="fas fa-bullhorn"></i> Quản lý chiến dịch</a></li>
-          </ul>
-        </li>
-        <li>
-          <button class="menu-parent" onclick="toggleMenu('notificationMenu')">
-            <i class="fas fa-bell"></i> Quản lý thông báo <i class="fas fa-chevron-down" style="float:right"></i>
-          </button>
-          <ul class="menu-child" id="notificationMenu" style="display:none;">
-            <li><a href="thongbao"><i class="fas fa-bolt"></i> Thông báo nhanh</a></li>
-            <li><a href="notification-admin"><i class="fas fa-calendar-check"></i> Thông báo sự kiện</a></li>
-          </ul>
-        </li>
-        <li><a href="danhmucdonhang"><i class="fas fa-box-open"></i> Quản lý đơn hàng</a></li>
-        <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> Cài đặt</a></li>
-      </ul>
-    </nav>
-  </aside>
+        </div>
+        <form id="campaign-form">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="campaign-name">Tên chiến dịch <span class="required">*</span></label>
+              <input
+                type="text"
+                id="campaign-name"
+                class="form-input"
+                placeholder="Nhập tên chiến dịch"
+                required
+              />
+            </div>
 
-  <aside class="sidebar hidden" id="settingsSidebar">
-    <div class="profile" style="text-align: left;">
-      <button id="backButton" style="background: none; border: none; color: white; font-size: 16px; margin-bottom: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px;" aria-label="Quay lại menu chính">
-        <span style="font-size: 20px;">←</span> Quay lại
-      </button>
+            <div class="form-group">
+              <label for="campaign-desc">Mô tả</label>
+              <textarea
+                id="campaign-desc"
+                class="form-input"
+                rows="4"
+                placeholder="Nhập mô tả chiến dịch"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="campaign-type">Loại chiến dịch <span class="required">*</span></label>
+              <select id="campaign-type" class="form-select" required>
+                <option value="">Chọn loại chiến dịch</option>
+                <option value="promotion">Khuyến mãi</option>
+                <option value="event">Sự kiện</option>
+                <option value="advertisement">Quảng cáo</option>
+                <option value="special_offer">Ưu đãi đặc biệt</option>
+                <option value="community_event">Sự kiện cộng đồng</option>
+              </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+              <div class="form-group">
+                <label for="campaign-start-date">Ngày bắt đầu <span class="required">*</span></label>
+                <input
+                  type="date"
+                  id="campaign-start-date"
+                  class="form-input"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="campaign-end-date">Ngày kết thúc <span class="required">*</span></label>
+                <input
+                  type="date"
+                  id="campaign-end-date"
+                  class="form-input"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>
+                <strong>Chọn sách áp dụng:</strong>
+                <button
+                  type="button"
+                  id="toggle-book-list"
+                  class="btn btn-sm btn-secondary"
+                  style="margin-left: 0.5rem"
+                >
+                  <i class="fas fa-chevron-down"></i> Chọn sách
+                </button>
+              </label>
+              <div id="book-search-wrap" style="display: none; margin-top: 1rem">
+                <input
+                  type="text"
+                  id="book-search-input"
+                  class="form-input"
+                  placeholder="Tìm kiếm sách..."
+                  style="margin-bottom: 1rem"
+                />
+                <div
+                  id="book-search-list"
+                  style="
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    gap: 1rem;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    background: #f9fafb;
+                  "
+                ></div>
+              </div>
+              <select id="campaign-books" multiple style="display: none"></select>
+              <div id="selected-books-count" style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem">
+                Đã chọn: 0 sách
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="campaign-images">Hình ảnh chiến dịch</label>
+              <input
+                type="file"
+                id="campaign-images"
+                class="form-input"
+                multiple
+                accept="image/*"
+              />
+              <div
+                id="image-preview-container"
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                  gap: 1rem;
+                  margin-top: 1rem;
+                "
+              ></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancelCampaignBtn">
+              Hủy
+            </button>
+            <button type="submit" class="btn btn-primary" id="saveCampaignBtn">
+              <i class="fas fa-save"></i> Lưu
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-    <nav>
-      <ul>
-        <li><button id="logoutButton" class="btn-danger" aria-label="Đăng xuất">Đăng xuất</button></li>
-      </ul>
-    </nav>
-  </aside>
 
-  <main class="main">
-    <h2>Quản Lý Chiến Dịch</h2>
-    <div class="search-filter" style="display:flex; gap:6px; align-items:center; margin-bottom:16px;">
-      <input type="text" id="search-campaign" placeholder="Tìm chiến dịch..." style="padding:10px 12px; font-size:16px; border:1px solid #ccc; border-radius:5px; flex:1;" aria-label="Tìm kiếm chiến dịch" />
-      <button id="btn-search" style="background:#007bff; color:#fff; border:none; border-radius:5px; padding:10px 18px; font-size:16px;" aria-label="Tìm kiếm">Tìm kiếm</button>
-      <button id="btn-add-campaign" class="btn-primary" style="padding:10px 18px; font-size:16px;" aria-label="Thêm chiến dịch mới">+ Thêm chiến dịch</button>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Hình ảnh</th>
-          <th>Tên chiến dịch</th>
-          <th>Ngày bắt đầu</th>
-          <th>Ngày kết thúc</th>
-          <th>Loại</th>
-          <th>Số truyện</th>
-          <th>Thao tác</th>
-        </tr>
-      </thead>
-      <tbody id="campaign-table-body">
-        <tr><td colspan="7" style="text-align:center;">Đang tải...</td></tr>
-      </tbody>
-    </table>
-
-    <div class="pagination"></div>
-
-    <div id="campaign-modal">
-      <form id="campaign-form">
-        <h2 style="text-align:center; color:#007bff; margin-bottom:8px;">🎯 Thêm / Cập nhật Chiến Dịch</h2>
-
-        <input type="text" id="campaign-name" class="form-input" placeholder="Tên chiến dịch" required aria-required="true" />
-
-        <textarea id="campaign-desc" placeholder="Mô tả chiến dịch" aria-label="Mô tả chiến dịch"></textarea>
-
-        <label for="campaign-books" style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-          <strong>Chọn sách áp dụng:</strong>
-          <span id="toggle-book-list" style="font-size:20px; cursor:pointer;">
-            <i class="fa fa-chevron-down"></i>
-          </span>
-        </label>
-
-        <div id="book-search-wrap" style="display:none;">
-          <input type="text" id="book-search-input" placeholder="Tìm sách..." aria-label="Tìm kiếm sách" />
-          <div id="book-search-list"></div>
-        </div>
-
-        <select id="campaign-books" multiple style="display:none" aria-label="Danh sách sách áp dụng"></select>
-
-        <div style="display:flex; gap:12px;">
-          <select id="campaign-type" class="form-select" style="flex:1;" aria-label="Loại chiến dịch">
-            <option value="promotion">Khuyến mãi</option>
-            <option value="event">Sự kiện</option>
-            <option value="advertisement">Quảng cáo</option>
-            <option value="special_offer">Ưu đãi đặc biệt</option>
-            <option value="community_event">Sự kiện cộng đồng</option>
-          </select>
-
-          <select id="campaign-status" class="form-select" style="flex:1;" aria-label="Trạng thái chiến dịch">
-            <option value="true">Hiển thị</option>
-            <option value="false">Ẩn</option>
-          </select>
-        </div>
-
-        <div style="display:flex; gap:12px;">
-          <input type="date" id="campaign-start" class="form-input" placeholder="Ngày bắt đầu" style="flex:1;" aria-label="Ngày bắt đầu" />
-          <input type="date" id="campaign-end" class="form-input" placeholder="Ngày kết thúc" style="flex:1;" aria-label="Ngày kết thúc" />
-        </div>
-
-        <div style="display:flex; gap:12px; margin-top:8px;">
-          <input type="file" id="campaign-image" class="form-input" accept="image/*" multiple style="flex:1;" aria-label="Tải lên hình ảnh chiến dịch" />
-        </div>
-
-        <div id="image-preview-container" class="image-preview-container">
-          <!-- Previews will be added dynamically -->
-        </div>
-
-        <div style="display:flex; gap:12px; margin-top:8px;">
-          <button type="submit" id="save-campaign-btn" class="btn-primary" style="flex:1;" aria-label="Thêm chiến dịch">Thêm</button>
-          <button type="button" id="update-campaign-btn" class="btn-success" style="flex:1; display:none;" aria-label="Cập nhật chiến dịch">Cập nhật</button>
-          <button type="button" id="close-campaign-modal" class="btn-secondary" style="flex:1;" aria-label="Hủy">Hủy</button>
-        </div>
-      </form>
-    </div>
-  </main>
-
-  <dialog id="uploadDialog">
-    <h4>Chọn ảnh mới</h4>
-    <input type="file" id="avatarUpload" accept="image/*" aria-label="Chọn ảnh đại diện mới" />
-    <button id="uploadButton" class="btn-primary" style="margin-top: 10px;" aria-label="Tải lên ảnh">Tải lên</button>
-    <div id="uploadMessage" class="notification"></div>
-    <button id="cancelButton" class="btn-danger" style="margin-top: 10px;" aria-label="Đóng cửa sổ">Đóng</button>
-  </dialog>
-
-  <link rel="stylesheet" href="/assets/css/dialog.css" />
-  <script src="/assets/js/campaigns.js"></script>
-</body>
+    <script src="/AdminServices.js"></script>
+    <script src="/assets/js/retry-helper.js"></script>
+    <script src="/assets/js/global-error-handler.js"></script>
+    <script src="/assets/js/admin-layout.js"></script>
+    <script src="/assets/js/admin-ui-components.js"></script>
+    <script src="/assets/js/api-response-helpers.js"></script>
+    <script src="/assets/js/campaigns.js"></script>
+  </body>
 </html>

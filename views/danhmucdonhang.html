@@ -304,6 +304,58 @@
     th {
       background-color: #f8f9fa;
       color: #333;
+      position: relative;
+    }
+
+    /* Sortable column styles */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      padding-right: 2rem;
+      transition: background-color 0.2s ease;
+    }
+
+    th.sortable:hover {
+      background-color: #e9ecef;
+    }
+
+    th.sortable .sort-icon {
+      position: absolute;
+      right: 0.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #6c757d;
+      font-size: 0.75rem;
+      opacity: 0;
+      transition: opacity 0.2s ease, color 0.2s ease;
+    }
+
+    th.sortable:hover .sort-icon {
+      opacity: 0.5;
+    }
+
+    th.sortable.sort-asc .sort-icon,
+    th.sortable.sort-desc .sort-icon {
+      opacity: 1;
+      color: #0ea5e9;
+    }
+
+    th.sortable.sort-asc .sort-icon::before {
+      content: '\f0de'; /* FontAwesome up arrow */
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+    }
+
+    th.sortable.sort-desc .sort-icon::before {
+      content: '\f0dd'; /* FontAwesome down arrow */
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+    }
+
+    th.sortable.sort-none .sort-icon::before {
+      content: '\f0dc'; /* FontAwesome sort icon */
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 400;
     }
 
     .modal-overlay {
@@ -747,23 +799,39 @@
         </select>
         <input type="date" id="startDate" />
         <input type="date" id="endDate" />
-        <select id="sortOrder">
-          <option value="desc">Mới nhất</option>
-          <option value="asc">Cũ nhất</option>
-        </select>
         <button class="btn-export">Xuất Dữ Liệu</button>
+      </div>
+      
+      <!-- Active Filters Display -->
+      <div id="activeFiltersContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; align-items: center;">
+        <!-- Active filters will be displayed here -->
       </div>
       <table>
         <thead>
           <tr>
             <th>Ảnh</th>
-            <th>Mã Đơn</th>
-            <th>Người Mua</th>
-            <th>Ngày Đặt</th>
+            <th class="sortable" data-sort="order_id">
+              Mã Đơn
+              <span class="sort-icon"></span>
+            </th>
+            <th class="sortable" data-sort="customer">
+              Người Mua
+              <span class="sort-icon"></span>
+            </th>
+            <th class="sortable" data-sort="date">
+              Ngày Đặt
+              <span class="sort-icon"></span>
+            </th>
             <th>Trạng Thái</th>
-            <th>Tổng Tiền</th>
-            <th>Shipper nhận</th> <!-- Thêm cột này -->
-            <th>Phương thức thanh toán</th>
+            <th class="sortable" data-sort="total">
+              Tổng Tiền
+              <span class="sort-icon"></span>
+            </th>
+            <th>Shipper nhận</th>
+            <th class="sortable" data-sort="payment">
+              Phương thức thanh toán
+              <span class="sort-icon"></span>
+            </th>
             <th>Hành Động</th>
           </tr>
         </thead>

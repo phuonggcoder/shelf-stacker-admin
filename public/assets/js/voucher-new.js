@@ -4,10 +4,14 @@ const VOUCHER_API = `${API_BASE_URL}/vouchers`;
 
 // Global variables
 let allVouchers = [];
+let allDeletedVouchers = []; // Lưu tất cả vouchers đã xóa
+let currentViewMode = 'active'; // 'active' or 'deleted'
 let currentPage = 1;
 let itemsPerPage = 10;
 let pendingDeleteVoucherId = null;
 let currentEditingVoucher = null; // Track current editing voucher
+let currentVoucherSortColumn = null; // Cột đang được sắp xếp
+let currentVoucherSortDirection = null; // Hướng sắp xếp hiện tại (asc/desc)
 
 // Debug mode - set to true to enable detailed logging
 const DEBUG_MODE = true;
@@ -116,7 +120,40 @@ function setupEventListeners() {
   const statusFilter = document.getElementById('statusFilter');
   
   if (searchInput) {
-    searchInput.addEventListener('input', debounce(handleSearch, 300));
+    // Create debounced search function
+    const debouncedSearch = debounce(handleSearch, 500);
+    
+    // Handle autocomplete on input
+    searchInput.addEventListener('input', function(e) {
+      const query = e.target.value.trim();
+      
+      // Show autocomplete if query length >= 2
+      if (query.length >= 2) {
+        handleAutocomplete(query);
+        // Also trigger search for filtering existing vouchers
+        debouncedSearch();
+      } else {
+        // Hide autocomplete if query is too short
+        const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+        if (autocompleteDropdown) {
+          autocompleteDropdown.style.display = 'none';
+        }
+        
+        // If empty, show all vouchers immediately
+        if (query.length === 0) {
+          handleSearch();
+        }
+      }
+    });
+    
+    // Handle focus - show autocomplete if there's a query
+    searchInput.addEventListener('focus', function(e) {
+      const query = e.target.value.trim();
+      if (query.length >= 2) {
+        handleAutocomplete(query);
+      }
+    });
+    
     debugLog('Search event listener added');
   }
   
@@ -170,6 +207,46 @@ function setupEventListeners() {
   if (editDiscountType) {
     editDiscountType.addEventListener('change', handleEditDiscountTypeChange);
     debugLog('Edit discount type change event listener added');
+  }
+
+  // View mode toggle (Active/Deleted)
+  const voucherActiveTab = document.getElementById('voucherActiveTab');
+  const voucherDeletedTab = document.getElementById('voucherDeletedTab');
+  if (voucherActiveTab) {
+    voucherActiveTab.addEventListener('click', () => {
+      switchVoucherViewMode('active');
+    });
+  }
+  if (voucherDeletedTab) {
+    voucherDeletedTab.addEventListener('click', () => {
+      switchVoucherViewMode('deleted');
+    });
+  }
+
+  // Update search input listener to handle view mode
+  if (searchInput) {
+    // Also listen for input changes to trigger search in deleted mode
+    searchInput.addEventListener('input', function(e) {
+      const query = e.target.value.trim();
+      
+      if (currentViewMode === 'deleted') {
+        // For deleted tab, search immediately without autocomplete
+        handleDeletedVouchersSearch(query);
+      } else {
+        // For active tab, use existing autocomplete logic
+        if (query.length >= 2) {
+          handleAutocomplete(query);
+        } else {
+          const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+          if (autocompleteDropdown) {
+            autocompleteDropdown.style.display = 'none';
+          }
+        }
+        // Trigger search after debounce
+        const debouncedSearch = debounce(handleSearch, 500);
+        debouncedSearch();
+      }
+    });
   }
   
   debugLog('All event listeners setup completed');
@@ -246,19 +323,132 @@ function renderVouchers() {
     return;
   }
 
+  // Apply sorting if any
+  let vouchersToRender = [...allVouchers];
+  if (currentVoucherSortColumn) {
+    sortVouchers(vouchersToRender, currentVoucherSortColumn, currentVoucherSortDirection);
+  }
+
   tableBody.innerHTML = '';
   
-  allVouchers.forEach((voucher, index) => {
+  vouchersToRender.forEach((voucher, index) => {
     debugLog(`Rendering voucher ${index + 1}:`, voucher);
     const row = createVoucherRow(voucher);
     tableBody.appendChild(row);
   });
   
   debugLog('Vouchers rendered successfully');
+  
+  // Setup sortable columns after render
+  setupVoucherSortableColumns();
+  
+  // Update active filters
+  updateVoucherActiveFilters();
+}
+
+// Setup sortable columns for vouchers
+function setupVoucherSortableColumns() {
+  const sortableHeaders = document.querySelectorAll('.voucher-table thead th.sortable');
+  sortableHeaders.forEach(header => {
+    if (!header.dataset.hasListener) {
+      header.dataset.hasListener = 'true';
+      header.addEventListener('click', function() {
+        const sortField = this.getAttribute('data-sort');
+        handleVoucherColumnSort(sortField, this);
+      });
+    }
+  });
+}
+
+// Handle voucher column sorting
+function handleVoucherColumnSort(field, headerElement) {
+  // Remove sort classes from all headers
+  document.querySelectorAll('.voucher-table thead th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc', 'sort-none');
+  });
+
+  // Determine new sort direction
+  if (currentVoucherSortColumn === field) {
+    // Toggle direction if clicking same column
+    currentVoucherSortDirection = currentVoucherSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    // Default to ascending for new column
+    currentVoucherSortDirection = 'asc';
+    currentVoucherSortColumn = field;
+  }
+
+  // Add sort class to current header
+  headerElement.classList.add(`sort-${currentVoucherSortDirection}`);
+
+  // Re-render vouchers with sorting
+  renderVouchers();
+}
+
+// Sort vouchers array
+function sortVouchers(vouchers, field, direction) {
+  if (!vouchers || vouchers.length === 0) return;
+
+  vouchers.sort((a, b) => {
+    let aValue, bValue;
+
+    switch(field) {
+      case 'voucher_id':
+        aValue = (a.voucher_id || '').toLowerCase();
+        bValue = (b.voucher_id || '').toLowerCase();
+        break;
+      case 'value':
+        // Sort by discount value or shipping discount
+        if (a.voucher_type === 'discount') {
+          aValue = parseFloat(a.discount_value || 0);
+        } else {
+          aValue = parseFloat(a.shipping_discount || 0);
+        }
+        if (b.voucher_type === 'discount') {
+          bValue = parseFloat(b.discount_value || 0);
+        } else {
+          bValue = parseFloat(b.shipping_discount || 0);
+        }
+        break;
+      case 'min_order':
+        aValue = parseFloat(a.min_order_value || 0);
+        bValue = parseFloat(b.min_order_value || 0);
+        break;
+      case 'date':
+        aValue = new Date(a.start_date || 0);
+        bValue = new Date(b.start_date || 0);
+        break;
+      default:
+        return 0;
+    }
+
+    // Compare values
+    if (field === 'date') {
+      // Date comparison
+      if (direction === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    } else if (field === 'value' || field === 'min_order') {
+      // Numeric comparison
+      if (direction === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    } else {
+      // String comparison
+      if (direction === 'asc') {
+        return aValue.localeCompare(bValue, 'vi');
+      } else {
+        return bValue.localeCompare(aValue, 'vi');
+      }
+    }
+  });
 }
 
 // Create voucher table row with improved data validation
-function createVoucherRow(voucher) {
+function createVoucherRow(voucher, searchTerm = '') {
   const row = document.createElement('tr');
   
   // Validate voucher data
@@ -273,8 +463,15 @@ function createVoucherRow(voucher) {
   const statusBadge = createStatusBadge(voucher);
   const usageProgress = createUsageProgress(voucher);
 
+  // Use provided searchTerm or get from input
+  if (!searchTerm) {
+    searchTerm = document.getElementById('searchVoucher')?.value.trim() || '';
+  }
+  const voucherId = voucher.voucher_id || 'N/A';
+  const highlightedVoucherId = highlightSearchText(voucherId, searchTerm);
+
   row.innerHTML = `
-    <td><strong>${voucher.voucher_id || 'N/A'}</strong></td>
+    <td><strong>${highlightedVoucherId}</strong></td>
     <td><span class="badge badge-${voucher.voucher_type === 'discount' ? 'primary' : 'info'}">${typeLabel}</span></td>
     <td>${valueLabel}</td>
     <td>≥ ${formatCurrency(voucher.min_order_value || 0)}</td>
@@ -292,6 +489,25 @@ function createVoucherRow(voucher) {
   `;
 
   return row;
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Highlight search text in content
+function highlightSearchText(text, searchTerm) {
+  if (!searchTerm || !text) return escapeHtml(text);
+  
+  const escapedText = escapeHtml(text);
+  const escapedSearch = escapeHtml(searchTerm);
+  const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  
+  return escapedText.replace(regex, '<mark style="background-color: #fef08a; padding: 2px 4px; border-radius: 3px;">$1</mark>');
 }
 
 // Format voucher value with improved validation
@@ -726,7 +942,7 @@ async function handleEditVoucher(event) {
 async function deleteVoucher(id) {
   debugLog('Deleting voucher with ID:', id);
   
-  if (!confirm('Bạn có chắc chắn muốn xóa voucher này?')) {
+  if (!confirm('Bạn có chắc chắn muốn xóa voucher này? Voucher sẽ được chuyển vào thùng rác và có thể khôi phục sau.')) {
     debugLog('Delete cancelled by user');
     return;
   }
@@ -735,9 +951,10 @@ async function deleteVoucher(id) {
     showLoading(true);
     const token = localStorage.getItem('authToken');
     
-    debugLog('Sending delete voucher request...');
+    debugLog('Sending soft delete voucher request...');
     
-    const response = await fetch(`${VOUCHER_API}/${id}`, {
+    // Use admin endpoint for soft delete
+    const response = await fetch(`${VOUCHER_API}/admin/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -748,7 +965,8 @@ async function deleteVoucher(id) {
     debugLog('Delete voucher response status:', response.status);
 
     if (response.ok) {
-      showNotification('success', 'Xóa voucher thành công!');
+      const result = await response.json();
+      showNotification('success', result.message || 'Xóa voucher thành công!');
       loadVouchers();
     } else {
       const result = await response.json();
@@ -764,20 +982,230 @@ async function deleteVoucher(id) {
   }
 }
 
+// Autocomplete variables
+let autocompleteTimeout = null;
+let autocompleteAbortController = null;
+let selectedAutocompleteIndex = -1;
+
+// Autocomplete function
+async function handleAutocomplete(query) {
+  // Don't show autocomplete in deleted mode
+  if (currentViewMode === 'deleted') {
+    const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+    if (autocompleteDropdown) {
+      autocompleteDropdown.style.display = 'none';
+    }
+    return;
+  }
+
+  // Clear previous timeout
+  if (autocompleteTimeout) {
+    clearTimeout(autocompleteTimeout);
+  }
+
+  // Cancel previous request
+  if (autocompleteAbortController) {
+    autocompleteAbortController.abort();
+  }
+
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  if (!autocompleteDropdown) return;
+
+  // If query is less than 2 characters, hide dropdown
+  if (!query || query.length < 2) {
+    autocompleteDropdown.style.display = 'none';
+    selectedAutocompleteIndex = -1;
+    return;
+  }
+
+  // Show loading state
+  autocompleteDropdown.innerHTML = '<div class="autocomplete-loading"><i class="fas fa-spinner fa-spin"></i> Đang tìm kiếm...</div>';
+  autocompleteDropdown.style.display = 'block';
+
+  // Debounce API call
+  autocompleteTimeout = setTimeout(async () => {
+    try {
+      // Create new AbortController for this request
+      autocompleteAbortController = new AbortController();
+      
+      const token = localStorage.getItem('authToken') || localStorage.getItem('admin_token') || localStorage.getItem('access_token');
+      const response = await fetch(`${VOUCHER_API}/autocomplete?q=${encodeURIComponent(query)}&limit=10`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        signal: autocompleteAbortController.signal
+      });
+
+      if (!response.ok) {
+        throw new Error('Autocomplete request failed');
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data && result.data.length > 0) {
+        renderAutocompleteSuggestions(result.data, query);
+      } else {
+        autocompleteDropdown.innerHTML = '<div class="autocomplete-empty">Không tìm thấy voucher nào</div>';
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        // Request was cancelled, ignore
+        return;
+      }
+      console.error('Autocomplete error:', error);
+      autocompleteDropdown.innerHTML = '<div class="autocomplete-empty">Lỗi khi tìm kiếm</div>';
+    }
+  }, 300);
+}
+
+// Render autocomplete suggestions
+function renderAutocompleteSuggestions(suggestions, query) {
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  if (!autocompleteDropdown) return;
+
+  autocompleteDropdown.innerHTML = suggestions.map((item, index) => {
+    const highlightedVoucherId = highlightSearchText(item.voucher_id || item.value || item.label, query);
+    const typeLabel = item.voucher_type === 'discount' ? 'Giảm giá' : 'Giảm ship';
+    const discountText = item.discount_type === 'percentage' 
+      ? `${item.discount_value}%` 
+      : `${formatCurrency(item.discount_value || 0)}`;
+    
+    return `
+      <div class="autocomplete-item" data-index="${index}" data-voucher-id="${item.voucher_id || item.value}">
+        <div class="autocomplete-item-title">${highlightedVoucherId}</div>
+        <div class="autocomplete-item-meta">
+          <span class="autocomplete-item-type">${typeLabel}</span>
+          ${item.discount_value ? `<span>Giảm: ${discountText}</span>` : ''}
+          ${item.description ? `<span>${escapeHtml(item.description.substring(0, 50))}${item.description.length > 50 ? '...' : ''}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Add click handlers
+  autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+    item.addEventListener('click', function() {
+      const voucherId = this.dataset.voucherId;
+      selectAutocompleteSuggestion(voucherId);
+    });
+    
+    item.addEventListener('mouseenter', function() {
+      // Remove active class from all items
+      autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('active'));
+      // Add active class to current item
+      this.classList.add('active');
+      selectedAutocompleteIndex = parseInt(this.dataset.index);
+    });
+  });
+
+  selectedAutocompleteIndex = -1;
+  autocompleteDropdown.style.display = 'block';
+}
+
+// Select autocomplete suggestion
+function selectAutocompleteSuggestion(voucherId) {
+  const searchInput = document.getElementById('searchVoucher');
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  
+  if (searchInput) {
+    searchInput.value = voucherId;
+    // Focus back to input
+    searchInput.focus();
+  }
+  
+  if (autocompleteDropdown) {
+    autocompleteDropdown.style.display = 'none';
+  }
+  
+  selectedAutocompleteIndex = -1;
+  
+  // Trigger search immediately (no debounce needed since user selected)
+  handleSearch();
+}
+
+// Close autocomplete when clicking outside
+document.addEventListener('click', function(event) {
+  const searchBox = document.querySelector('.search-box');
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  
+  if (searchBox && autocompleteDropdown && !searchBox.contains(event.target)) {
+    autocompleteDropdown.style.display = 'none';
+    selectedAutocompleteIndex = -1;
+  }
+});
+
+// Handle keyboard navigation in autocomplete
+document.addEventListener('keydown', function(event) {
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  if (!autocompleteDropdown || autocompleteDropdown.style.display === 'none') {
+    return;
+  }
+
+  const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+  if (items.length === 0) return;
+
+  if (event.key === 'ArrowDown') {
+    event.preventDefault();
+    selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+    items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+    items.forEach((item, index) => {
+      item.classList.toggle('active', index === selectedAutocompleteIndex);
+    });
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault();
+    selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+    if (selectedAutocompleteIndex >= 0) {
+      items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+    }
+    items.forEach((item, index) => {
+      item.classList.toggle('active', index === selectedAutocompleteIndex);
+    });
+  } else if (event.key === 'Enter' && selectedAutocompleteIndex >= 0) {
+    event.preventDefault();
+    const selectedItem = items[selectedAutocompleteIndex];
+    if (selectedItem) {
+      const voucherId = selectedItem.dataset.voucherId;
+      selectAutocompleteSuggestion(voucherId);
+    }
+  } else if (event.key === 'Escape') {
+    autocompleteDropdown.style.display = 'none';
+    selectedAutocompleteIndex = -1;
+  }
+});
+
 // Search and filter functions with improved performance
 function handleSearch() {
-  const searchTerm = document.getElementById('searchVoucher').value.toLowerCase();
+  const searchInput = document.getElementById('searchVoucher');
+  const searchTerm = searchInput ? searchInput.value.trim() : '';
   debugLog('Searching for:', searchTerm);
   
-  const filteredVouchers = allVouchers.filter(voucher => 
-    voucher && (
-      (voucher.voucher_id && voucher.voucher_id.toLowerCase().includes(searchTerm)) ||
-      (voucher.description && voucher.description.toLowerCase().includes(searchTerm))
-    )
-  );
+  // Hide autocomplete when searching (only for active tab)
+  if (currentViewMode === 'active') {
+    const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+    if (autocompleteDropdown) {
+      autocompleteDropdown.style.display = 'none';
+    }
+  }
   
-  debugLog('Search results count:', filteredVouchers.length);
-  renderFilteredVouchers(filteredVouchers);
+  // Handle search based on current view mode
+  if (currentViewMode === 'deleted') {
+    // Search in deleted vouchers
+    handleDeletedVouchersSearch(searchTerm);
+  } else {
+    // Search in active vouchers
+    const searchLower = searchTerm.toLowerCase();
+    const filteredVouchers = allVouchers.filter(voucher => 
+      voucher && (
+        (voucher.voucher_id && voucher.voucher_id.toLowerCase().includes(searchLower)) ||
+        (voucher.description && voucher.description.toLowerCase().includes(searchLower))
+      )
+    );
+    
+    debugLog('Search results count:', filteredVouchers.length);
+    renderFilteredVouchers(filteredVouchers, searchTerm);
+    updateVoucherActiveFilters();
+  }
 }
 
 function handleFilterChange() {
@@ -806,22 +1234,158 @@ function handleFilterChange() {
   
   debugLog('Filter results count:', filteredVouchers.length);
   renderFilteredVouchers(filteredVouchers);
+  updateVoucherActiveFilters();
 }
 
-function renderFilteredVouchers(vouchers) {
+// Update active filters display for vouchers
+function updateVoucherActiveFilters() {
+  const container = document.getElementById('activeFiltersContainer');
+  if (!container) {
+    // Create container if it doesn't exist
+    const actionBar = document.querySelector('.action-bar');
+    if (actionBar) {
+      const newContainer = document.createElement('div');
+      newContainer.id = 'activeFiltersContainer';
+      newContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; align-items: center;';
+      actionBar.parentNode.insertBefore(newContainer, actionBar.nextSibling);
+      return updateVoucherActiveFilters();
+    }
+    return;
+  }
+
+  container.innerHTML = '';
+
+  // Search filter
+  const searchTerm = document.getElementById('searchVoucher')?.value.trim() || '';
+  if (searchTerm) {
+    const badge = createVoucherFilterBadge('Tìm kiếm', `"${searchTerm}"`, 'search');
+    container.appendChild(badge);
+  }
+
+  // Voucher type filter
+  const voucherType = document.getElementById('voucherTypeFilter')?.value || '';
+  if (voucherType) {
+    const typeMap = {
+      discount: 'Giảm giá',
+      percent: 'Giảm giá phần trăm',
+      shipping: 'Miễn phí vận chuyển',
+      combo: 'Combo giảm giá'
+    };
+    const typeText = typeMap[voucherType] || voucherType;
+    const badge = createVoucherFilterBadge('Loại', typeText, 'type');
+    container.appendChild(badge);
+  }
+
+  // Status filter
+  const status = document.getElementById('statusFilter')?.value || '';
+  if (status) {
+    const statusMap = {
+      active: 'Đang hoạt động',
+      inactive: 'Ngưng hoạt động',
+      expired: 'Hết hạn'
+    };
+    const statusText = statusMap[status] || status;
+    const badge = createVoucherFilterBadge('Trạng thái', statusText, 'status');
+    container.appendChild(badge);
+  }
+
+  // Show container if there are filters
+  container.style.display = container.children.length > 0 ? 'flex' : 'none';
+}
+
+// Create filter badge for vouchers
+function createVoucherFilterBadge(label, value, filterType) {
+  const badge = document.createElement('div');
+  badge.className = 'filter-badge';
+  badge.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  `;
+  
+  badge.innerHTML = `
+    <span><strong>${label}:</strong> ${escapeHtml(value)}</span>
+    <button type="button" class="filter-remove-btn" data-filter-type="${filterType}" style="
+      background: none;
+      border: none;
+      color: #6366f1;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      line-height: 1;
+    ">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+
+  // Add click handler for remove button
+  const removeBtn = badge.querySelector('.filter-remove-btn');
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeVoucherFilter(filterType);
+  });
+
+  return badge;
+}
+
+// Remove individual filter for vouchers
+function removeVoucherFilter(filterType) {
+  switch(filterType) {
+    case 'search':
+      const searchInput = document.getElementById('searchVoucher');
+      if (searchInput) searchInput.value = '';
+      break;
+    case 'type':
+      const voucherTypeFilter = document.getElementById('voucherTypeFilter');
+      if (voucherTypeFilter) voucherTypeFilter.value = '';
+      break;
+    case 'status':
+      const statusFilter = document.getElementById('statusFilter');
+      if (statusFilter) statusFilter.value = '';
+      break;
+  }
+  
+  // Re-apply filters
+  handleFilterChange();
+  handleSearch();
+}
+
+function renderFilteredVouchers(vouchers, searchTerm = '') {
   debugLog('Rendering filtered vouchers:', vouchers.length);
   const tableBody = document.getElementById('voucherTableBody');
   
   if (!vouchers.length) {
     tableBody.innerHTML = '<tr><td colspan="8" class="text-center">Không tìm thấy voucher nào.</td></tr>';
+    setupVoucherSortableColumns(); // Setup even when empty
+    updateVoucherActiveFilters(); // Update filters even when empty
     return;
   }
 
+  // Apply sorting if any
+  let vouchersToRender = [...vouchers];
+  if (currentVoucherSortColumn) {
+    sortVouchers(vouchersToRender, currentVoucherSortColumn, currentVoucherSortDirection);
+  }
+
   tableBody.innerHTML = '';
-  vouchers.forEach(voucher => {
-    const row = createVoucherRow(voucher);
+  vouchersToRender.forEach(voucher => {
+    const row = createVoucherRow(voucher, searchTerm);
     tableBody.appendChild(row);
   });
+  
+  // Setup sortable columns after render
+  setupVoucherSortableColumns();
+  
+  // Update active filters
+  updateVoucherActiveFilters();
 }
 
 // Analytics functions with improved error handling
@@ -1019,9 +1583,295 @@ document.addEventListener('keydown', function(event) {
   }
 });
 
+// Switch view mode between active and deleted vouchers
+function switchVoucherViewMode(mode) {
+  currentViewMode = mode;
+  const activeView = document.getElementById('activeVouchersView');
+  const deletedView = document.getElementById('deletedVouchersView');
+  const activeTab = document.getElementById('voucherActiveTab');
+  const deletedTab = document.getElementById('voucherDeletedTab');
+  
+  // Hide autocomplete when switching tabs
+  const autocompleteDropdown = document.getElementById('voucherAutocomplete');
+  if (autocompleteDropdown) {
+    autocompleteDropdown.style.display = 'none';
+  }
+
+  if (mode === 'active') {
+    if (activeView) activeView.style.display = 'block';
+    if (deletedView) deletedView.style.display = 'none';
+    if (activeTab) {
+      activeTab.style.borderBottomColor = '#4f46e5';
+      activeTab.style.color = '#4f46e5';
+      activeTab.style.fontWeight = '600';
+    }
+    if (deletedTab) {
+      deletedTab.style.borderBottomColor = 'transparent';
+      deletedTab.style.color = '#6b7280';
+      deletedTab.style.fontWeight = '500';
+    }
+    // Load active vouchers if not loaded
+    if (allVouchers.length === 0) {
+      loadVouchers();
+    } else {
+      // Apply current search if exists
+      const searchInput = document.getElementById('searchVoucher');
+      const searchTerm = searchInput ? searchInput.value.trim() : '';
+      if (searchTerm) {
+        handleSearch();
+      } else {
+        renderVouchers();
+      }
+    }
+  } else {
+    if (activeView) activeView.style.display = 'none';
+    if (deletedView) deletedView.style.display = 'block';
+    if (activeTab) {
+      activeTab.style.borderBottomColor = 'transparent';
+      activeTab.style.color = '#6b7280';
+      activeTab.style.fontWeight = '500';
+    }
+    if (deletedTab) {
+      deletedTab.style.borderBottomColor = '#4f46e5';
+      deletedTab.style.color = '#4f46e5';
+      deletedTab.style.fontWeight = '600';
+    }
+    // Load deleted vouchers
+    loadDeletedVouchers();
+  }
+}
+
+// Load deleted vouchers
+async function loadDeletedVouchers() {
+  debugLog('Loading deleted vouchers...');
+  showLoading(true);
+
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      showNotification('error', 'Vui lòng đăng nhập.');
+      return;
+    }
+
+    // Use trash endpoint
+    const response = await fetch(`${VOUCHER_API}/trash/all`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    debugLog('Deleted vouchers response:', data);
+
+    allDeletedVouchers = data.vouchers || [];
+    debugLog('Loaded deleted vouchers:', allDeletedVouchers.length);
+
+    // Apply search filter if exists
+    const searchInput = document.getElementById('searchVoucher');
+    const searchTerm = searchInput ? searchInput.value.trim() : '';
+    
+    if (searchTerm) {
+      handleDeletedVouchersSearch(searchTerm);
+    } else {
+      // Render deleted vouchers
+      renderDeletedVouchers(allDeletedVouchers, '');
+    }
+  } catch (error) {
+    debugLog('Error loading deleted vouchers:', error);
+    showNotification('error', 'Không thể tải danh sách vouchers đã xóa: ' + error.message);
+    const tbody = document.getElementById('deletedVoucherTableBody');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 3rem;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+            <p style="color: #6b7280;">Lỗi tải dữ liệu</p>
+          </td>
+        </tr>
+      `;
+    }
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Render deleted vouchers with search highlighting
+function renderDeletedVouchers(vouchers, searchTerm = '') {
+  const tbody = document.getElementById('deletedVoucherTableBody');
+  if (!tbody) return;
+
+  if (!vouchers || vouchers.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 3rem;">
+          <i class="fas fa-inbox" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+          <p style="color: #6b7280;">${searchTerm ? 'Không tìm thấy voucher nào' : 'Không có voucher nào đã xóa'}</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = vouchers.map(v => {
+    const deletedAt = v.deletedAt ? new Date(v.deletedAt).toLocaleString('vi-VN') : (v.updatedAt ? new Date(v.updatedAt).toLocaleString('vi-VN') : 'N/A');
+    const typeDisplay = v.voucher_type === 'discount' ? 'Giảm giá' : (v.voucher_type === 'shipping' ? 'Giảm ship' : 'N/A');
+    const valueDisplay = v.discount_value ? formatCurrency(v.discount_value) : (v.shipping_discount ? formatCurrency(v.shipping_discount) : 'N/A');
+    const minOrderDisplay = v.min_order_value ? formatCurrency(v.min_order_value) : 'N/A';
+    
+    // Highlight search term in voucher_id
+    const voucherIdDisplay = searchTerm ? highlightSearchText(v.voucher_id || 'N/A', searchTerm) : escapeHtml(v.voucher_id || 'N/A');
+
+    return `
+      <tr style="opacity: 0.8;">
+        <td style="vertical-align: middle;">
+          <strong style="color: #1f2937;">${voucherIdDisplay}</strong>
+        </td>
+        <td style="vertical-align: middle; color: #4b5563;">${typeDisplay}</td>
+        <td style="vertical-align: middle; color: #4b5563;">${valueDisplay}</td>
+        <td style="vertical-align: middle; color: #4b5563; font-size: 0.875rem;">${minOrderDisplay}</td>
+        <td style="vertical-align: middle; color: #6b7280; font-size: 0.875rem;">${deletedAt}</td>
+        <td style="vertical-align: middle;">
+          <div style="display: flex; gap: 0.5rem; justify-content: center;">
+            <button onclick="restoreVoucher('${v._id}')" class="btn btn-sm btn-success" title="Khôi phục" style="padding: 0.5rem 1rem;">
+              <i class="fas fa-undo"></i> Khôi phục
+            </button>
+            <button onclick="permanentlyDeleteVoucher('${v._id}')" class="btn btn-sm btn-danger" title="Xóa vĩnh viễn" style="padding: 0.5rem 1rem;">
+              <i class="fas fa-trash-alt"></i> Xóa vĩnh viễn
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// Handle search for deleted vouchers
+function handleDeletedVouchersSearch(searchTerm) {
+  if (!searchTerm) {
+    renderDeletedVouchers(allDeletedVouchers, '');
+    return;
+  }
+
+  const searchLower = searchTerm.toLowerCase();
+  const filtered = allDeletedVouchers.filter(v => 
+    v && (
+      (v.voucher_id && v.voucher_id.toLowerCase().includes(searchLower)) ||
+      (v.description && v.description.toLowerCase().includes(searchLower))
+    )
+  );
+
+  renderDeletedVouchers(filtered, searchTerm);
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Restore voucher
+async function restoreVoucher(voucherId) {
+  if (!confirm('Bạn có chắc muốn khôi phục voucher này?')) {
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      showNotification('error', 'Vui lòng đăng nhập.');
+      return;
+    }
+
+    // Use restore endpoint
+    const response = await fetch(`${VOUCHER_API}/${voucherId}/restore`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    showNotification('success', result.message || 'Khôi phục voucher thành công');
+
+    // Reload based on current view mode
+    if (currentViewMode === 'deleted') {
+      await loadDeletedVouchers();
+    } else {
+      await loadVouchers();
+    }
+  } catch (error) {
+    debugLog('Error restoring voucher:', error);
+    showNotification('error', 'Không thể khôi phục voucher: ' + error.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
+// Permanently delete voucher
+async function permanentlyDeleteVoucher(voucherId) {
+  const voucher = allDeletedVouchers.find(v => v._id === voucherId);
+  const voucherCode = voucher ? (voucher.voucher_id || 'voucher này') : 'voucher này';
+  
+  if (!confirm(`Bạn có chắc muốn XÓA VĨNH VIỄN "${voucherCode}"?\n\nHành động này không thể hoàn tác!`)) {
+    return;
+  }
+
+  showLoading(true);
+
+  try {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      showNotification('error', 'Vui lòng đăng nhập.');
+      return;
+    }
+
+    // Use force delete endpoint
+    const response = await fetch(`${VOUCHER_API}/${voucherId}/force`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    showNotification('success', result.message || 'Xóa vĩnh viễn voucher thành công');
+
+    // Reload deleted vouchers
+    await loadDeletedVouchers();
+  } catch (error) {
+    debugLog('Error permanently deleting voucher:', error);
+    showNotification('error', 'Không thể xóa vĩnh viễn voucher: ' + error.message);
+  } finally {
+    showLoading(false);
+  }
+}
+
 // Export functions for global access
 window.editVoucher = editVoucher;
 window.deleteVoucher = deleteVoucher;
+window.restoreVoucher = restoreVoucher;
+window.permanentlyDeleteVoucher = permanentlyDeleteVoucher;
 window.openCreateVoucherModal = openCreateVoucherModal;
 window.closeCreateVoucherModal = closeCreateVoucherModal;
 window.openEditVoucherModal = openEditVoucherModal;

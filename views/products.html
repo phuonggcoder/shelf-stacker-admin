@@ -10,8 +10,8 @@
     />
     <link rel="stylesheet" href="/assets/css/admin-main.css" />
     <link rel="stylesheet" href="/assets/css/admin-ui-components.css" />
-      <script src="/assets/js/loading-state-helper.js"></script>
-</head>
+    <script src="/assets/js/loading-state-helper.js"></script>
+  </head>
   <body>
     <!-- Sidebar -->
     <aside class="admin-sidebar" id="adminSidebar">
@@ -45,7 +45,10 @@
                   >Danh sách sản phẩm</a
                 >
               </li>
-              <li><a href="/categories" data-page="categories">Danh mục</a></li>
+              <li>
+                <a href="/categories" data-page="categories">Cây danh mục</a>
+              </li>
+              <li><a href="/campaigns" data-page="campaigns">Chiến dịch</a></li>
             </ul>
           </li>
           <li class="nav-item">
@@ -158,12 +161,15 @@
               flex-wrap: wrap;
             "
           >
-            <div style="flex: 1; min-width: 250px; position: relative">
+            <div
+              style="flex: 1; min-width: 250px; position: relative; z-index: 1"
+            >
               <input
                 type="text"
                 id="searchInput"
                 class="form-input"
                 placeholder="Tìm kiếm sản phẩm..."
+                autocomplete="off"
               />
               <button
                 id="clearSearchBtn"
@@ -175,16 +181,25 @@
                   transform: translateY(-50%);
                   padding: 0.25rem 0.5rem;
                   display: none;
+                  z-index: 20;
                 "
                 title="Xóa tìm kiếm"
               >
                 <i class="fas fa-times"></i>
               </button>
+              <div
+                id="productsAutocomplete"
+                class="autocomplete-dropdown"
+                style="display: none"
+              ></div>
             </div>
             <select
               id="categoryFilter"
               class="form-select"
               style="width: 200px"
+              multiple
+              size="1"
+              title="Chọn danh mục (giữ Ctrl/Cmd để chọn nhiều)"
             >
               <option value="">Tất cả danh mục</option>
             </select>
@@ -203,37 +218,6 @@
               <option value="true">Sách nổi bật</option>
               <option value="false">Sách thường</option>
             </select>
-            <select
-              id="stockFilter"
-              class="form-select"
-              style="width: 150px"
-              title="Lọc tồn kho"
-            >
-              <option value="">Tất cả tồn kho</option>
-              <option value="in_stock">Còn hàng</option>
-              <option value="out_of_stock">Hết hàng</option>
-            </select>
-            <select
-              id="sortBy"
-              class="form-select"
-              style="width: 150px"
-              title="Sắp xếp theo"
-            >
-              <option value="createdAt">Ngày tạo</option>
-              <option value="title">Tên sách</option>
-              <option value="price">Giá</option>
-              <option value="stock">Tồn kho</option>
-              <option value="sold">Đã bán</option>
-            </select>
-            <select
-              id="sortOrder"
-              class="form-select"
-              style="width: 120px"
-              title="Thứ tự"
-            >
-              <option value="desc" selected>Giảm dần</option>
-              <option value="asc">Tăng dần</option>
-            </select>
             <button
               class="btn btn-secondary"
               id="clearFiltersBtn"
@@ -242,19 +226,84 @@
             >
               <i class="fas fa-filter"></i> Xóa lọc
             </button>
+          </div>
+
+          <!-- Active Filters Display -->
+          <div
+            id="activeFiltersContainer"
+            style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 0.5rem;
+              margin-top: 1rem;
+              align-items: center;
+            "
+          >
+            <!-- Active filters will be displayed here -->
+          </div>
+          <div style="display: flex; gap: 0.5rem; margin-top: 1rem">
             <button class="btn btn-primary" id="addBookBtn">
               <i class="fas fa-plus"></i>
               Thêm sản phẩm
             </button>
-            <button class="btn btn-secondary" id="trashBtn">
-              <i class="fas fa-trash"></i>
-              Đã xóa
+          </div>
+        </div>
+
+        <!-- View Mode Tabs -->
+        <div
+          class="card"
+          style="margin-bottom: 1.5rem; padding: 0; overflow: hidden"
+        >
+          <div
+            style="
+              display: flex;
+              border-bottom: 2px solid #e5e7eb;
+              background: #ffffff;
+            "
+          >
+            <button
+              class="view-tab-btn"
+              id="activeTab"
+              data-view="active"
+              style="
+                flex: 1;
+                padding: 1rem 1.5rem;
+                background: none;
+                border: none;
+                border-bottom: 3px solid #4f46e5;
+                color: #4f46e5;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 0.95rem;
+              "
+            >
+              <i class="fas fa-box"></i> Sản phẩm hoạt động
+            </button>
+            <button
+              class="view-tab-btn"
+              id="deletedTab"
+              data-view="deleted"
+              style="
+                flex: 1;
+                padding: 1rem 1.5rem;
+                background: none;
+                border: none;
+                border-bottom: 3px solid transparent;
+                color: #6b7280;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 0.95rem;
+              "
+            >
+              <i class="fas fa-trash"></i> Sản phẩm đã xóa
             </button>
           </div>
         </div>
 
-        <!-- Products Table -->
-        <div class="card">
+        <!-- Products Table (Active) -->
+        <div class="card" id="activeProductsView">
           <div class="card-header">
             <h3 class="card-title">Danh sách sản phẩm</h3>
             <div style="display: flex; gap: 0.5rem; align-items: center">
@@ -274,10 +323,22 @@
                     <input type="checkbox" id="selectAll" />
                   </th>
                   <th style="width: 80px">Ảnh</th>
-                  <th>Tên sách</th>
-                  <th>Tác giả</th>
-                  <th>Danh mục</th>
-                  <th>Giá</th>
+                  <th class="sortable" data-sort="title">
+                    Tên sách
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable" data-sort="author">
+                    Tác giả
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable" data-sort="category">
+                    Danh mục
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable" data-sort="price">
+                    Giá
+                    <span class="sort-icon"></span>
+                  </th>
                   <th>Tồn kho</th>
                   <th>Trạng thái</th>
                   <th style="width: 150px">Thao tác</th>
@@ -322,6 +383,45 @@
                 <i class="fas fa-chevron-right"></i>
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Deleted Products Table -->
+        <div class="card" id="deletedProductsView" style="display: none">
+          <div class="card-header">
+            <h3 class="card-title">Sản phẩm đã xóa</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <span
+                style="color: #6b7280; font-size: 0.9rem"
+                id="deletedProductsCount"
+                >0 sản phẩm đã xóa</span
+              >
+              <button class="btn btn-sm btn-secondary" id="refreshDeletedBtn">
+                <i class="fas fa-sync"></i>
+              </button>
+            </div>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 80px">Ảnh</th>
+                  <th style="width: 250px">Tên sách</th>
+                  <th style="width: 150px">Tác giả</th>
+                  <th style="width: 120px">Giá</th>
+                  <th style="width: 150px">Ngày xóa</th>
+                  <th style="width: 200px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="deletedProductsTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 3rem">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

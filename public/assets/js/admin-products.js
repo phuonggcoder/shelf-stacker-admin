@@ -28,13 +28,22 @@ let pageSize = 10; // Giới hạn 10 sản phẩm mỗi trang
 let totalPages = 1;
 let filters = {
     search: '',
-    category: '',
+    categories: [], // Changed to array for multi-select
     status: '',
-    featured: '',
-    stock: ''
+    featured: ''
 };
 let sortBy = 'createdAt'; // Mặc định sắp xếp theo ngày tạo
 let sortOrder = 'desc'; // Mặc định giảm dần
+let allProducts = []; // Lưu tất cả sản phẩm đã tải để sắp xếp client-side
+let allDeletedProducts = []; // Lưu tất cả sản phẩm đã xóa
+let currentViewMode = 'active'; // 'active' or 'deleted'
+let currentSortColumn = null; // Cột đang được sắp xếp
+let currentSortDirection = null; // Hướng sắp xếp hiện tại (asc/desc)
+
+// Autocomplete variables
+let autocompleteTimeout = null;
+let autocompleteAbortController = null;
+let selectedAutocompleteIndex = -1;
 
 document.addEventListener('DOMContentLoaded', async function() {
     const pathname = window.location.pathname;
@@ -62,7 +71,7 @@ async function initProductsPage() {
     console.log('📚 initProductsPage called');
     try {
         console.log('📚 Loading categories first...');
-        await loadCategories();
+        await loadCategoriesWithMap();
         console.log('📚 Categories loaded, setting up event listeners...');
         setupEventListeners();
         console.log('📚 Event listeners setup, loading products...');
@@ -76,10 +85,19 @@ async function initProductsPage() {
 }
 
 function setupEventListeners() {
-    // Search with debounce
+    // Search with debounce and autocomplete
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         let searchTimeout;
+        
+        // Create debounced search function
+        const debouncedSearch = debounce(() => {
+            filters.search = searchInput.value.trim();
+            currentPage = 1;
+            updateActiveFilters();
+            applyFiltersAndRender();
+        }, 500);
+        
         searchInput.addEventListener('input', (e) => {
             const value = e.target.value.trim();
             const clearSearchBtn = document.getElementById('clearSearchBtn');
@@ -87,12 +105,46 @@ function setupEventListeners() {
                 clearSearchBtn.style.display = value ? 'block' : 'none';
             }
             
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                filters.search = value;
-                currentPage = 1;
-                loadProducts();
-            }, 500);
+            // Handle search based on current view mode
+            if (currentViewMode === 'deleted') {
+                // Search in deleted products (no autocomplete)
+                handleDeletedProductsSearch(value);
+            } else {
+                // Search in active products (with autocomplete)
+                if (value.length >= 2) {
+                    // Show autocomplete immediately (client-side, fast)
+                    handleProductsAutocomplete(value);
+                    // Also trigger search for filtering existing products (debounced)
+                    debouncedSearch();
+                } else {
+                    // Hide autocomplete if query is too short
+                    const autocompleteDropdown = document.getElementById('productsAutocomplete');
+                    if (autocompleteDropdown) {
+                        autocompleteDropdown.style.display = 'none';
+                        selectedAutocompleteIndex = -1;
+                    }
+                    
+                    // If empty, show all products immediately
+                    if (value.length === 0) {
+                        filters.search = '';
+                        currentPage = 1;
+                        updateActiveFilters();
+                        applyFiltersAndRender();
+                    }
+                }
+            }
+        });
+        
+        // Handle focus - show autocomplete if there's a query (only for active tab)
+        searchInput.addEventListener('focus', function(e) {
+            if (currentViewMode === 'deleted') {
+                // Don't show autocomplete in deleted mode
+                return;
+            }
+            const query = e.target.value.trim();
+            if (query.length >= 2) {
+                handleProductsAutocomplete(query);
+            }
         });
         
         // Clear search button
@@ -103,7 +155,20 @@ function setupEventListeners() {
                 clearSearchBtn.style.display = 'none';
                 filters.search = '';
                 currentPage = 1;
-                loadProducts();
+                
+                // Hide autocomplete
+                const autocompleteDropdown = document.getElementById('productsAutocomplete');
+                if (autocompleteDropdown) {
+                    autocompleteDropdown.style.display = 'none';
+                }
+                
+                // Handle based on current view mode
+                if (currentViewMode === 'deleted') {
+                    handleDeletedProductsSearch('');
+                } else {
+                    updateActiveFilters();
+                    applyFiltersAndRender();
+                }
             });
         }
     }
@@ -111,10 +176,13 @@ function setupEventListeners() {
     // Filters
     const categoryFilter = document.getElementById('categoryFilter');
     if (categoryFilter) {
+        // Make it look like a regular select but allow multi-select
         categoryFilter.addEventListener('change', (e) => {
-            filters.category = e.target.value;
+            const selectedOptions = Array.from(e.target.selectedOptions);
+            filters.categories = selectedOptions.map(opt => opt.value).filter(v => v !== '');
             currentPage = 1;
-            loadProducts();
+            updateActiveFilters();
+            applyFiltersAndRender();
         });
     }
 
@@ -123,7 +191,8 @@ function setupEventListeners() {
         statusFilter.addEventListener('change', (e) => {
             filters.status = e.target.value;
             currentPage = 1;
-            loadProducts();
+            updateActiveFilters();
+            applyFiltersAndRender();
         });
     }
     
@@ -133,35 +202,8 @@ function setupEventListeners() {
         featuredFilter.addEventListener('change', (e) => {
             filters.featured = e.target.value;
             currentPage = 1;
-            loadProducts();
-        });
-    }
-    
-    const stockFilter = document.getElementById('stockFilter');
-    if (stockFilter) {
-        stockFilter.addEventListener('change', (e) => {
-            filters.stock = e.target.value;
-            currentPage = 1;
-            loadProducts();
-        });
-    }
-
-    // Sort
-    const sortBySelect = document.getElementById('sortBy');
-    if (sortBySelect) {
-        sortBySelect.addEventListener('change', (e) => {
-            sortBy = e.target.value;
-            currentPage = 1;
-            loadProducts();
-        });
-    }
-
-    const sortOrderSelect = document.getElementById('sortOrder');
-    if (sortOrderSelect) {
-        sortOrderSelect.addEventListener('change', (e) => {
-            sortOrder = e.target.value;
-            currentPage = 1;
-            loadProducts();
+            updateActiveFilters();
+            applyFiltersAndRender();
         });
     }
     
@@ -169,22 +211,7 @@ function setupEventListeners() {
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     if (clearFiltersBtn) {
         clearFiltersBtn.addEventListener('click', () => {
-            filters = { search: '', category: '', status: '', featured: '', stock: '' };
-            sortBy = 'createdAt';
-            sortOrder = 'desc';
-            currentPage = 1;
-            
-            // Reset form inputs
-            if (searchInput) searchInput.value = '';
-            if (categoryFilter) categoryFilter.value = '';
-            if (statusFilter) statusFilter.value = '';
-            if (featuredFilter) featuredFilter.value = '';
-            if (stockFilter) stockFilter.value = '';
-            if (sortBySelect) sortBySelect.value = 'createdAt';
-            if (sortOrderSelect) sortOrderSelect.value = 'desc';
-            
-            loadProducts();
-            showToast('Đã xóa tất cả bộ lọc', 'info');
+            clearAllFilters();
         });
     }
 
@@ -194,13 +221,13 @@ function setupEventListeners() {
     if (prevPage) prevPage.addEventListener('click', () => {
         if (currentPage > 1) {
             currentPage--;
-            loadProducts();
+            applyFiltersAndRender();
         }
     });
     if (nextPage) nextPage.addEventListener('click', () => {
         if (currentPage < totalPages) {
             currentPage++;
-            loadProducts();
+            applyFiltersAndRender();
         }
     });
 
@@ -219,11 +246,496 @@ function setupEventListeners() {
         });
     }
 
-    const trashBtn = document.getElementById('trashBtn');
-    if (trashBtn) {
-        trashBtn.addEventListener('click', () => {
-            window.location.href = '/trashbooks';
+    // View mode toggle (Active/Deleted)
+    const activeTab = document.getElementById('activeTab');
+    const deletedTab = document.getElementById('deletedTab');
+    if (activeTab) {
+        activeTab.addEventListener('click', () => {
+            switchViewMode('active');
         });
+    }
+    if (deletedTab) {
+        deletedTab.addEventListener('click', () => {
+            switchViewMode('deleted');
+        });
+    }
+
+    // Refresh deleted products button
+    const refreshDeletedBtn = document.getElementById('refreshDeletedBtn');
+    if (refreshDeletedBtn) {
+        refreshDeletedBtn.addEventListener('click', () => {
+            loadDeletedProducts();
+        });
+    }
+
+    // Setup sortable column headers
+    setupSortableColumns();
+}
+
+// Switch view mode between active and deleted products
+function switchViewMode(mode) {
+    currentViewMode = mode;
+    const activeView = document.getElementById('activeProductsView');
+    const deletedView = document.getElementById('deletedProductsView');
+    const activeTab = document.getElementById('activeTab');
+    const deletedTab = document.getElementById('deletedTab');
+    const viewModeText = document.getElementById('viewModeText');
+    
+    // Hide autocomplete when switching tabs
+    const autocompleteDropdown = document.getElementById('productsAutocomplete');
+    if (autocompleteDropdown) {
+        autocompleteDropdown.style.display = 'none';
+    }
+
+    if (mode === 'active') {
+        if (activeView) activeView.style.display = 'block';
+        if (deletedView) deletedView.style.display = 'none';
+        if (activeTab) {
+            activeTab.style.borderBottomColor = '#4f46e5';
+            activeTab.style.color = '#4f46e5';
+            activeTab.style.fontWeight = '600';
+        }
+        if (deletedTab) {
+            deletedTab.style.borderBottomColor = 'transparent';
+            deletedTab.style.color = '#6b7280';
+            deletedTab.style.fontWeight = '500';
+        }
+        if (viewModeText) viewModeText.textContent = 'Danh sách sản phẩm';
+        // Load active products if not loaded
+        if (allProducts.length === 0) {
+            loadProducts();
+        } else {
+            // Apply current search if exists
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput && searchInput.value.trim()) {
+                applyFiltersAndRender();
+            } else {
+                applyFiltersAndRender();
+            }
+        }
+    } else {
+        if (activeView) activeView.style.display = 'none';
+        if (deletedView) deletedView.style.display = 'block';
+        if (activeTab) {
+            activeTab.style.borderBottomColor = 'transparent';
+            activeTab.style.color = '#6b7280';
+            activeTab.style.fontWeight = '500';
+        }
+        if (deletedTab) {
+            deletedTab.style.borderBottomColor = '#4f46e5';
+            deletedTab.style.color = '#4f46e5';
+            deletedTab.style.fontWeight = '600';
+        }
+        if (viewModeText) viewModeText.textContent = 'Sản phẩm đã xóa';
+        // Load deleted products
+        loadDeletedProducts();
+    }
+}
+
+// Load deleted products
+async function loadDeletedProducts() {
+    if (typeof showLoading === 'function') {
+        showLoading();
+    }
+
+    try {
+        if (!window.AdminServices) {
+            throw new Error('AdminServices is not loaded');
+        }
+
+        console.log('🗑️ Loading deleted books...');
+        const response = await window.AdminServices.getTrashBooks();
+        console.log('🗑️ Deleted books response:', response);
+
+        // Extract deleted products from response
+        const extractDataFunc = window.extractData || function(resp, key) {
+            if (!resp) return [];
+            if (Array.isArray(resp)) return resp;
+            if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+            if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+            if (resp.books) return Array.isArray(resp.books) ? resp.books : [];
+            return [];
+        };
+
+        allDeletedProducts = extractDataFunc(response, 'books');
+        console.log('🗑️ Loaded deleted products:', allDeletedProducts.length);
+
+        // Apply search filter if exists
+        const searchInput = document.getElementById('searchInput');
+        const searchTerm = searchInput ? searchInput.value.trim() : '';
+        
+        if (searchTerm) {
+            handleDeletedProductsSearch(searchTerm);
+        } else {
+            // Render deleted products
+            renderDeletedProducts(allDeletedProducts, '');
+        }
+
+        // Update count
+        const deletedCount = document.getElementById('deletedProductsCount');
+        if (deletedCount) {
+            const displayCount = searchTerm ? 
+                allDeletedProducts.filter(p => {
+                    const searchLower = searchTerm.toLowerCase();
+                    const title = (p.title || '').toLowerCase();
+                    const author = (p.author || '').toLowerCase();
+                    return title.includes(searchLower) || author.includes(searchLower);
+                }).length : allDeletedProducts.length;
+            deletedCount.textContent = `${displayCount} sản phẩm đã xóa`;
+        }
+    } catch (error) {
+        console.error('❌ Error loading deleted products:', error);
+        if (typeof showToast === 'function') {
+            showToast('Không thể tải danh sách sản phẩm đã xóa: ' + error.message, 'error');
+        }
+        const tbody = document.getElementById('deletedProductsTableBody');
+        if (tbody) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 3rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #f59e0b; margin-bottom: 1rem;"></i>
+                        <p style="color: #6b7280;">Lỗi tải dữ liệu</p>
+                    </td>
+                </tr>
+            `;
+        }
+    } finally {
+        if (typeof hideLoading === 'function') {
+            hideLoading();
+        }
+    }
+}
+
+// Render deleted products with search highlighting
+function renderDeletedProducts(products, searchTerm = '') {
+    const tbody = document.getElementById('deletedProductsTableBody');
+    if (!tbody) return;
+
+    if (!products || products.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-inbox" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+                    <p style="color: #6b7280;">${searchTerm ? 'Không tìm thấy sản phẩm nào' : 'Không có sản phẩm nào đã xóa'}</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = products.map(product => {
+        const imageUrl = product.thumbnail || product.image || 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
+        const deletedAt = product.deletedAt ? new Date(product.deletedAt).toLocaleString('vi-VN') : 'N/A';
+        const price = product.price ? Number(product.price).toLocaleString('vi-VN') + '₫' : 'N/A';
+
+        // Highlight search term in title and author
+        const titleDisplay = searchTerm ? highlightSearchText(product.title || 'N/A', searchTerm) : escapeHtml(product.title || 'N/A');
+        const authorDisplay = searchTerm ? highlightSearchText(product.author || 'N/A', searchTerm) : escapeHtml(product.author || 'N/A');
+
+        return `
+            <tr style="opacity: 0.8;">
+                <td style="vertical-align: middle;">
+                    <img src="${imageUrl}" 
+                         style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px;" 
+                         alt="${escapeHtml(product.title || '')}" />
+                </td>
+                <td style="vertical-align: middle;">
+                    <strong style="color: #1f2937;">${titleDisplay}</strong>
+                </td>
+                <td style="vertical-align: middle; color: #4b5563;">${authorDisplay}</td>
+                <td style="vertical-align: middle; color: #4b5563;">${price}</td>
+                <td style="vertical-align: middle; color: #6b7280; font-size: 0.875rem;">${deletedAt}</td>
+                <td style="vertical-align: middle;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                        <button onclick="restoreProduct('${product._id}')" class="btn btn-sm btn-success" title="Khôi phục" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-undo"></i> Khôi phục
+                        </button>
+                        <button onclick="permanentlyDeleteProduct('${product._id}')" class="btn btn-sm btn-danger" title="Xóa vĩnh viễn" style="padding: 0.5rem 1rem;">
+                            <i class="fas fa-trash-alt"></i> Xóa vĩnh viễn
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// Handle search for deleted products
+function handleDeletedProductsSearch(searchTerm) {
+    if (!searchTerm) {
+        renderDeletedProducts(allDeletedProducts, '');
+        // Update count
+        const deletedCount = document.getElementById('deletedProductsCount');
+        if (deletedCount) {
+            deletedCount.textContent = `${allDeletedProducts.length} sản phẩm đã xóa`;
+        }
+        return;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    const filtered = allDeletedProducts.filter(product => {
+        const title = (product.title || '').toLowerCase();
+        const author = (product.author || '').toLowerCase();
+        return title.includes(searchLower) || author.includes(searchLower);
+    });
+
+    renderDeletedProducts(filtered, searchTerm);
+    
+    // Update count
+    const deletedCount = document.getElementById('deletedProductsCount');
+    if (deletedCount) {
+        deletedCount.textContent = `${filtered.length} sản phẩm đã xóa`;
+    }
+}
+
+// Restore product
+async function restoreProduct(productId) {
+    if (!confirm('Bạn có chắc muốn khôi phục sản phẩm này?')) {
+        return;
+    }
+
+    if (typeof showLoading === 'function') {
+        showLoading();
+    }
+
+    try {
+        if (!window.AdminServices) {
+            throw new Error('AdminServices is not loaded');
+        }
+
+        await window.AdminServices.restoreBook(productId);
+        
+        if (typeof showToast === 'function') {
+            showToast('Khôi phục sản phẩm thành công', 'success');
+        }
+
+        // Reload based on current view mode
+        if (currentViewMode === 'deleted') {
+            await loadDeletedProducts();
+        } else {
+            await loadProducts();
+        }
+    } catch (error) {
+        console.error('❌ Error restoring product:', error);
+        if (typeof showToast === 'function') {
+            showToast('Không thể khôi phục sản phẩm: ' + error.message, 'error');
+        }
+    } finally {
+        if (typeof hideLoading === 'function') {
+            hideLoading();
+        }
+    }
+}
+
+// Permanently delete product
+async function permanentlyDeleteProduct(productId) {
+    const product = allDeletedProducts.find(p => p._id === productId);
+    const productName = product ? (product.title || 'sản phẩm này') : 'sản phẩm này';
+    
+    if (!confirm(`Bạn có chắc muốn XÓA VĨNH VIỄN "${productName}"?\n\nHành động này không thể hoàn tác!`)) {
+        return;
+    }
+
+    if (typeof showLoading === 'function') {
+        showLoading();
+    }
+
+    try {
+        if (!window.AdminServices) {
+            throw new Error('AdminServices is not loaded');
+        }
+
+        await window.AdminServices.forceDeleteBook(productId);
+        
+        if (typeof showToast === 'function') {
+            showToast('Xóa vĩnh viễn sản phẩm thành công', 'success');
+        }
+
+        // Reload deleted products
+        await loadDeletedProducts();
+    } catch (error) {
+        console.error('❌ Error permanently deleting product:', error);
+        if (typeof showToast === 'function') {
+            showToast('Không thể xóa vĩnh viễn sản phẩm: ' + error.message, 'error');
+        }
+    } finally {
+        if (typeof hideLoading === 'function') {
+            hideLoading();
+        }
+    }
+}
+
+// Export functions
+window.restoreProduct = restoreProduct;
+window.permanentlyDeleteProduct = permanentlyDeleteProduct;
+
+// Setup sortable columns
+function setupSortableColumns() {
+    const sortableHeaders = document.querySelectorAll('.table th.sortable');
+    sortableHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const sortField = this.getAttribute('data-sort');
+            handleColumnSort(sortField, this);
+        });
+    });
+}
+
+// Handle column sorting
+function handleColumnSort(field, headerElement) {
+    // Remove sort classes from all headers
+    document.querySelectorAll('.table th.sortable').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc', 'sort-none');
+    });
+
+    // Determine new sort direction
+    if (currentSortColumn === field) {
+        // Toggle direction if clicking same column
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        // Default to ascending for new column
+        currentSortDirection = 'asc';
+        currentSortColumn = field;
+    }
+
+    // Add sort class to current header
+    headerElement.classList.add(`sort-${currentSortDirection}`);
+
+    // Sort products
+    sortProducts(field, currentSortDirection);
+    
+    // Re-render products
+    applyFiltersAndRender();
+}
+
+// Sort products array
+function sortProducts(field, direction) {
+    if (!allProducts || allProducts.length === 0) return;
+
+    allProducts.sort((a, b) => {
+        let aValue, bValue;
+
+        switch(field) {
+            case 'title':
+                aValue = (a.title || '').toLowerCase();
+                bValue = (b.title || '').toLowerCase();
+                break;
+            case 'author':
+                aValue = (a.author || '').toLowerCase();
+                bValue = (b.author || '').toLowerCase();
+                break;
+            case 'category':
+                aValue = (a.categories && a.categories.length > 0) 
+                    ? (a.categories[0].name || a.categories[0] || '').toLowerCase()
+                    : '';
+                bValue = (b.categories && b.categories.length > 0)
+                    ? (b.categories[0].name || b.categories[0] || '').toLowerCase()
+                    : '';
+                break;
+            case 'price':
+                aValue = parseFloat(a.price || 0);
+                bValue = parseFloat(b.price || 0);
+                break;
+            default:
+                return 0;
+        }
+
+        // Compare values
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+            if (direction === 'asc') {
+                return aValue.localeCompare(bValue, 'vi');
+            } else {
+                return bValue.localeCompare(aValue, 'vi');
+            }
+        } else {
+            // Numeric comparison
+            if (direction === 'asc') {
+                return aValue - bValue;
+            } else {
+                return bValue - aValue;
+            }
+        }
+    });
+}
+
+// Apply filters and render products
+function applyFiltersAndRender() {
+    let filteredProducts = [...allProducts];
+
+    // Apply search filter
+    if (filters.search) {
+        const searchTerm = filters.search.toLowerCase();
+        filteredProducts = filteredProducts.filter(product => {
+            const title = (product.title || '').toLowerCase();
+            const author = (product.author || '').toLowerCase();
+            return title.includes(searchTerm) || author.includes(searchTerm);
+        });
+    }
+
+    // Apply category filter (multi-select)
+    if (filters.categories && filters.categories.length > 0) {
+        filteredProducts = filteredProducts.filter(product => {
+            if (!product.categories || product.categories.length === 0) return false;
+            return filters.categories.some(catId => 
+                product.categories.some(cat => (cat._id || cat) === catId)
+            );
+        });
+    }
+
+    // Apply status filter (stock)
+    if (filters.status) {
+        filteredProducts = filteredProducts.filter(product => {
+            const stock = product.stock || 0;
+            if (filters.status === 'in_stock') return stock > 0;
+            if (filters.status === 'out_of_stock') return stock === 0;
+            return true;
+        });
+    }
+
+    // Apply featured filter
+    if (filters.featured) {
+        filteredProducts = filteredProducts.filter(product => {
+            if (filters.featured === 'true') return product.featured === true;
+            if (filters.featured === 'false') return product.featured !== true;
+            return true;
+        });
+    }
+
+    // Update total pages based on filtered results
+    totalPages = Math.ceil(filteredProducts.length / pageSize);
+    if (currentPage > totalPages && totalPages > 0) {
+        currentPage = totalPages;
+    }
+
+    // Paginate
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    const paginatedProducts = filteredProducts.slice(startIdx, endIdx);
+
+    // Render
+    renderProducts(paginatedProducts);
+    updatePagination({
+        page: currentPage,
+        limit: pageSize,
+        total: filteredProducts.length,
+        totalPages: totalPages
+    });
+    updateActiveFilters();
+}
+
+// Store categories map for display
+let categoriesMap = {};
+
+async function loadCategoriesWithMap() {
+    try {
+        const categories = await window.AdminServices.getCategories();
+        const categoriesList = Array.isArray(categories) ? categories : (categories.categories || categories.data || []);
+        categoriesMap = {};
+        categoriesList.forEach(cat => {
+            categoriesMap[cat._id] = cat.name;
+        });
+        await loadCategories();
+    } catch (error) {
+        console.error('Error loading categories map:', error);
     }
 }
 
@@ -234,6 +746,11 @@ async function loadCategories() {
         // API có thể trả về array trực tiếp hoặc { categories: [...] }
         const categoriesList = Array.isArray(categories) ? categories : (categories.categories || categories.data || []);
         if (categoryFilter && categoriesList.length > 0) {
+            // Clear existing options except "Tất cả danh mục"
+            const allOption = categoryFilter.querySelector('option[value=""]');
+            categoryFilter.innerHTML = '';
+            if (allOption) categoryFilter.appendChild(allOption);
+            
             categoriesList.forEach(cat => {
                 const option = document.createElement('option');
                 option.value = cat._id;
@@ -244,6 +761,178 @@ async function loadCategories() {
     } catch (error) {
         console.error('Error loading categories:', error);
     }
+}
+
+// Update active filters display
+function updateActiveFilters() {
+    const container = document.getElementById('activeFiltersContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Search filter
+    if (filters.search) {
+        const badge = createFilterBadge('Tìm kiếm', `"${filters.search}"`, 'search');
+        container.appendChild(badge);
+    }
+
+    // Category filters
+    if (filters.categories && filters.categories.length > 0) {
+        filters.categories.forEach(catId => {
+            const catName = categoriesMap[catId] || catId;
+            const badge = createFilterBadge('Danh mục', catName, 'category', catId);
+            container.appendChild(badge);
+        });
+    }
+
+    // Status filter
+    if (filters.status) {
+        const statusText = filters.status === 'in_stock' ? 'Còn hàng' : 'Hết hàng';
+        const badge = createFilterBadge('Trạng thái', statusText, 'status');
+        container.appendChild(badge);
+    }
+
+    // Featured filter
+    if (filters.featured) {
+        const featuredText = filters.featured === 'true' ? 'Sách nổi bật' : 'Sách thường';
+        const badge = createFilterBadge('Nổi bật', featuredText, 'featured');
+        container.appendChild(badge);
+    }
+
+    // Show container if there are filters
+    container.style.display = container.children.length > 0 ? 'flex' : 'none';
+}
+
+// Create filter badge
+function createFilterBadge(label, value, filterType, filterValue = null) {
+    const badge = document.createElement('div');
+    badge.className = 'filter-badge';
+    badge.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: #e0e7ff;
+        color: #3730a3;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    `;
+    
+    badge.innerHTML = `
+        <span><strong>${label}:</strong> ${escapeHtml(value)}</span>
+        <button type="button" class="filter-remove-btn" data-filter-type="${filterType}" data-filter-value="${filterValue || ''}" style="
+            background: none;
+            border: none;
+            color: #6366f1;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            line-height: 1;
+        ">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    // Add click handler for remove button
+    const removeBtn = badge.querySelector('.filter-remove-btn');
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeFilter(filterType, filterValue);
+    });
+
+    return badge;
+}
+
+// Remove individual filter
+function removeFilter(filterType, filterValue) {
+    switch(filterType) {
+        case 'search':
+            filters.search = '';
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+            const clearSearchBtn = document.getElementById('clearSearchBtn');
+            if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+            break;
+        case 'category':
+            filters.categories = filters.categories.filter(id => id !== filterValue);
+            const categoryFilter = document.getElementById('categoryFilter');
+            if (categoryFilter) {
+                Array.from(categoryFilter.options).forEach(opt => {
+                    if (opt.value === filterValue) opt.selected = false;
+                });
+            }
+            break;
+        case 'status':
+            filters.status = '';
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) statusFilter.value = '';
+            break;
+        case 'featured':
+            filters.featured = '';
+            const featuredFilter = document.getElementById('featuredFilter');
+            if (featuredFilter) featuredFilter.value = '';
+            break;
+    }
+    currentPage = 1;
+    updateActiveFilters();
+    applyFiltersAndRender();
+}
+
+// Clear all filters
+function clearAllFilters() {
+    filters = { search: '', categories: [], status: '', featured: '' };
+    currentPage = 1;
+    
+    // Reset form inputs
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.value = '';
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    if (clearSearchBtn) clearSearchBtn.style.display = 'none';
+    
+    const categoryFilter = document.getElementById('categoryFilter');
+    if (categoryFilter) {
+        Array.from(categoryFilter.options).forEach(opt => opt.selected = false);
+        if (categoryFilter.options[0]) categoryFilter.options[0].selected = true;
+    }
+    
+    const statusFilter = document.getElementById('statusFilter');
+    if (statusFilter) statusFilter.value = '';
+    
+    const featuredFilter = document.getElementById('featuredFilter');
+    if (featuredFilter) featuredFilter.value = '';
+    
+    updateActiveFilters();
+    applyFiltersAndRender();
+    if (typeof showToast === 'function') {
+        showToast('Đã xóa tất cả bộ lọc', 'info');
+    }
+}
+
+// Highlight search text in content
+function highlightSearchText(text, searchTerm) {
+    if (!searchTerm || !text) return escapeHtml(text);
+    
+    const escapedText = escapeHtml(text);
+    const escapedSearch = escapeHtml(searchTerm);
+    const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    
+    return escapedText.replace(regex, '<mark style="background-color: #fef08a; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+}
+
+// Debounce helper function
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
 }
 
 // Refresh products data (optimized version)
@@ -261,25 +950,17 @@ async function loadProducts() {
             throw new Error('AdminServices is not loaded');
         }
         
-        // Theo tài liệu: GET /api/books/admin hỗ trợ: page, limit, category, status, search
-        // KHÔNG hỗ trợ sortBy/sortOrder (mặc định sort theo createdAt desc)
+        // Load tất cả products để có thể sắp xếp client-side chính xác
+        // Sử dụng limit lớn để load tất cả (hoặc có thể load từng trang nếu cần)
         const params = {
-            page: currentPage,
-            limit: pageSize
+            page: 1,
+            limit: 1000 // Load nhiều products để sắp xếp chính xác
         };
         
-        if (filters.search) params.search = filters.search;
-        if (filters.category) params.category = filters.category;
-        // Status filter: in_stock hoặc out_of_stock
-        if (filters.status) {
-            params.status = filters.status;
-        } else if (filters.stock) {
-            // Stock filter có thể override status
-            params.status = filters.stock;
-        }
-        // Featured filter không được hỗ trợ trong API, sẽ filter client-side nếu cần
-
-        console.log('📚 Loading books with params:', params);
+        // Note: Không apply filters ở API level khi cần sắp xếp client-side
+        // Ta sẽ filter và sort ở client-side để có kết quả chính xác
+        
+        console.log('📚 Loading all books for sorting...');
         const response = await window.AdminServices.getBooks(params);
         console.log('📚 Books response received:', response);
         console.log('📚 Response type:', typeof response);
@@ -325,17 +1006,25 @@ async function loadProducts() {
         console.log('📚 Extracted books:', books.length);
         console.log('📚 Extracted pagination:', paginationData);
         
+        // Lưu tất cả products để sắp xếp client-side
+        // Note: Nếu API hỗ trợ pagination và có nhiều trang, cần load tất cả
+        // Ở đây giả sử ta load từng trang, nhưng để sắp xếp tốt hơn nên load tất cả
+        // Tạm thời lưu products hiện tại
+        allProducts = books;
+        
         // Cập nhật currentPage từ pagination
         if (paginationData.page) {
             currentPage = paginationData.page;
         }
         
-        if (books.length > 0) {
-            renderProducts(books);
-            updatePagination(paginationData);
+        // Apply filters and render (includes sorting if any)
+        if (allProducts.length > 0) {
+            updateActiveFilters();
+            applyFiltersAndRender();
         } else {
             renderProducts([]);
             updatePagination(paginationData);
+            updateActiveFilters();
         }
     } catch (error) {
         console.error('Error loading products:', error);
@@ -370,6 +1059,286 @@ function safeImageUrl(url) {
     return placeholderSvg;
 }
 
+// Products autocomplete function
+async function handleProductsAutocomplete(query) {
+    // Don't show autocomplete in deleted mode
+    if (currentViewMode === 'deleted') {
+        const autocompleteDropdown = document.getElementById('productsAutocomplete');
+        if (autocompleteDropdown) {
+            autocompleteDropdown.style.display = 'none';
+        }
+        return;
+    }
+
+    // Clear previous timeout
+    if (autocompleteTimeout) {
+        clearTimeout(autocompleteTimeout);
+    }
+
+    // Cancel previous request
+    if (autocompleteAbortController) {
+        autocompleteAbortController.abort();
+    }
+
+    const autocompleteDropdown = document.getElementById('productsAutocomplete');
+    if (!autocompleteDropdown) {
+        console.warn('⚠️ productsAutocomplete element not found');
+        return;
+    }
+
+    // If query is less than 2 characters, hide dropdown
+    if (!query || query.length < 2) {
+        autocompleteDropdown.style.display = 'none';
+        selectedAutocompleteIndex = -1;
+        return;
+    }
+
+    console.log('🔍 handleProductsAutocomplete called with query:', query);
+    console.log('📦 allProducts length:', allProducts?.length || 0);
+    
+    // Helper function to get client-side suggestions
+    const getClientSideSuggestions = (searchQuery) => {
+        if (!allProducts || allProducts.length === 0) {
+            console.warn('⚠️ allProducts is empty, cannot provide suggestions');
+            return [];
+        }
+        
+        const searchLower = searchQuery.toLowerCase();
+        const filtered = allProducts.filter(product => {
+            if (!product) return false;
+            const title = (product.title || '').toLowerCase();
+            const author = (product.author || '').toLowerCase();
+            return title.includes(searchLower) || author.includes(searchLower);
+        }).slice(0, 10);
+        
+        console.log('🔍 Client-side filtered results:', filtered.length);
+        
+        return filtered.map(p => ({
+            id: p._id,
+            label: `${p.title || 'N/A'} - ${p.author || 'N/A'}`,
+            value: p.title || '',
+            title: p.title,
+            author: p.author,
+            thumbnail: p.thumbnail || p.cover_images?.[0]
+        }));
+    };
+    
+    // Show client-side suggestions immediately (no debounce for display)
+    // Don't show loading - show results immediately if available
+    const clientSideSuggestions = getClientSideSuggestions(query);
+    console.log('💡 Client-side suggestions:', clientSideSuggestions.length);
+    
+    if (clientSideSuggestions.length > 0) {
+        // Show results immediately from client-side data (no loading state needed)
+        renderProductsAutocompleteSuggestions(clientSideSuggestions, query);
+    } else {
+        // Show empty state only if no products loaded yet
+        if (allProducts && allProducts.length > 0) {
+            autocompleteDropdown.innerHTML = '<div class="autocomplete-empty">Không tìm thấy sản phẩm nào</div>';
+        } else {
+            autocompleteDropdown.innerHTML = '<div class="autocomplete-loading"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...</div>';
+        }
+        autocompleteDropdown.style.display = 'block';
+    }
+    
+    // Optionally try API in background (if available, will update with better results)
+    // But don't block UI - client-side results are shown immediately
+    if (autocompleteTimeout) {
+        clearTimeout(autocompleteTimeout);
+    }
+    
+    autocompleteTimeout = setTimeout(async () => {
+        try {
+            // Create new AbortController for this request
+            if (autocompleteAbortController) {
+                autocompleteAbortController.abort();
+            }
+            autocompleteAbortController = new AbortController();
+            
+            // Get API base URL from AdminServices or use default
+            let API_BASE_URL = 'https://server-shelf-stacker-w1ds.onrender.com/api';
+            if (window.AdminServices && window.AdminServices.baseURL) {
+                API_BASE_URL = window.AdminServices.baseURL;
+            } else if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                API_BASE_URL = 'http://localhost:3000/api';
+            }
+            
+            const token = localStorage.getItem('authToken') || localStorage.getItem('admin_token') || localStorage.getItem('access_token');
+            
+            console.log('🔍 Trying API autocomplete (background):', `${API_BASE_URL}/books/autocomplete?q=${query}`);
+            
+            const response = await fetch(`${API_BASE_URL}/books/autocomplete?q=${encodeURIComponent(query)}&limit=10`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                signal: autocompleteAbortController.signal
+            }).catch(err => {
+                console.log('⚠️ Fetch error (expected if API not available):', err.message);
+                return null;
+            });
+
+            if (response && response.ok) {
+                const result = await response.json();
+                console.log('📦 Autocomplete API response:', result);
+                
+                // If API returns data and has more/better results, update
+                if (result.success && result.data && result.data.length > 0) {
+                    // Update with API results
+                    renderProductsAutocompleteSuggestions(result.data, query);
+                }
+            } else if (response) {
+                console.log('⚠️ API autocomplete not available (status:', response.status, '), using client-side suggestions');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                // Request was cancelled, ignore
+                return;
+            }
+            console.log('⚠️ API autocomplete error (expected if API not available):', error.message);
+            // Client-side suggestions already shown, no need to change
+        }
+    }, 200); // Smaller delay for API call since UI is already updated
+}
+
+// Render autocomplete suggestions for products
+function renderProductsAutocompleteSuggestions(suggestions, query) {
+    const autocompleteDropdown = document.getElementById('productsAutocomplete');
+    if (!autocompleteDropdown) {
+        console.warn('⚠️ productsAutocomplete element not found');
+        return;
+    }
+
+    autocompleteDropdown.innerHTML = suggestions.map((item, index) => {
+        const title = item.title || item.label || 'N/A';
+        const author = item.author || '';
+        const highlightedTitle = highlightSearchText(title, query);
+        const highlightedAuthor = author ? highlightSearchText(author, query) : '';
+        const thumbnail = item.thumbnail || '';
+        const imageUrl = thumbnail ? safeImageUrl(thumbnail) : 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'40\' height=\'60\'%3E%3Crect width=\'40\' height=\'60\' fill=\'%23e5e7eb\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%239ca3af\' font-size=\'8\'%3ENo Image%3C/text%3E%3C/svg%3E';
+        
+        return `
+            <div class="autocomplete-item" data-index="${index}" data-product-id="${item.id || ''}" data-product-title="${escapeHtml(title)}">
+                <img src="${imageUrl}" alt="${escapeHtml(title)}" style="width: 45px; height: 65px; object-fit: cover; border-radius: 4px; flex-shrink: 0;" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'45\' height=\'65\'%3E%3Crect width=\'45\' height=\'65\' fill=\'%23e5e7eb\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%239ca3af\' font-size=\'9\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                <div>
+                    <div class="autocomplete-item-title">${highlightedTitle}</div>
+                    ${author ? `<div class="autocomplete-item-meta">Tác giả: ${highlightedAuthor}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click handlers
+    autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const productTitle = this.dataset.productTitle;
+            selectProductsAutocompleteSuggestion(productTitle);
+        });
+        
+        item.addEventListener('mouseenter', function() {
+            // Remove active class from all items
+            autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('active'));
+            // Add active class to current item
+            this.classList.add('active');
+            selectedAutocompleteIndex = parseInt(this.dataset.index);
+        });
+    });
+
+    selectedAutocompleteIndex = -1;
+    autocompleteDropdown.style.display = 'block';
+}
+
+// Select autocomplete suggestion for products
+function selectProductsAutocompleteSuggestion(productTitle) {
+    const searchInput = document.getElementById('searchInput');
+    const autocompleteDropdown = document.getElementById('productsAutocomplete');
+    
+    if (searchInput) {
+        searchInput.value = productTitle;
+        // Focus back to input
+        searchInput.focus();
+    }
+    
+    if (autocompleteDropdown) {
+        autocompleteDropdown.style.display = 'none';
+    }
+    
+    selectedAutocompleteIndex = -1;
+    
+    // Trigger search immediately
+    filters.search = productTitle;
+    currentPage = 1;
+    updateActiveFilters();
+    applyFiltersAndRender();
+}
+
+// Close autocomplete when clicking outside (for products) - moved to global scope
+if (typeof window.setupProductsAutocompleteClickOutside === 'undefined') {
+    window.setupProductsAutocompleteClickOutside = true;
+    document.addEventListener('click', function(event) {
+        const searchContainer = document.querySelector('#searchInput')?.closest('[style*="position: relative"], .form-input')?.parentElement;
+        const autocompleteDropdown = document.getElementById('productsAutocomplete');
+        const searchInput = document.getElementById('searchInput');
+        
+        if (autocompleteDropdown && searchInput) {
+            // Check if click is outside both input and dropdown
+            if (!searchInput.contains(event.target) && 
+                !autocompleteDropdown.contains(event.target) &&
+                event.target.id !== 'clearSearchBtn') {
+                autocompleteDropdown.style.display = 'none';
+                selectedAutocompleteIndex = -1;
+            }
+        }
+    });
+
+    // Handle keyboard navigation in autocomplete (for products)
+    document.addEventListener('keydown', function(event) {
+        const searchInput = document.getElementById('searchInput');
+        if (!searchInput || document.activeElement !== searchInput) {
+            return;
+        }
+
+        const autocompleteDropdown = document.getElementById('productsAutocomplete');
+        if (!autocompleteDropdown || autocompleteDropdown.style.display === 'none') {
+            return;
+        }
+
+        const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+        if (items.length === 0) return;
+
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+            selectedAutocompleteIndex = Math.min(selectedAutocompleteIndex + 1, items.length - 1);
+            items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+            items.forEach((item, index) => {
+                item.classList.toggle('active', index === selectedAutocompleteIndex);
+            });
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            selectedAutocompleteIndex = Math.max(selectedAutocompleteIndex - 1, -1);
+            if (selectedAutocompleteIndex >= 0) {
+                items[selectedAutocompleteIndex].scrollIntoView({ block: 'nearest' });
+            } else {
+                items.forEach((item) => item.classList.remove('active'));
+            }
+            items.forEach((item, index) => {
+                item.classList.toggle('active', index === selectedAutocompleteIndex);
+            });
+        } else if (event.key === 'Enter' && selectedAutocompleteIndex >= 0) {
+            event.preventDefault();
+            const selectedItem = items[selectedAutocompleteIndex];
+            if (selectedItem) {
+                const productTitle = selectedItem.dataset.productTitle;
+                selectProductsAutocompleteSuggestion(productTitle);
+            }
+        } else if (event.key === 'Escape') {
+            event.preventDefault();
+            autocompleteDropdown.style.display = 'none';
+            selectedAutocompleteIndex = -1;
+        }
+    });
+}
+
 function renderProducts(products) {
     console.log('📚 renderProducts called with', products.length, 'products');
     const tbody = document.getElementById('productsTableBody');
@@ -397,16 +1366,27 @@ function renderProducts(products) {
             return;
         }
 
+        // Get search term for highlighting
+        const searchTerm = filters.search || '';
+        
         tbody.innerHTML = products.map(book => {
         // Escape tất cả các giá trị để tránh XSS và syntax errors
         const bookId = book._id || '';
-        const title = escapeHtml(book.title || 'N/A');
-        const author = escapeHtml(book.author || 'N/A');
-        const categories = book.categories?.map(c => escapeHtml(c.name || c)).join(', ') || 'N/A';
+        const title = book.title || 'N/A';
+        const author = book.author || 'N/A';
+        const categories = book.categories?.map(c => {
+            const catName = c.name || c;
+            return categoriesMap[c._id || c] || catName;
+        }).join(', ') || 'N/A';
         const price = window.AdminServices ? window.AdminServices.formatCurrency(book.price || 0) : (book.price || 0).toLocaleString('vi-VN') + ' ₫';
         const stock = book.stock || 0;
         const imageUrl = safeImageUrl(book.thumbnail || book.cover_images?.[0]);
         const featured = book.featured ? '<span class="badge" style="background: #f59e0b; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 500;">Nổi bật</span>' : '';
+        
+        // Highlight search terms
+        const highlightedTitle = highlightSearchText(title, searchTerm);
+        const highlightedAuthor = highlightSearchText(author, searchTerm);
+        const highlightedCategories = categories.split(', ').map(cat => highlightSearchText(cat, searchTerm)).join(', ');
         
         return `
         <tr style="transition: background-color 0.2s;">
@@ -415,18 +1395,18 @@ function renderProducts(products) {
             </td>
             <td style="vertical-align: middle;">
                 <img src="${imageUrl}" 
-                     alt="${title}" 
+                     alt="${escapeHtml(title)}" 
                      style="width: 50px; height: 70px; object-fit: cover; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);"
                      onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'50\' height=\'70\'%3E%3Crect width=\'50\' height=\'70\' fill=\'%23e5e7eb\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%239ca3af\' font-size=\'10\'%3ENo Image%3C/text%3E%3C/svg%3E'">
             </td>
             <td style="vertical-align: middle;">
                 <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <strong style="color: #1f2937; font-size: 0.95rem;">${title}</strong>
+                    <strong style="color: #1f2937; font-size: 0.95rem;">${highlightedTitle}</strong>
                     ${featured}
                 </div>
             </td>
-            <td style="vertical-align: middle; color: #4b5563;">${author}</td>
-            <td style="vertical-align: middle; color: #4b5563; font-size: 0.9rem;">${categories}</td>
+            <td style="vertical-align: middle; color: #4b5563;">${highlightedAuthor}</td>
+            <td style="vertical-align: middle; color: #4b5563; font-size: 0.9rem;">${highlightedCategories}</td>
             <td style="vertical-align: middle;"><strong style="color: #dc2626; font-size: 1rem;">${price}</strong></td>
             <td style="vertical-align: middle;">
                 <span style="color: ${stock > 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">

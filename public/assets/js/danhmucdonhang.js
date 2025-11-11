@@ -16,6 +16,25 @@ function getFullImageURL(path) {
   return BASE_URL + path;
 }
 
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Highlight search text in content
+function highlightSearchText(text, searchTerm) {
+  if (!searchTerm || !text) return escapeHtml(text);
+  
+  const escapedText = escapeHtml(text);
+  const escapedSearch = escapeHtml(searchTerm);
+  const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+  
+  return escapedText.replace(regex, '<mark style="background-color: #fef08a; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+}
+
 function isValidStatusTransition(currentStatus, newStatus, order) {
   // Nếu là trả hàng thì cho phép lên đã hoàn tiền
   if (currentStatus === 'Returned') {
@@ -208,7 +227,7 @@ function renderOrders(orders) {
   if (!tbody) return;
 
   if (!orders || orders.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;">Không có đơn hàng</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;">Không có đơn hàng</td></tr>';
     renderOrderPagination(1, 1);
     return;
   }
@@ -220,6 +239,9 @@ function renderOrders(orders) {
   const endIdx = startIdx + ORDERS_PER_PAGE;
   const ordersToShow = orders.slice(startIdx, endIdx);
 
+  // Get search term for highlighting
+  const keyword = document.getElementById('order-search')?.value.trim() || '';
+  
   tbody.innerHTML = ordersToShow.map(order => {
     const book = order.order_items?.[0]?.book_id || {};
     const rawImage = book.thumbnail?.trim() || book.main_image?.[0];
@@ -227,6 +249,7 @@ function renderOrders(orders) {
 
     const code = order.order_id || order._id || 'Không rõ';
     const customerName = order.user_id?.username || 'Không rõ';
+    const phoneNumber = order.user_id?.phone_number || order.user_id?.phone || '';
     const createdAt = order.order_date || order.createdAt || '';
     const total = order.total_amount?.toLocaleString('vi-VN') || '0';
     const status = STATUS_MAP[order.order_status] || 'Chưa rõ';
@@ -255,19 +278,24 @@ function renderOrders(orders) {
 
     const shipper = order.assigned_shipper_id;
     const shipperName = shipper
-      ? `<span class="shipper-link" data-order-id="${order._id}" style="color:#0ea5e9;cursor:pointer;text-decoration:underline;">${shipper.full_name || shipper.username || shipper.phone_number || 'Chưa nhận'}</span>`
+      ? `<span class="shipper-link" data-order-id="${order._id}" style="color:#0ea5e9;cursor:pointer;text-decoration:underline;">${escapeHtml(shipper.full_name || shipper.username || shipper.phone_number || 'Chưa nhận')}</span>`
       : 'Chưa nhận';
+
+    // Highlight search terms
+    const highlightedCode = highlightSearchText(code, keyword);
+    const highlightedCustomerName = highlightSearchText(customerName, keyword);
+    const highlightedPhone = phoneNumber ? highlightSearchText(phoneNumber, keyword) : '';
 
     return `
       <tr data-id="${order._id}">
         <td><img src="${image}" alt="Ảnh bìa" class="thumb" /></td>
-        <td>${code}</td>
-        <td>${customerName}</td>
+        <td>${highlightedCode}</td>
+        <td>${highlightedCustomerName}</td>
         <td>${formattedDate}</td>
         <td>${status}</td>
         <td>${total}₫</td>
         <td>${shipperName}</td>
-        <td>${paymentMethodText}</td> <!-- Thêm cột này -->
+        <td>${paymentMethodText}</td>
         <td class="actions">
           <button class="btn-detail">Chi tiết</button>
           <button class="btn-update">Cập nhật</button>
@@ -463,7 +491,10 @@ function filterOrdersByStatus(status) {
     filteredOrders = filteredOrders.filter(order => {
       const code = (order.order_id || order._id || '').toLowerCase();
       const customerName = (order.user_id?.username || '').toLowerCase();
-      return code.includes(keyword.toLowerCase()) || customerName.includes(keyword.toLowerCase());
+      const phoneNumber = (order.user_id?.phone_number || order.user_id?.phone || '').toLowerCase();
+      return code.includes(keyword.toLowerCase()) || 
+             customerName.includes(keyword.toLowerCase()) ||
+             phoneNumber.includes(keyword.toLowerCase());
     });
   }
 
@@ -508,17 +539,249 @@ function filterOrdersByStatus(status) {
     });
   }
 
-  // Sắp xếp theo chọn lọc mới nhất/cũ nhất
-  const sortOrderEl = document.getElementById('sortOrder');
-  const sortOrder = sortOrderEl ? sortOrderEl.value : 'desc';
-  filteredOrders.sort((a, b) => {
-    const dateA = new Date(a.order_date || a.createdAt || 0);
-    const dateB = new Date(b.order_date || b.createdAt || 0);
-    if (sortOrder === 'desc') return dateB - dateA; // Mới nhất lên đầu
-    else return dateA - dateB; // Cũ nhất lên đầu
-  });
+  // Sắp xếp theo chọn lọc mới nhất/cũ nhất (nếu không có column sort)
+  if (!currentOrderSortColumn) {
+    // Default sort by date desc (newest first)
+    filteredOrders.sort((a, b) => {
+      const dateA = new Date(a.order_date || a.createdAt || 0);
+      const dateB = new Date(b.order_date || b.createdAt || 0);
+      return dateB - dateA; // Mới nhất lên đầu
+    });
+  } else {
+    // Sắp xếp theo column đã chọn
+    sortOrders(filteredOrders, currentOrderSortColumn, currentOrderSortDirection);
+  }
 
   renderOrders(filteredOrders);
+  updateOrderActiveFilters();
+}
+
+// Update active filters display for orders
+function updateOrderActiveFilters() {
+  const container = document.getElementById('activeFiltersContainer');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  // Search filter
+  const keyword = document.getElementById('order-search')?.value.trim() || '';
+  if (keyword) {
+    const badge = createOrderFilterBadge('Tìm kiếm', `"${keyword}"`, 'search');
+    container.appendChild(badge);
+  }
+
+  // Status filter (from statusFilter select)
+  const statusFilter = document.getElementById('statusFilter')?.value || '';
+  if (statusFilter) {
+    const statusMap = {
+      pending: 'Chờ xác nhận',
+      awaitingpickup: 'Chờ lấy hàng',
+      outfordelivery: 'Chờ giao hàng',
+      delivered: 'Đã giao',
+      returned: 'Trả hàng',
+      cancelled: 'Đã huỷ',
+      refunded: 'Đã hoàn tiền'
+    };
+    const statusText = statusMap[statusFilter] || statusFilter;
+    const badge = createOrderFilterBadge('Trạng thái', statusText, 'status');
+    container.appendChild(badge);
+  }
+
+  // Date filters
+  const startDate = document.getElementById('startDate')?.value || '';
+  const endDate = document.getElementById('endDate')?.value || '';
+  if (startDate || endDate) {
+    let dateText = '';
+    if (startDate && endDate) {
+      dateText = `${startDate} - ${endDate}`;
+    } else if (startDate) {
+      dateText = `Từ ${startDate}`;
+    } else if (endDate) {
+      dateText = `Đến ${endDate}`;
+    }
+    const badge = createOrderFilterBadge('Ngày', dateText, 'date');
+    container.appendChild(badge);
+  }
+
+  // Show container if there are filters
+  container.style.display = container.children.length > 0 ? 'flex' : 'none';
+}
+
+// Create filter badge for orders
+function createOrderFilterBadge(label, value, filterType) {
+  const badge = document.createElement('div');
+  badge.className = 'filter-badge';
+  badge.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: #e0e7ff;
+    color: #3730a3;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+  `;
+  
+  badge.innerHTML = `
+    <span><strong>${label}:</strong> ${escapeHtml(value)}</span>
+    <button type="button" class="filter-remove-btn" data-filter-type="${filterType}" style="
+      background: none;
+      border: none;
+      color: #6366f1;
+      cursor: pointer;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      font-size: 1rem;
+      line-height: 1;
+    ">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+
+  // Add click handler for remove button
+  const removeBtn = badge.querySelector('.filter-remove-btn');
+  removeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeOrderFilter(filterType);
+  });
+
+  return badge;
+}
+
+// Remove individual filter for orders
+function removeOrderFilter(filterType) {
+  switch(filterType) {
+    case 'search':
+      const searchInput = document.getElementById('order-search');
+      if (searchInput) searchInput.value = '';
+      break;
+    case 'status':
+      const statusFilter = document.getElementById('statusFilter');
+      if (statusFilter) statusFilter.value = '';
+      break;
+    case 'date':
+      const startDate = document.getElementById('startDate');
+      const endDate = document.getElementById('endDate');
+      if (startDate) startDate.value = '';
+      if (endDate) endDate.value = '';
+      break;
+  }
+  
+  // Re-apply filters
+  const activeTab = document.querySelector('.tab-button.active');
+  const status = activeTab ? activeTab.dataset.status : 'all';
+  filterOrdersByStatus(status);
+}
+
+// Setup sortable columns for orders
+function setupOrderSortableColumns() {
+  const sortableHeaders = document.querySelectorAll('table thead th.sortable');
+  sortableHeaders.forEach(header => {
+    // Check if already has listener by checking data attribute
+    if (!header.dataset.hasListener) {
+      header.dataset.hasListener = 'true';
+      header.addEventListener('click', function() {
+        const sortField = this.getAttribute('data-sort');
+        handleOrderColumnSort(sortField, this);
+      });
+    }
+  });
+}
+
+// Handle order column sorting
+function handleOrderColumnSort(field, headerElement) {
+  // Remove sort classes from all headers
+  document.querySelectorAll('table thead th.sortable').forEach(th => {
+    th.classList.remove('sort-asc', 'sort-desc', 'sort-none');
+  });
+
+  // Determine new sort direction
+  if (currentOrderSortColumn === field) {
+    // Toggle direction if clicking same column
+    currentOrderSortDirection = currentOrderSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    // Default to ascending for new column
+    currentOrderSortDirection = 'asc';
+    currentOrderSortColumn = field;
+  }
+
+  // Add sort class to current header
+  headerElement.classList.add(`sort-${currentOrderSortDirection}`);
+
+  // Re-apply filters (which will trigger sorting)
+  const activeTab = document.querySelector('.tab-button.active');
+  const status = activeTab ? activeTab.dataset.status : 'all';
+  filterOrdersByStatus(status);
+}
+
+// Sort orders array
+function sortOrders(orders, field, direction) {
+  if (!orders || orders.length === 0) return;
+
+  orders.sort((a, b) => {
+    let aValue, bValue;
+
+    switch(field) {
+      case 'order_id':
+        aValue = (a.order_id || a._id || '').toLowerCase();
+        bValue = (b.order_id || b._id || '').toLowerCase();
+        break;
+      case 'customer':
+        aValue = (a.user_id?.username || '').toLowerCase();
+        bValue = (b.user_id?.username || '').toLowerCase();
+        break;
+      case 'date':
+        aValue = new Date(a.order_date || a.createdAt || 0);
+        bValue = new Date(b.order_date || b.createdAt || 0);
+        break;
+      case 'total':
+        aValue = parseFloat(a.total_amount || 0);
+        bValue = parseFloat(b.total_amount || 0);
+        break;
+      case 'payment':
+        const paymentMethodMap = {
+          'COD': 'Thanh toán khi nhận hàng',
+          'PAYOS': 'PayOS',
+          'ZALOPAY': 'ZaloPay',
+          'BANK_TRANSFER': 'Chuyển khoản',
+          'MOMO': 'MoMo',
+          'VNPAY': 'VNPay'
+        };
+        const paymentA = a.payment_id?.payment_method || '';
+        const paymentB = b.payment_id?.payment_method || '';
+        aValue = (paymentMethodMap[paymentA] || paymentA).toLowerCase();
+        bValue = (paymentMethodMap[paymentB] || paymentB).toLowerCase();
+        break;
+      default:
+        return 0;
+    }
+
+    // Compare values
+    if (field === 'date') {
+      // Date comparison
+      if (direction === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    } else if (field === 'total') {
+      // Numeric comparison
+      if (direction === 'asc') {
+        return aValue - bValue;
+      } else {
+        return bValue - aValue;
+      }
+    } else {
+      // String comparison
+      if (direction === 'asc') {
+        return aValue.localeCompare(bValue, 'vi');
+      } else {
+        return bValue.localeCompare(aValue, 'vi');
+      }
+    }
+  });
 }
 
 function searchOrders(keyword) {
@@ -868,6 +1131,7 @@ window.onload = () => {
     orderSearch.addEventListener('input', debounce(e => {
       const keyword = e.target.value.trim();
       searchOrders(keyword);
+      updateOrderActiveFilters();
     }, 300));
   }
 
@@ -885,6 +1149,7 @@ window.onload = () => {
       const activeTab = document.querySelector('.tab-button.active');
       const status = activeTab ? activeTab.dataset.status : 'all';
       filterOrdersByStatus(status);
+      updateOrderActiveFilters();
     }, 300));
   }
 
@@ -894,6 +1159,7 @@ window.onload = () => {
       const activeTab = document.querySelector('.tab-button.active');
       const status = activeTab ? activeTab.dataset.status : 'all';
       filterOrdersByStatus(status);
+      updateOrderActiveFilters();
     }, 300));
   }
 
@@ -903,6 +1169,7 @@ window.onload = () => {
       const activeTab = document.querySelector('.tab-button.active');
       const status = activeTab ? activeTab.dataset.status : 'all';
       filterOrdersByStatus(status);
+      updateOrderActiveFilters();
     }, 300));
   }
 
@@ -952,6 +1219,11 @@ window.onload = () => {
   }
 
   loadOrders();
+  
+  // Setup sortable columns after page load
+  setTimeout(() => {
+    setupOrderSortableColumns();
+  }, 500);
 };
 
 function toggleMenu(id) {
@@ -1105,3 +1377,5 @@ function renderOrderPagination(page, totalPages) {
 
 let currentOrderPage = 1;
 const ORDERS_PER_PAGE = 15;
+let currentOrderSortColumn = null; // Cột đang được sắp xếp
+let currentOrderSortDirection = null; // Hướng sắp xếp hiện tại (asc/desc)

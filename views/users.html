@@ -19,7 +19,7 @@
             <ul class="nav-menu">
                 <li class="nav-item"><a href="/home" class="nav-link"><i class="fas fa-home"></i><span>Dashboard</span></a></li>
                 <li class="nav-item has-submenu"><a href="#" class="nav-link"><i class="fas fa-box"></i><span>Sản phẩm</span><i class="fas fa-chevron-down submenu-icon"></i></a>
-                    <ul class="submenu"><li><a href="/products">Danh sách sản phẩm</a></li><li><a href="/categories">Danh mục</a></li></ul>
+                    <ul class="submenu"><li><a href="/products">Danh sách sản phẩm</a></li><li><a href="/categories">Cây danh mục</a></li><li><a href="/campaigns">Chiến dịch</a></li><li><a href="/trashbooks">Sản phẩm đã xóa</a></li></ul>
                 </li>
                 <li class="nav-item"><a href="/orders" class="nav-link"><i class="fas fa-shopping-cart"></i><span>Đơn hàng</span></a></li>
                 <li class="nav-item"><a href="/vouchers" class="nav-link"><i class="fas fa-ticket-alt"></i><span>Vouchers</span></a></li>
@@ -74,6 +74,11 @@
                     </select>
                     <button class="btn btn-primary" id="addUserBtn"><i class="fas fa-plus"></i> Thêm người dùng</button>
                     <button class="btn btn-secondary" id="refreshBtn"><i class="fas fa-sync"></i></button>
+                </div>
+                
+                <!-- Active Filters Display -->
+                <div id="activeFiltersContainer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; align-items: center;">
+                    <!-- Active filters will be displayed here -->
                 </div>
             </div>
 

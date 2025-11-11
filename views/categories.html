@@ -37,7 +37,8 @@
             ></a>
             <ul class="submenu">
               <li><a href="/products">Danh sách sản phẩm</a></li>
-              <li><a href="/categories" class="active">Danh mục</a></li>
+              <li><a href="/categories" class="active">Cây danh mục</a></li>
+              <li><a href="/campaigns">Chiến dịch</a></li>
             </ul>
           </li>
           <li class="nav-item">
@@ -159,63 +160,88 @@
             <button class="btn btn-primary" id="addCategoryBtn">
               <i class="fas fa-plus"></i> Thêm danh mục
             </button>
-            <button class="btn btn-secondary" id="trashBtn">
-              <i class="fas fa-trash"></i> Đã xóa
-            </button>
             <button class="btn btn-secondary" id="refreshBtn">
               <i class="fas fa-sync"></i>
             </button>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem">
-          <!-- Categories Tree -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Cây danh mục</h3>
-            </div>
-            <div
-              id="categoriesTree"
-              style="max-height: 600px; overflow-y: auto"
+        <!-- View Mode Tabs -->
+        <div class="card" style="margin-bottom: 1.5rem; padding: 0; overflow: hidden">
+          <div style="display: flex; border-bottom: 2px solid #e5e7eb; background: #ffffff">
+            <button 
+              class="view-tab-btn" 
+              id="categoryActiveTab" 
+              data-view="active"
+              style="flex: 1; padding: 1rem 1.5rem; background: none; border: none; border-bottom: 3px solid #4f46e5; color: #4f46e5; font-weight: 600; cursor: pointer; transition: all 0.2s; font-size: 0.95rem;"
             >
-              <div style="text-align: center; padding: 3rem">
-                <i class="fas fa-spinner fa-spin"></i>
-                <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
-              </div>
+              <i class="fas fa-sitemap"></i> Danh mục hoạt động
+            </button>
+            <button 
+              class="view-tab-btn" 
+              id="categoryDeletedTab" 
+              data-view="deleted"
+              style="flex: 1; padding: 1rem 1.5rem; background: none; border: none; border-bottom: 3px solid transparent; color: #6b7280; font-weight: 500; cursor: pointer; transition: all 0.2s; font-size: 0.95rem;"
+            >
+              <i class="fas fa-trash"></i> Danh mục đã xóa
+            </button>
+          </div>
+        </div>
+
+        <!-- Categories Tree (Active) -->
+        <div class="card" id="activeCategoriesView">
+          <div class="card-header">
+            <h3 class="card-title">Cây danh mục</h3>
+            <span
+              style="color: #6b7280; font-size: 0.9rem"
+              id="categoriesCount"
+              >0 danh mục</span
+            >
+          </div>
+          <div
+            id="categoriesTree"
+            style="max-height: 700px; overflow-y: auto; padding: 1rem"
+          >
+            <div style="text-align: center; padding: 3rem">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
             </div>
           </div>
+        </div>
 
-          <!-- Categories List -->
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Danh sách danh mục</h3>
-              <span
-                style="color: #6b7280; font-size: 0.9rem"
-                id="categoriesCount"
-                >0 danh mục</span
+        <!-- Deleted Categories Table -->
+        <div class="card" id="deletedCategoriesView" style="display: none">
+          <div class="card-header">
+            <h3 class="card-title">Danh mục đã xóa</h3>
+            <div style="display: flex; gap: 0.5rem; align-items: center">
+              <span style="color: #6b7280; font-size: 0.9rem" id="deletedCategoriesCount"
+                >0 danh mục đã xóa</span
               >
+              <button class="btn btn-sm btn-secondary" id="refreshDeletedCategoriesBtn">
+                <i class="fas fa-sync"></i>
+              </button>
             </div>
-            <div class="table-container">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>Tên</th>
-                    <th>Slug</th>
-                    <th>Mô tả</th>
-                    <th>Hiển thị</th>
-                    <th style="width: 150px">Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody id="categoriesTableBody">
-                  <tr>
-                    <td colspan="5" style="text-align: center; padding: 3rem">
-                      <i class="fas fa-spinner fa-spin"></i>
-                      <p style="margin-top: 1rem">Đang tải...</p>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width: 250px">Tên danh mục</th>
+                  <th style="width: 200px">Slug</th>
+                  <th style="width: 300px">Mô tả</th>
+                  <th style="width: 150px">Ngày xóa</th>
+                  <th style="width: 200px">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="deletedCategoriesTableBody">
+                <tr>
+                  <td colspan="5" style="text-align: center; padding: 3rem">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

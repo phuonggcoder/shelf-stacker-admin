@@ -61,6 +61,7 @@ function setupEventListeners() {
             searchTimeout = setTimeout(() => {
                 filters.search = e.target.value;
                 currentPage = 1;
+                updateUserActiveFilters();
                 loadUsers();
             }, 500);
         });
@@ -68,8 +69,18 @@ function setupEventListeners() {
 
     const roleFilter = document.getElementById('roleFilter');
     const statusFilter = document.getElementById('statusFilter');
-    if (roleFilter) roleFilter.addEventListener('change', (e) => { filters.role = e.target.value; currentPage = 1; loadUsers(); });
-    if (statusFilter) statusFilter.addEventListener('change', (e) => { filters.status = e.target.value; currentPage = 1; loadUsers(); });
+    if (roleFilter) roleFilter.addEventListener('change', (e) => { 
+        filters.role = e.target.value; 
+        currentPage = 1; 
+        updateUserActiveFilters();
+        loadUsers(); 
+    });
+    if (statusFilter) statusFilter.addEventListener('change', (e) => { 
+        filters.status = e.target.value; 
+        currentPage = 1; 
+        updateUserActiveFilters();
+        loadUsers(); 
+    });
 
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) refreshBtn.addEventListener('click', () => loadUsers());
@@ -175,7 +186,8 @@ async function loadUsers() {
             filteredUsers = filteredUsers.filter(u => 
                 (u.email && u.email.toLowerCase().includes(searchLower)) ||
                 (u.full_name && u.full_name.toLowerCase().includes(searchLower)) ||
-                (u.username && u.username.toLowerCase().includes(searchLower))
+                (u.username && u.username.toLowerCase().includes(searchLower)) ||
+                (u.phone_number && u.phone_number.toLowerCase().includes(searchLower))
             );
         }
         if (filters.role) {
@@ -210,6 +222,8 @@ async function loadUsers() {
             renderUsers([]);
             updatePagination({ page: 1, limit: pageSize, total: 0, pages: 1, totalPages: 1 });
         }
+        
+        updateUserActiveFilters();
     } catch (error) {
         console.error('Error loading users:', error);
         showToast('Không thể tải danh sách người dùng', 'error');
@@ -232,10 +246,23 @@ function renderUsers(users) {
         return;
     }
 
-    tbody.innerHTML = users.map(user => `
+    // Get search term for highlighting
+    const searchTerm = filters.search || '';
+    
+    tbody.innerHTML = users.map(user => {
+        const email = user.email || 'N/A';
+        const fullName = user.full_name || user.username || 'N/A';
+        const phoneNumber = user.phone_number || 'N/A';
+        
+        // Highlight search terms
+        const highlightedEmail = highlightSearchText(email, searchTerm);
+        const highlightedFullName = highlightSearchText(fullName, searchTerm);
+        const highlightedPhone = highlightSearchText(phoneNumber, searchTerm);
+        
+        return `
         <tr style="transition: background-color 0.2s;">
-            <td style="vertical-align: middle;"><strong style="color: #1f2937;">${user.email || 'N/A'}</strong></td>
-            <td style="vertical-align: middle; color: #4b5563;">${user.full_name || user.username || 'N/A'}</td>
+            <td style="vertical-align: middle;"><strong style="color: #1f2937;">${highlightedEmail}</strong></td>
+            <td style="vertical-align: middle; color: #4b5563;">${highlightedFullName}</td>
             <td style="vertical-align: middle;">
                 ${user.roles?.map(r => {
                     const roleColors = {
@@ -249,7 +276,7 @@ function renderUsers(users) {
                     return `<span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; background: ${colors.bg}; color: ${colors.text}; margin-right: 0.25rem;">${label}</span>`;
                 }).join('') || '<span style="color: #6b7280;">Người dùng</span>'}
             </td>
-            <td style="vertical-align: middle; color: #4b5563;">${user.phone_number || 'N/A'}</td>
+            <td style="vertical-align: middle; color: #4b5563;">${highlightedPhone}</td>
             <td style="vertical-align: middle;">
                 <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.8rem; font-weight: 500; background: ${user.isActive ? '#d1fae5' : '#fee2e2'}; color: ${user.isActive ? '#065f46' : '#991b1b'};">
                     ${user.isActive ? 'Hoạt động' : 'Đã khóa'}
@@ -265,7 +292,8 @@ function renderUsers(users) {
                 </div>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const countEl = document.getElementById('usersCount');
     if (countEl) countEl.textContent = `${users.length} người dùng`;
@@ -376,6 +404,120 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Highlight search text in content
+function highlightSearchText(text, searchTerm) {
+    if (!searchTerm || !text) return escapeHtml(text);
+    
+    const escapedText = escapeHtml(text);
+    const escapedSearch = escapeHtml(searchTerm);
+    const regex = new RegExp(`(${escapedSearch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    
+    return escapedText.replace(regex, '<mark style="background-color: #fef08a; padding: 2px 4px; border-radius: 3px;">$1</mark>');
+}
+
+// Update active filters display for users
+function updateUserActiveFilters() {
+    const container = document.getElementById('activeFiltersContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Search filter
+    if (filters.search) {
+        const badge = createUserFilterBadge('Tìm kiếm', `"${filters.search}"`, 'search');
+        container.appendChild(badge);
+    }
+
+    // Role filter
+    if (filters.role) {
+        const roleMap = {
+            user: 'Người dùng',
+            shipper: 'Shipper',
+            admin: 'Admin'
+        };
+        const roleText = roleMap[filters.role] || filters.role;
+        const badge = createUserFilterBadge('Vai trò', roleText, 'role');
+        container.appendChild(badge);
+    }
+
+    // Status filter
+    if (filters.status) {
+        const statusText = filters.status === 'active' ? 'Hoạt động' : 'Đã khóa';
+        const badge = createUserFilterBadge('Trạng thái', statusText, 'status');
+        container.appendChild(badge);
+    }
+
+    // Show container if there are filters
+    container.style.display = container.children.length > 0 ? 'flex' : 'none';
+}
+
+// Create filter badge for users
+function createUserFilterBadge(label, value, filterType) {
+    const badge = document.createElement('div');
+    badge.className = 'filter-badge';
+    badge.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.375rem 0.75rem;
+        background: #e0e7ff;
+        color: #3730a3;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+    `;
+    
+    badge.innerHTML = `
+        <span><strong>${label}:</strong> ${escapeHtml(value)}</span>
+        <button type="button" class="filter-remove-btn" data-filter-type="${filterType}" style="
+            background: none;
+            border: none;
+            color: #6366f1;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+            line-height: 1;
+        ">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+
+    // Add click handler for remove button
+    const removeBtn = badge.querySelector('.filter-remove-btn');
+    removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeUserFilter(filterType);
+    });
+
+    return badge;
+}
+
+// Remove individual filter for users
+function removeUserFilter(filterType) {
+    switch(filterType) {
+        case 'search':
+            filters.search = '';
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) searchInput.value = '';
+            break;
+        case 'role':
+            filters.role = '';
+            const roleFilter = document.getElementById('roleFilter');
+            if (roleFilter) roleFilter.value = '';
+            break;
+        case 'status':
+            filters.status = '';
+            const statusFilter = document.getElementById('statusFilter');
+            if (statusFilter) statusFilter.value = '';
+            break;
+    }
+    currentPage = 1;
+    updateUserActiveFilters();
+    loadUsers();
 }
 
 async function toggleUserStatus(id, isActive) {

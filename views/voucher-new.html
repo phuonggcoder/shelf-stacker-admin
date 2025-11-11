@@ -1,446 +1,701 @@
 <!DOCTYPE html>
 <html lang="vi">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quản lý Voucher - Shelf Stacker Admin</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/assets/css/voucher-new.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quản lý Voucher - Shelf Stacker Admin</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/assets/css/voucher-new.css" />
     <script src="/assets/js/loading-state-helper.js"></script>
-</head>
-<body>
-  <!-- Sidebar -->
-  <div data-include="/partials/sidebar.html"></div>
+  </head>
+  <body>
+    <!-- Sidebar -->
+    <div data-include="/partials/sidebar.html"></div>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-left">
-        <button class="menu-toggle" onclick="toggleSidebar()">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1>Quản lý Voucher</h1>
-      </div>
-      <div class="header-right">
-        <div class="notification-dropdown">
-          <button class="notification-btn" onclick="toggleNotificationDropdown()">
-            <i class="fas fa-bell"></i>
-            <span class="notification-badge" id="notificationBadge">0</span>
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-left">
+          <button class="menu-toggle" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
           </button>
-          <div class="notification-dropdown-content" id="notificationDropdown">
-            <!-- Notifications will be loaded here -->
+          <h1>Quản lý Voucher</h1>
+        </div>
+        <div class="header-right">
+          <div class="notification-dropdown">
+            <button
+              class="notification-btn"
+              onclick="toggleNotificationDropdown()"
+            >
+              <i class="fas fa-bell"></i>
+              <span class="notification-badge" id="notificationBadge">0</span>
+            </button>
+            <div
+              class="notification-dropdown-content"
+              id="notificationDropdown"
+            >
+              <!-- Notifications will be loaded here -->
+            </div>
+          </div>
+          <div class="user-menu">
+            <img
+              id="headerAvatar"
+              src="https://graph.facebook.com/4/picture?width=100&height=100"
+              alt="User"
+            />
+            <span id="userName">Admin</span>
           </div>
         </div>
-        <div class="user-menu">
-          <img id="headerAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-          <span id="userName">Admin</span>
+      </header>
+
+      <!-- Dashboard -->
+      <div class="dashboard">
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+          <div class="summary-card">
+            <div class="card-icon">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <div class="card-content">
+              <h3 id="totalVouchers">0</h3>
+              <p>Tổng voucher</p>
+            </div>
+            <div class="card-trend">
+              <span class="trend-value" id="totalTrend">0%</span>
+              <i class="fas fa-arrow-up"></i>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon active">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="card-content">
+              <h3 id="activeVouchers">0</h3>
+              <p>Đang hoạt động</p>
+            </div>
+            <div class="card-trend">
+              <span class="trend-value" id="activeTrend">0%</span>
+              <i class="fas fa-arrow-up"></i>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon expired">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="card-content">
+              <h3 id="expiredVouchers">0</h3>
+              <p>Hết hạn</p>
+            </div>
+            <div class="card-trend">
+              <span class="trend-value" id="expiredTrend">0%</span>
+              <i class="fas fa-arrow-down"></i>
+            </div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon usage">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="card-content">
+              <h3 id="totalUsage">0</h3>
+              <p>Tổng lượt sử dụng</p>
+            </div>
+            <div class="card-trend">
+              <span class="trend-value" id="usageTrend">0%</span>
+              <i class="fas fa-arrow-up"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+          <div class="action-left">
+            <button class="btn btn-primary" onclick="openCreateVoucherModal()">
+              <i class="fas fa-plus"></i> Tạo voucher mới
+            </button>
+            <button class="btn btn-secondary" onclick="openAnalyticsModal()">
+              <i class="fas fa-chart-bar"></i> Thống kê
+            </button>
+          </div>
+          <div class="action-right">
+            <div class="search-box" style="position: relative">
+              <i class="fas fa-search"></i>
+              <input
+                type="text"
+                id="searchVoucher"
+                placeholder="Tìm kiếm voucher..."
+                autocomplete="off"
+              />
+              <div
+                id="voucherAutocomplete"
+                class="autocomplete-dropdown"
+                style="display: none"
+              ></div>
+            </div>
+            <select id="voucherTypeFilter" class="filter-select">
+              <option value="">Tất cả loại</option>
+              <option value="discount">Giảm giá</option>
+              <option value="shipping">Giảm ship</option>
+            </select>
+            <select id="statusFilter" class="filter-select">
+              <option value="">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Ngưng hoạt động</option>
+              <option value="expired">Hết hạn</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Active Filters Display -->
+        <div
+          id="activeFiltersContainer"
+          style="
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            align-items: center;
+          "
+        >
+          <!-- Active filters will be displayed here -->
+        </div>
+
+        <!-- View Mode Tabs -->
+        <div
+          class="card"
+          style="margin-bottom: 1.5rem; padding: 0; overflow: hidden"
+        >
+          <div
+            style="
+              display: flex;
+              border-bottom: 2px solid #e5e7eb;
+              background: #ffffff;
+            "
+          >
+            <button
+              class="view-tab-btn"
+              id="voucherActiveTab"
+              data-view="active"
+              style="
+                flex: 1;
+                padding: 1rem 1.5rem;
+                background: none;
+                border: none;
+                border-bottom: 3px solid #4f46e5;
+                color: #4f46e5;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 0.95rem;
+              "
+            >
+              <i class="fas fa-ticket-alt"></i> Vouchers hoạt động
+            </button>
+            <button
+              class="view-tab-btn"
+              id="voucherDeletedTab"
+              data-view="deleted"
+              style="
+                flex: 1;
+                padding: 1rem 1.5rem;
+                background: none;
+                border: none;
+                border-bottom: 3px solid transparent;
+                color: #6b7280;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+                font-size: 0.95rem;
+              "
+            >
+              <i class="fas fa-trash"></i> Vouchers đã xóa
+            </button>
+          </div>
+        </div>
+
+        <!-- Voucher Table (Active) -->
+        <div id="activeVouchersView">
+          <div class="table-container">
+            <table class="voucher-table">
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="voucher_id">
+                    Mã voucher
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th>Loại</th>
+                  <th class="sortable" data-sort="value">
+                    Giá trị
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable" data-sort="min_order">
+                    Điều kiện
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th class="sortable" data-sort="date">
+                    Thời gian
+                    <span class="sort-icon"></span>
+                  </th>
+                  <th>Sử dụng</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="voucherTableBody">
+                <!-- Vouchers will be loaded here -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="pagination">
+            <!-- Pagination will be generated here -->
+          </div>
+        </div>
+
+        <!-- Deleted Vouchers Table -->
+        <div id="deletedVouchersView" style="display: none">
+          <div class="table-container">
+            <table class="voucher-table">
+              <thead>
+                <tr>
+                  <th>Mã voucher</th>
+                  <th>Loại</th>
+                  <th>Giá trị</th>
+                  <th>Điều kiện</th>
+                  <th>Ngày xóa</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="deletedVoucherTableBody">
+                <tr>
+                  <td colspan="6" style="text-align: center; padding: 3rem">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p style="margin-top: 1rem; color: #6b7280">Đang tải...</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </header>
+    </main>
 
-    <!-- Dashboard -->
-    <div class="dashboard">
-      <!-- Summary Cards -->
-      <div class="summary-cards">
-        <div class="summary-card">
-          <div class="card-icon">
-            <i class="fas fa-ticket-alt"></i>
-          </div>
-          <div class="card-content">
-            <h3 id="totalVouchers">0</h3>
-            <p>Tổng voucher</p>
-          </div>
-          <div class="card-trend">
-            <span class="trend-value" id="totalTrend">0%</span>
-            <i class="fas fa-arrow-up"></i>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="card-icon active">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <div class="card-content">
-            <h3 id="activeVouchers">0</h3>
-            <p>Đang hoạt động</p>
-          </div>
-          <div class="card-trend">
-            <span class="trend-value" id="activeTrend">0%</span>
-            <i class="fas fa-arrow-up"></i>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="card-icon expired">
-            <i class="fas fa-clock"></i>
-          </div>
-          <div class="card-content">
-            <h3 id="expiredVouchers">0</h3>
-            <p>Hết hạn</p>
-          </div>
-          <div class="card-trend">
-            <span class="trend-value" id="expiredTrend">0%</span>
-            <i class="fas fa-arrow-down"></i>
-          </div>
-        </div>
-        <div class="summary-card">
-          <div class="card-icon usage">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div class="card-content">
-            <h3 id="totalUsage">0</h3>
-            <p>Tổng lượt sử dụng</p>
-          </div>
-          <div class="card-trend">
-            <span class="trend-value" id="usageTrend">0%</span>
-            <i class="fas fa-arrow-up"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Action Bar -->
-      <div class="action-bar">
-        <div class="action-left">
-          <button class="btn btn-primary" onclick="openCreateVoucherModal()">
-            <i class="fas fa-plus"></i> Tạo voucher mới
+    <!-- Create Voucher Modal -->
+    <div id="createVoucherModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Tạo voucher mới</h2>
+          <button class="close-btn" onclick="closeCreateVoucherModal()">
+            <i class="fas fa-times"></i>
           </button>
-          <button class="btn btn-secondary" onclick="openAnalyticsModal()">
-            <i class="fas fa-chart-bar"></i> Thống kê
+        </div>
+        <form id="createVoucherForm" class="voucher-form">
+          <div class="form-section">
+            <h3>Thông tin cơ bản</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="voucherId">Mã voucher *</label>
+                <input type="text" id="voucherId" name="voucher_id" required />
+              </div>
+              <div class="form-group">
+                <label for="voucherType">Loại voucher *</label>
+                <select id="voucherType" name="voucher_type" required>
+                  <option value="discount">Giảm giá sản phẩm</option>
+                  <option value="shipping">Giảm phí vận chuyển</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="description">Mô tả</label>
+              <textarea id="description" name="description" rows="3"></textarea>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Giá trị voucher</h3>
+            <div id="discountFields" class="form-row">
+              <div class="form-group">
+                <label for="discountType">Loại giảm giá</label>
+                <select id="discountType" name="discount_type">
+                  <option value="fixed">Giảm cố định (VND)</option>
+                  <option value="percentage">Giảm phần trăm (%)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="discountValue">Giá trị giảm *</label>
+                <input
+                  type="number"
+                  id="discountValue"
+                  name="discount_value"
+                  min="1"
+                />
+              </div>
+            </div>
+            <div id="maxDiscountGroup" class="form-group" style="display: none">
+              <label for="maxDiscountValue">Giảm tối đa (VND)</label>
+              <input
+                type="number"
+                id="maxDiscountValue"
+                name="max_discount_value"
+                min="1"
+              />
+            </div>
+            <div id="shippingFields" class="form-group" style="display: none">
+              <label for="shippingDiscount">Giảm phí ship (VND) *</label>
+              <input
+                type="number"
+                id="shippingDiscount"
+                name="shipping_discount"
+                min="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="minOrderValue"
+                >Giá trị đơn hàng tối thiểu (VND) *</label
+              >
+              <input
+                type="number"
+                id="minOrderValue"
+                name="min_order_value"
+                min="0"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Giới hạn sử dụng</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="usageLimit">Tổng số lần sử dụng *</label>
+                <input
+                  type="number"
+                  id="usageLimit"
+                  name="usage_limit"
+                  min="1"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="maxPerUser">Số lần tối đa mỗi user *</label>
+                <input
+                  type="number"
+                  id="maxPerUser"
+                  name="max_per_user"
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Thời gian hiệu lực</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="startDate">Ngày bắt đầu *</label>
+                <input
+                  type="datetime-local"
+                  id="startDate"
+                  name="start_date"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="endDate">Ngày kết thúc *</label>
+                <input
+                  type="datetime-local"
+                  id="endDate"
+                  name="end_date"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Trạng thái</h3>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="isActive" name="is_active" checked />
+                <span class="checkmark"></span>
+                Kích hoạt voucher ngay sau khi tạo
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeCreateVoucherModal()"
+            >
+              Hủy
+            </button>
+            <button type="submit" class="btn btn-primary">Tạo voucher</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Edit Voucher Modal -->
+    <div id="editVoucherModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Chỉnh sửa voucher</h2>
+          <button class="close-btn" onclick="closeEditVoucherModal()">
+            <i class="fas fa-times"></i>
           </button>
         </div>
-        <div class="action-right">
-          <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" id="searchVoucher" placeholder="Tìm kiếm voucher...">
+        <form id="editVoucherForm" class="voucher-form">
+          <input type="hidden" id="editVoucherId" name="_id" />
+          <!-- Same form structure as create, but with edit- prefix -->
+          <div class="form-section">
+            <h3>Thông tin cơ bản</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editVoucherIdField">Mã voucher *</label>
+                <input
+                  type="text"
+                  id="editVoucherIdField"
+                  name="voucher_id"
+                  required
+                  readonly
+                />
+              </div>
+              <div class="form-group">
+                <label for="editVoucherType">Loại voucher *</label>
+                <select id="editVoucherType" name="voucher_type" required>
+                  <option value="discount">Giảm giá sản phẩm</option>
+                  <option value="shipping">Giảm phí vận chuyển</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editDescription">Mô tả</label>
+              <textarea
+                id="editDescription"
+                name="description"
+                rows="3"
+              ></textarea>
+            </div>
           </div>
-          <select id="voucherTypeFilter" class="filter-select">
-            <option value="">Tất cả loại</option>
-            <option value="discount">Giảm giá cố định</option>
-            <option value="percent">Giảm giá phần trăm</option>
-            <option value="shipping">Miễn phí vận chuyển</option>
-            <option value="combo">Combo giảm giá</option>
-            <option value="shipping">Giảm ship</option>
-          </select>
-          <select id="statusFilter" class="filter-select">
-            <option value="">Tất cả trạng thái</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="inactive">Ngưng hoạt động</option>
-            <option value="expired">Hết hạn</option>
-          </select>
-        </div>
-      </div>
 
-      <!-- Voucher Table -->
-      <div class="table-container">
-        <table class="voucher-table">
-          <thead>
-            <tr>
-              <th>Mã voucher</th>
-              <th>Loại</th>
-              <th>Giá trị</th>
-              <th>Điều kiện</th>
-              <th>Thời gian</th>
-              <th>Sử dụng</th>
-              <th>Trạng thái</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody id="voucherTableBody">
-            <!-- Vouchers will be loaded here -->
-          </tbody>
-        </table>
-      </div>
+          <div class="form-section">
+            <h3>Giá trị voucher</h3>
+            <div id="editDiscountFields" class="form-row">
+              <div class="form-group">
+                <label for="editDiscountType">Loại giảm giá</label>
+                <select id="editDiscountType" name="discount_type">
+                  <option value="fixed">Giảm cố định (VND)</option>
+                  <option value="percentage">Giảm phần trăm (%)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="editDiscountValue">Giá trị giảm *</label>
+                <input
+                  type="number"
+                  id="editDiscountValue"
+                  name="discount_value"
+                  min="1"
+                />
+              </div>
+            </div>
+            <div
+              id="editMaxDiscountGroup"
+              class="form-group"
+              style="display: none"
+            >
+              <label for="editMaxDiscountValue">Giảm tối đa (VND)</label>
+              <input
+                type="number"
+                id="editMaxDiscountValue"
+                name="max_discount_value"
+                min="1"
+              />
+            </div>
+            <div
+              id="editShippingFields"
+              class="form-group"
+              style="display: none"
+            >
+              <label for="editShippingDiscount">Giảm phí ship (VND) *</label>
+              <input
+                type="number"
+                id="editShippingDiscount"
+                name="shipping_discount"
+                min="1"
+              />
+            </div>
+            <div class="form-group">
+              <label for="editMinOrderValue"
+                >Giá trị đơn hàng tối thiểu (VND) *</label
+              >
+              <input
+                type="number"
+                id="editMinOrderValue"
+                name="min_order_value"
+                min="0"
+                required
+              />
+            </div>
+          </div>
 
-      <!-- Pagination -->
-      <div class="pagination" id="pagination">
-        <!-- Pagination will be generated here -->
+          <div class="form-section">
+            <h3>Giới hạn sử dụng</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editUsageLimit">Tổng số lần sử dụng *</label>
+                <input
+                  type="number"
+                  id="editUsageLimit"
+                  name="usage_limit"
+                  min="1"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editMaxPerUser">Số lần tối đa mỗi user *</label>
+                <input
+                  type="number"
+                  id="editMaxPerUser"
+                  name="max_per_user"
+                  min="1"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Thời gian hiệu lực</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="editStartDate">Ngày bắt đầu *</label>
+                <input
+                  type="datetime-local"
+                  id="editStartDate"
+                  name="start_date"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editEndDate">Ngày kết thúc *</label>
+                <input
+                  type="datetime-local"
+                  id="editEndDate"
+                  name="end_date"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>Trạng thái</h3>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="editIsActive" name="is_active" />
+                <span class="checkmark"></span>
+                Kích hoạt voucher
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="closeEditVoucherModal()"
+            >
+              Hủy
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Cập nhật voucher
+            </button>
+          </div>
+        </form>
       </div>
     </div>
-  </main>
 
-  <!-- Create Voucher Modal -->
-  <div id="createVoucherModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Tạo voucher mới</h2>
-        <button class="close-btn" onclick="closeCreateVoucherModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <form id="createVoucherForm" class="voucher-form">
-        <div class="form-section">
-          <h3>Thông tin cơ bản</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="voucherId">Mã voucher *</label>
-              <input type="text" id="voucherId" name="voucher_id" required>
-            </div>
-            <div class="form-group">
-              <label for="voucherType">Loại voucher *</label>
-              <select id="voucherType" name="voucher_type" required>
-                <option value="discount">Giảm giá sản phẩm</option>
-                <option value="shipping">Giảm phí vận chuyển</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="description">Mô tả</label>
-            <textarea id="description" name="description" rows="3"></textarea>
-          </div>
+    <!-- Analytics Modal -->
+    <div id="analyticsModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2>Thống kê Voucher</h2>
+          <button class="close-btn" onclick="closeAnalyticsModal()">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
+        <div class="analytics-content">
+          <div class="analytics-filters">
+            <div class="date-range-picker">
+              <label>Từ ngày:</label>
+              <input type="date" id="analyticsStartDate" />
+              <label>Đến ngày:</label>
+              <input type="date" id="analyticsEndDate" />
+              <button class="btn btn-primary" onclick="loadAnalytics()">
+                Xem thống kê
+              </button>
+            </div>
+          </div>
 
-        <div class="form-section">
-          <h3>Giá trị voucher</h3>
-          <div id="discountFields" class="form-row">
-            <div class="form-group">
-              <label for="discountType">Loại giảm giá</label>
-              <select id="discountType" name="discount_type">
-                <option value="fixed">Giảm cố định (VND)</option>
-                <option value="percentage">Giảm phần trăm (%)</option>
-              </select>
+          <div class="analytics-charts">
+            <div class="chart-container">
+              <h3>Top Voucher được sử dụng nhiều nhất</h3>
+              <div id="topVouchersChart" class="chart"></div>
             </div>
-            <div class="form-group">
-              <label for="discountValue">Giá trị giảm *</label>
-              <input type="number" id="discountValue" name="discount_value" min="1">
+            <div class="chart-container">
+              <h3>Sử dụng theo loại voucher</h3>
+              <div id="usageByTypeChart" class="chart"></div>
             </div>
-          </div>
-          <div id="maxDiscountGroup" class="form-group" style="display: none;">
-            <label for="maxDiscountValue">Giảm tối đa (VND)</label>
-            <input type="number" id="maxDiscountValue" name="max_discount_value" min="1">
-          </div>
-          <div id="shippingFields" class="form-group" style="display: none;">
-            <label for="shippingDiscount">Giảm phí ship (VND) *</label>
-            <input type="number" id="shippingDiscount" name="shipping_discount" min="1">
-          </div>
-          <div class="form-group">
-            <label for="minOrderValue">Giá trị đơn hàng tối thiểu (VND) *</label>
-            <input type="number" id="minOrderValue" name="min_order_value" min="0" required>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Giới hạn sử dụng</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="usageLimit">Tổng số lần sử dụng *</label>
-              <input type="number" id="usageLimit" name="usage_limit" min="1" required>
+            <div class="chart-container">
+              <h3>Sử dụng theo tháng</h3>
+              <div id="usageByMonthChart" class="chart"></div>
             </div>
-            <div class="form-group">
-              <label for="maxPerUser">Số lần tối đa mỗi user *</label>
-              <input type="number" id="maxPerUser" name="max_per_user" min="1" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Thời gian hiệu lực</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="startDate">Ngày bắt đầu *</label>
-              <input type="datetime-local" id="startDate" name="start_date" required>
-            </div>
-            <div class="form-group">
-              <label for="endDate">Ngày kết thúc *</label>
-              <input type="datetime-local" id="endDate" name="end_date" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Trạng thái</h3>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="isActive" name="is_active" checked>
-              <span class="checkmark"></span>
-              Kích hoạt voucher ngay sau khi tạo
-            </label>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeCreateVoucherModal()">Hủy</button>
-          <button type="submit" class="btn btn-primary">Tạo voucher</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Edit Voucher Modal -->
-  <div id="editVoucherModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Chỉnh sửa voucher</h2>
-        <button class="close-btn" onclick="closeEditVoucherModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <form id="editVoucherForm" class="voucher-form">
-        <input type="hidden" id="editVoucherId" name="_id">
-        <!-- Same form structure as create, but with edit- prefix -->
-        <div class="form-section">
-          <h3>Thông tin cơ bản</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editVoucherIdField">Mã voucher *</label>
-              <input type="text" id="editVoucherIdField" name="voucher_id" required readonly>
-            </div>
-            <div class="form-group">
-              <label for="editVoucherType">Loại voucher *</label>
-              <select id="editVoucherType" name="voucher_type" required>
-                <option value="discount">Giảm giá sản phẩm</option>
-                <option value="shipping">Giảm phí vận chuyển</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="editDescription">Mô tả</label>
-            <textarea id="editDescription" name="description" rows="3"></textarea>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Giá trị voucher</h3>
-          <div id="editDiscountFields" class="form-row">
-            <div class="form-group">
-              <label for="editDiscountType">Loại giảm giá</label>
-              <select id="editDiscountType" name="discount_type">
-                <option value="fixed">Giảm cố định (VND)</option>
-                <option value="percentage">Giảm phần trăm (%)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="editDiscountValue">Giá trị giảm *</label>
-              <input type="number" id="editDiscountValue" name="discount_value" min="1">
-            </div>
-          </div>
-          <div id="editMaxDiscountGroup" class="form-group" style="display: none;">
-            <label for="editMaxDiscountValue">Giảm tối đa (VND)</label>
-            <input type="number" id="editMaxDiscountValue" name="max_discount_value" min="1">
-          </div>
-          <div id="editShippingFields" class="form-group" style="display: none;">
-            <label for="editShippingDiscount">Giảm phí ship (VND) *</label>
-            <input type="number" id="editShippingDiscount" name="shipping_discount" min="1">
-          </div>
-          <div class="form-group">
-            <label for="editMinOrderValue">Giá trị đơn hàng tối thiểu (VND) *</label>
-            <input type="number" id="editMinOrderValue" name="min_order_value" min="0" required>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Giới hạn sử dụng</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editUsageLimit">Tổng số lần sử dụng *</label>
-              <input type="number" id="editUsageLimit" name="usage_limit" min="1" required>
-            </div>
-            <div class="form-group">
-              <label for="editMaxPerUser">Số lần tối đa mỗi user *</label>
-              <input type="number" id="editMaxPerUser" name="max_per_user" min="1" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Thời gian hiệu lực</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editStartDate">Ngày bắt đầu *</label>
-              <input type="datetime-local" id="editStartDate" name="start_date" required>
-            </div>
-            <div class="form-group">
-              <label for="editEndDate">Ngày kết thúc *</label>
-              <input type="datetime-local" id="editEndDate" name="end_date" required>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-section">
-          <h3>Trạng thái</h3>
-          <div class="form-group">
-            <label class="checkbox-label">
-              <input type="checkbox" id="editIsActive" name="is_active">
-              <span class="checkmark"></span>
-              Kích hoạt voucher
-            </label>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" class="btn btn-secondary" onclick="closeEditVoucherModal()">Hủy</button>
-          <button type="submit" class="btn btn-primary">Cập nhật voucher</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Analytics Modal -->
-  <div id="analyticsModal" class="modal">
-    <div class="modal-content large">
-      <div class="modal-header">
-        <h2>Thống kê Voucher</h2>
-        <button class="close-btn" onclick="closeAnalyticsModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="analytics-content">
-        <div class="analytics-filters">
-          <div class="date-range-picker">
-            <label>Từ ngày:</label>
-            <input type="date" id="analyticsStartDate">
-            <label>Đến ngày:</label>
-            <input type="date" id="analyticsEndDate">
-            <button class="btn btn-primary" onclick="loadAnalytics()">Xem thống kê</button>
-          </div>
-        </div>
-        
-        <div class="analytics-charts">
-          <div class="chart-container">
-            <h3>Top Voucher được sử dụng nhiều nhất</h3>
-            <div id="topVouchersChart" class="chart"></div>
-          </div>
-          <div class="chart-container">
-            <h3>Sử dụng theo loại voucher</h3>
-            <div id="usageByTypeChart" class="chart"></div>
-          </div>
-          <div class="chart-container">
-            <h3>Sử dụng theo tháng</h3>
-            <div id="usageByMonthChart" class="chart"></div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Delete Confirmation Modal -->
-  <div id="deleteModal" class="modal">
-    <div class="modal-content small">
-      <div class="modal-header">
-        <h2>Xác nhận xóa</h2>
-        <button class="close-btn" onclick="closeDeleteModal()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p>Bạn có chắc chắn muốn xóa voucher này?</p>
-        <p class="warning">Hành động này không thể hoàn tác!</p>
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeDeleteModal()">Hủy</button>
-        <button class="btn btn-danger" onclick="confirmDeleteVoucher()">Xóa</button>
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+      <div class="modal-content small">
+        <div class="modal-header">
+          <h2>Xác nhận xóa</h2>
+          <button class="close-btn" onclick="closeDeleteModal()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Bạn có chắc chắn muốn xóa voucher này?</p>
+          <p class="warning">Hành động này không thể hoàn tác!</p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-secondary" onclick="closeDeleteModal()">
+            Hủy
+          </button>
+          <button class="btn btn-danger" onclick="confirmDeleteVoucher()">
+            Xóa
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Loading Overlay -->
-  <div id="loadingOverlay" class="loading-overlay">
-    <div class="loading-spinner">
-      <i class="fas fa-spinner fa-spin"></i>
-      <p>Đang tải...</p>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Đang tải...</p>
+      </div>
     </div>
-  </div>
 
-      <script src="/assets/js/global-error-handler.js"></script>
+    <script src="/assets/js/global-error-handler.js"></script>
     <script src="/assets/js/retry-helper.js"></script>
     <script src="/assets/js/voucher-new.js"></script>
-</body>
+  </body>
 </html>
