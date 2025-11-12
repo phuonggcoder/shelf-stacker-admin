@@ -1,9 +1,0 @@
-body{font-family:Arial,Helvetica,sans-serif;background:#f6f9fc;color:#222}
-.container{max-width:1100px;margin:24px auto;padding:16px;background:#fff;border-radius:6px}
-#voucher-table{width:100%;border-collapse:collapse}
-#voucher-table th,#voucher-table td{padding:8px;border-bottom:1px solid #eee}
-#modal{position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center}
-.hidden{display:none}
-.modal-content{background:#fff;padding:16px;border-radius:6px;width:600px}
-.modal-content label{display:block;margin:6px 0}
-.modal-actions{text-align:right;margin-top:12px}

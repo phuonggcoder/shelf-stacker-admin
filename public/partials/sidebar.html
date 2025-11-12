@@ -1,68 +1,136 @@
-<aside class="sidebar" id="mainSidebar">
-  <div class="profile">
-    <img id="sidebarAvatar" src="https://graph.facebook.com/4/picture?width=100&height=100" alt="User" />
-    <h3 style="margin-bottom:0;">WEB ADMIN</h3>
+<aside class="admin-sidebar" id="adminSidebar">
+  <div class="sidebar-header">
+    <div class="logo">
+      <i class="fas fa-book"></i>
+      <span class="logo-text">Shelf Stacker</span>
+    </div>
+    <button class="sidebar-toggle" id="sidebarToggle" title="Thu nhỏ/Mở rộng">
+      <i class="fas fa-chevron-left"></i>
+    </button>
   </div>
-  <nav>
-    <ul>
-      <!-- Trang chủ -->
-  <li><a href="/home"><i class="fas fa-home"></i> <span>Trang chủ</span></a></li>
-      
-      <!-- Quản lý Sản phẩm -->
-      <li>
-        <button class="menu-parent" onclick="toggleMenu('productMenu')" aria-expanded="false">
-          <i class="fas fa-box"></i> <span>Quản lý Sản phẩm</span> <i class="fas fa-chevron-down" style="float:right"></i>
-        </button>
-        <ul class="menu-child" id="productMenu" style="display:none;">
-          <li><a href="/danhgiasanpham"><i class="fas fa-book"></i> <span>Danh sách truyện tranh</span></a></li>
-          <li><a href="/trashbooks"><i class="fas fa-trash"></i> <span>Sản phẩm đã xóa</span></a></li>
+
+  <nav class="sidebar-nav">
+    <ul class="nav-menu">
+      <li class="nav-item">
+        <a href="/home" class="nav-link" data-page="dashboard">
+          <i class="fas fa-home"></i>
+          <span>Dashboard</span>
+          <span class="sidebar-tooltip">Dashboard</span>
+        </a>
+      </li>
+      <li class="nav-item has-submenu">
+        <a href="#" class="nav-link submenu-toggle">
+          <i class="fas fa-box"></i>
+          <span>Sản phẩm</span>
+          <i class="fas fa-chevron-down submenu-icon"></i>
+          <span class="sidebar-tooltip">Sản phẩm</span>
+        </a>
+        <ul class="submenu">
+          <li>
+            <a href="/products" data-page="products" class="submenu-link">
+              <i class="fas fa-list"></i>
+              <span>Danh sách sản phẩm</span>
+            </a>
+          </li>
+          <li>
+            <a href="/categories" data-page="categories" class="submenu-link">
+              <i class="fas fa-sitemap"></i>
+              <span>Cây danh mục</span>
+            </a>
+          </li>
+          <li>
+            <a href="/campaigns" data-page="campaigns" class="submenu-link">
+              <i class="fas fa-bullhorn"></i>
+              <span>Chiến dịch</span>
+            </a>
+          </li>
         </ul>
       </li>
-
-      <!-- Quản lý Đơn hàng -->
-      <li>
-        <button class="menu-parent" onclick="toggleMenu('orderMenu')" aria-expanded="false">
-          <i class="fas fa-shopping-cart"></i> <span>Quản lý Đơn hàng</span> <i class="fas fa-chevron-down" style="float:right"></i>
-        </button>
-        <ul class="menu-child" id="orderMenu" style="display:none;">
-          <li><a href="/danhmucdonhang"><i class="fas fa-list"></i> <span>Danh sách đơn hàng</span></a></li>
-        </ul>
+      <li class="nav-item">
+        <a href="/orders" class="nav-link" data-page="orders">
+          <i class="fas fa-shopping-cart"></i>
+          <span>Đơn hàng</span>
+          <span class="sidebar-tooltip">Đơn hàng</span>
+        </a>
       </li>
-
-      <!-- Quản lý Khuyến mãi -->
-      <li>
-        <button class="menu-parent" onclick="toggleMenu('promotionMenu')" aria-expanded="false">
-          <i class="fas fa-gift"></i> <span>Quản lý Khuyến mãi</span> <i class="fas fa-chevron-down" style="float:right"></i>
-        </button>
-        <ul class="menu-child" id="promotionMenu" style="display:none;">
-          <li><a href="/voucher-new"><i class="fas fa-ticket-alt"></i> <span>Quản lý voucher</span></a></li>
-          <li><a href="/khoiphucvoucher"><i class="fas fa-history"></i> <span>Voucher đã xóa</span></a></li>
-          <li><a href="/campaigns"><i class="fas fa-bullhorn"></i> <span>Quản lý chiến dịch</span></a></li>
-        </ul>
+      <li class="nav-item">
+        <a href="/vouchers" class="nav-link" data-page="vouchers">
+          <i class="fas fa-ticket-alt"></i>
+          <span>Vouchers</span>
+          <span class="sidebar-tooltip">Vouchers</span>
+        </a>
       </li>
-
-      <!-- Quản lý Người dùng -->
-      <li>
-        <button class="menu-parent" onclick="toggleMenu('userMenu')" aria-expanded="false">
-          <i class="fas fa-users"></i> <span>Quản lý Người dùng</span> <i class="fas fa-chevron-down" style="float:right"></i>
-        </button>
-        <ul class="menu-child" id="userMenu" style="display:none;">
-          <li><a href="/quanlynguoidung"><i class="fas fa-user-cog"></i> <span>Danh sách người dùng</span></a></li>
-        </ul>
+      <li class="nav-item">
+        <a href="/users" class="nav-link" data-page="users">
+          <i class="fas fa-users"></i>
+          <span>Người dùng</span>
+          <span class="sidebar-tooltip">Người dùng</span>
+        </a>
       </li>
-
-      <!-- Quản lý Thông báo -->
-      <li>
-        <button class="menu-parent" onclick="toggleMenu('notificationMenu')" aria-expanded="false">
-          <i class="fas fa-bell"></i> <span>Quản lý Thông báo</span> <i class="fas fa-chevron-down" style="float:right"></i>
-        </button>
-        <ul class="menu-child" id="notificationMenu" style="display:none;">
-          <li><a href="/thongbao"><i class="fas fa-bolt"></i> <span>Thông báo nhanh</span></a></li>
-        </ul>
+      <li class="nav-item">
+        <a href="/notifications" class="nav-link" data-page="notifications">
+          <i class="fas fa-bell"></i>
+          <span>Thông báo</span>
+          <span class="sidebar-tooltip">Thông báo</span>
+        </a>
       </li>
-
-      <!-- Cài đặt -->
-  <li><a href="#" id="settingsLink"><i class="fas fa-cog"></i> <span>Cài đặt</span></a></li>
+      <li class="nav-item">
+        <a href="/reports" class="nav-link" data-page="reports">
+          <i class="fas fa-chart-bar"></i>
+          <span>Báo cáo</span>
+          <span class="sidebar-tooltip">Báo cáo</span>
+        </a>
+      </li>
+      <li class="nav-item">
+        <a href="/settings" class="nav-link" data-page="settings">
+          <i class="fas fa-cog"></i>
+          <span>Cài đặt</span>
+          <span class="sidebar-tooltip">Cài đặt</span>
+        </a>
+      </li>
     </ul>
   </nav>
+
+  <div class="sidebar-footer">
+    <a href="/profile" class="user-info" id="userInfo">
+      <div class="user-avatar" id="userAvatar">
+        <i class="fas fa-user-circle"></i>
+      </div>
+      <div class="user-details">
+        <span class="user-name" id="userName">Admin</span>
+        <span class="user-email" id="userEmail">admin@email.com</span>
+      </div>
+      <span class="sidebar-tooltip">Thông tin người dùng</span>
+      <!-- User Info Tooltip -->
+      <div class="user-info-tooltip" id="userInfoTooltip">
+        <div class="tooltip-header">
+          <div class="tooltip-avatar">
+            <i class="fas fa-user-circle"></i>
+          </div>
+          <div class="tooltip-user-details">
+            <div class="tooltip-name" id="tooltipUserName">Admin</div>
+            <div class="tooltip-email" id="tooltipUserEmail">
+              admin@email.com
+            </div>
+          </div>
+        </div>
+        <div class="tooltip-divider"></div>
+        <div class="tooltip-actions">
+          <a href="/settings" class="tooltip-action-item">
+            <i class="fas fa-cog"></i>
+            <span>Cài đặt</span>
+          </a>
+          <button class="tooltip-action-item" id="tooltipLogoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Đăng xuất</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <button class="logout-btn" id="logoutBtn">
+      <i class="fas fa-sign-out-alt"></i>
+      <span>Đăng xuất</span>
+      <span class="sidebar-tooltip">Đăng xuất</span>
+    </button>
+  </div>
 </aside>

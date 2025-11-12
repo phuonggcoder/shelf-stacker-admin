@@ -174,6 +174,11 @@ app.get('/settings', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'settings.html'));
 });
 
+// Profile
+app.get('/profile', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'profile.html'));
+});
+
 // Parse JSON and URL-encoded request bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -196,18 +201,9 @@ app.get('/quanlynguoidung', (req, res) => res.sendFile(path.join(__dirname, 'vie
 app.get('/danhmucdonhang', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdonhang.html')));
 app.get('/trashbooks', (req, res) => res.sendFile(path.join(__dirname, 'views', 'trashbooks.html')));
 app.get('/danhmucdaxoa', (req, res) => res.sendFile(path.join(__dirname, 'views', 'danhmucdaxoa.html')));
-app.get('/voucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'voucher.html')));
-app.get('/voucher-new', (req, res) => res.sendFile(path.join(__dirname, 'views', 'voucher-new.html')));
-app.get('/khoiphucvoucher', (req, res) => res.sendFile(path.join(__dirname, 'views', 'khoiphucvoucher.html')));
 app.get('/campaigns', (req, res) => res.sendFile(path.join(__dirname, 'views', 'campaigns.html')));
 app.get('/thongbao', (req, res) => res.sendFile(path.join(__dirname, 'views', 'thongbao.html')));
 app.get('/notification-admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'notification-admin.html')));
-app.get('/order-stats', (req, res) => res.sendFile(path.join(__dirname, 'views', 'order-stats.html')));
-app.get('/category-products', (req, res) => res.sendFile(path.join(__dirname, 'views', 'category-products.html')));
-app.get('/admin-email-verification', (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin-email-verification.html')));
-app.get('/vouchers-admin', (req, res) => res.sendFile(path.join(__dirname, 'views', 'vouchers-admin.html')));
-app.get('/voucher-detail', (req, res) => res.sendFile(path.join(__dirname, 'views', 'voucher-detail.html')));
-app.get('/vouchers-trash', (req, res) => res.sendFile(path.join(__dirname, 'views', 'vouchers-trash.html')));
 
 // NOTE: This project is a frontend/admin console only.
 // All voucher-related APIs are provided by an external backend service.

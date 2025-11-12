@@ -11,101 +11,11 @@
     <link rel="stylesheet" href="/assets/css/admin-main.css" />
     <link rel="stylesheet" href="/assets/css/admin-ui-components.css" />
     <script src="/assets/js/loading-state-helper.js"></script>
+    <script src="/assets/js/includes.js"></script>
   </head>
   <body>
     <!-- Sidebar -->
-    <aside class="admin-sidebar" id="adminSidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <i class="fas fa-book"></i>
-          <span class="logo-text">Shelf Stacker</span>
-        </div>
-        <button class="sidebar-toggle" id="sidebarToggle">
-          <i class="fas fa-bars"></i>
-        </button>
-      </div>
-
-      <nav class="sidebar-nav">
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <a href="/home" class="nav-link" data-page="dashboard">
-              <i class="fas fa-home"></i>
-              <span>Dashboard</span>
-            </a>
-          </li>
-          <li class="nav-item has-submenu active">
-            <a href="#" class="nav-link">
-              <i class="fas fa-box"></i>
-              <span>Sản phẩm</span>
-              <i class="fas fa-chevron-down submenu-icon"></i>
-            </a>
-            <ul class="submenu">
-              <li>
-                <a href="/products" data-page="products" class="active"
-                  >Danh sách sản phẩm</a
-                >
-              </li>
-              <li>
-                <a href="/categories" data-page="categories">Cây danh mục</a>
-              </li>
-              <li><a href="/campaigns" data-page="campaigns">Chiến dịch</a></li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a href="/orders" class="nav-link" data-page="orders">
-              <i class="fas fa-shopping-cart"></i>
-              <span>Đơn hàng</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/vouchers" class="nav-link" data-page="vouchers">
-              <i class="fas fa-ticket-alt"></i>
-              <span>Vouchers</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/users" class="nav-link" data-page="users">
-              <i class="fas fa-users"></i>
-              <span>Người dùng</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/notifications" class="nav-link" data-page="notifications">
-              <i class="fas fa-bell"></i>
-              <span>Thông báo</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/reports" class="nav-link" data-page="reports">
-              <i class="fas fa-chart-bar"></i>
-              <span>Báo cáo</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/settings" class="nav-link" data-page="settings">
-              <i class="fas fa-cog"></i>
-              <span>Cài đặt</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-info">
-          <div class="user-avatar">
-            <i class="fas fa-user-circle"></i>
-          </div>
-          <div class="user-details">
-            <span class="user-name" id="userName">Admin</span>
-            <span class="user-email" id="userEmail">admin@email.com</span>
-          </div>
-        </div>
-        <button class="logout-btn" id="logoutBtn">
-          <i class="fas fa-sign-out-alt"></i>
-          <span>Đăng xuất</span>
-        </button>
-      </div>
-    </aside>
+    <div data-include="/partials/sidebar.html"></div>
 
     <!-- Main Content -->
     <main class="admin-main" id="adminMain">

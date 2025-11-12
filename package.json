@@ -16,6 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+    "@material/tooltip": "^14.0.0",
     "axios": "^1.6.0",
     "cloudinary": "^2.8.0",
     "cors": "^2.8.5",

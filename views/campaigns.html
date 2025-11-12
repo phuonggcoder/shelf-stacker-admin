@@ -11,127 +11,11 @@
     <link rel="stylesheet" href="/assets/css/admin-main.css" />
     <link rel="stylesheet" href="/assets/css/admin-ui-components.css" />
     <script src="/assets/js/loading-state-helper.js"></script>
+    <script src="/assets/js/includes.js"></script>
   </head>
   <body>
     <!-- Sidebar -->
-    <aside class="admin-sidebar" id="adminSidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <i class="fas fa-book"></i>
-          <span class="logo-text">Shelf Stacker</span>
-        </div>
-        <button class="sidebar-toggle" id="sidebarToggle">
-          <i class="fas fa-bars"></i>
-        </button>
-      </div>
-
-      <nav class="sidebar-nav">
-        <ul class="nav-menu">
-          <li class="nav-item">
-            <a href="/home" class="nav-link" data-page="dashboard">
-              <i class="fas fa-home"></i>
-              <span>Dashboard</span>
-            </a>
-          </li>
-          <li class="nav-item has-submenu active">
-            <a href="#" class="nav-link">
-              <i class="fas fa-box"></i>
-              <span>Sản phẩm</span>
-              <i class="fas fa-chevron-down submenu-icon"></i>
-            </a>
-            <ul class="submenu">
-              <li>
-                <a href="/products" data-page="products">Danh sách sản phẩm</a>
-              </li>
-              <li>
-                <a href="/categories" data-page="categories">Cây danh mục</a>
-              </li>
-              <li>
-                <a href="/campaigns" data-page="campaigns" class="active">Chiến dịch</a>
-              </li>
-              <li>
-                <a href="/trashbooks" data-page="trash">Sản phẩm đã xóa</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a href="/orders" class="nav-link" data-page="orders">
-              <i class="fas fa-shopping-cart"></i>
-              <span>Đơn hàng</span>
-            </a>
-          </li>
-          <li class="nav-item has-submenu">
-            <a href="#" class="nav-link">
-              <i class="fas fa-ticket-alt"></i>
-              <span>Vouchers</span>
-              <i class="fas fa-chevron-down submenu-icon"></i>
-            </a>
-            <ul class="submenu">
-              <li>
-                <a href="/vouchers" data-page="vouchers">Danh sách vouchers</a>
-              </li>
-              <li>
-                <a href="/vouchers-trash" data-page="vouchers-trash">Vouchers đã xóa</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item has-submenu">
-            <a href="#" class="nav-link">
-              <i class="fas fa-tags"></i>
-              <span>Danh mục</span>
-              <i class="fas fa-chevron-down submenu-icon"></i>
-            </a>
-            <ul class="submenu">
-              <li>
-                <a href="/categories" data-page="categories">Cây danh mục</a>
-              </li>
-              <li>
-                <a href="/danhmucdaxoa" data-page="categories-trash">Danh mục đã xóa</a>
-              </li>
-            </ul>
-          </li>
-          <li class="nav-item">
-            <a href="/users" class="nav-link" data-page="users">
-              <i class="fas fa-users"></i>
-              <span>Người dùng</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/notifications" class="nav-link" data-page="notifications">
-              <i class="fas fa-bell"></i>
-              <span>Thông báo</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/reports" class="nav-link" data-page="reports">
-              <i class="fas fa-chart-bar"></i>
-              <span>Báo cáo</span>
-            </a>
-          </li>
-          <li class="nav-item">
-            <a href="/settings" class="nav-link" data-page="settings">
-              <i class="fas fa-cog"></i>
-              <span>Cài đặt</span>
-            </a>
-          </li>
-        </ul>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="user-info">
-          <div class="user-avatar">
-            <i class="fas fa-user-circle"></i>
-          </div>
-          <div class="user-details">
-            <span class="user-name" id="userName">Admin</span>
-            <span class="user-email" id="userEmail">admin@email.com</span>
-          </div>
-        </div>
-        <button class="logout-btn" id="logoutBtn">
-          <i class="fas fa-sign-out-alt"></i><span>Đăng xuất</span>
-        </button>
-      </div>
-    </aside>
+    <div data-include="/partials/sidebar.html"></div>
 
     <main class="admin-main">
       <header class="admin-header">
@@ -291,7 +175,10 @@
 
     <!-- Campaign Modal -->
     <div id="campaign-modal" class="modal" style="display: none">
-      <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto">
+      <div
+        class="modal-content"
+        style="max-width: 900px; max-height: 90vh; overflow-y: auto"
+      >
         <div class="modal-header">
           <h2 class="modal-title">Thêm / Cập nhật Chiến dịch</h2>
           <button class="modal-close" id="closeCampaignModal">
@@ -301,7 +188,9 @@
         <form id="campaign-form">
           <div class="modal-body">
             <div class="form-group">
-              <label for="campaign-name">Tên chiến dịch <span class="required">*</span></label>
+              <label for="campaign-name"
+                >Tên chiến dịch <span class="required">*</span></label
+              >
               <input
                 type="text"
                 id="campaign-name"
@@ -322,7 +211,9 @@
             </div>
 
             <div class="form-group">
-              <label for="campaign-type">Loại chiến dịch <span class="required">*</span></label>
+              <label for="campaign-type"
+                >Loại chiến dịch <span class="required">*</span></label
+              >
               <select id="campaign-type" class="form-select" required>
                 <option value="">Chọn loại chiến dịch</option>
                 <option value="promotion">Khuyến mãi</option>
@@ -333,9 +224,13 @@
               </select>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem">
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem"
+            >
               <div class="form-group">
-                <label for="campaign-start-date">Ngày bắt đầu <span class="required">*</span></label>
+                <label for="campaign-start-date"
+                  >Ngày bắt đầu <span class="required">*</span></label
+                >
                 <input
                   type="date"
                   id="campaign-start-date"
@@ -344,7 +239,9 @@
                 />
               </div>
               <div class="form-group">
-                <label for="campaign-end-date">Ngày kết thúc <span class="required">*</span></label>
+                <label for="campaign-end-date"
+                  >Ngày kết thúc <span class="required">*</span></label
+                >
                 <input
                   type="date"
                   id="campaign-end-date"
@@ -366,7 +263,10 @@
                   <i class="fas fa-chevron-down"></i> Chọn sách
                 </button>
               </label>
-              <div id="book-search-wrap" style="display: none; margin-top: 1rem">
+              <div
+                id="book-search-wrap"
+                style="display: none; margin-top: 1rem"
+              >
                 <input
                   type="text"
                   id="book-search-input"
@@ -378,7 +278,10 @@
                   id="book-search-list"
                   style="
                     display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                    grid-template-columns: repeat(
+                      auto-fill,
+                      minmax(150px, 1fr)
+                    );
                     gap: 1rem;
                     max-height: 300px;
                     overflow-y: auto;
@@ -389,8 +292,15 @@
                   "
                 ></div>
               </div>
-              <select id="campaign-books" multiple style="display: none"></select>
-              <div id="selected-books-count" style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem">
+              <select
+                id="campaign-books"
+                multiple
+                style="display: none"
+              ></select>
+              <div
+                id="selected-books-count"
+                style="margin-top: 0.5rem; color: #6b7280; font-size: 0.875rem"
+              >
                 Đã chọn: 0 sách
               </div>
             </div>
@@ -416,7 +326,11 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" id="cancelCampaignBtn">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="cancelCampaignBtn"
+            >
               Hủy
             </button>
             <button type="submit" class="btn btn-primary" id="saveCampaignBtn">

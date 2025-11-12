@@ -1763,6 +1763,355 @@ class AdminServices {
             day: '2-digit'
         }).format(new Date(dateString));
     }
+
+    // ==================== User Profile Management ====================
+    /**
+     * Lấy thông tin cá nhân của user đang đăng nhập
+     * @returns {Promise<Object>} User object
+     */
+    async getMyProfile() {
+        console.log('👤 [AdminServices] getMyProfile called');
+        try {
+            const response = await this.request('/api/users/me');
+            console.log('📦 [AdminServices] getMyProfile response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] getMyProfile error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Cập nhật thông tin cá nhân
+     * @param {Object} data - { full_name, phone_number, gender, birth_date, avatar }
+     * @returns {Promise<Object>} Updated user object
+     */
+    async updateProfile(data) {
+        console.log('📤 [AdminServices] updateProfile called with:', data);
+        const response = await this.request('/api/users/update', {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        console.log('📦 [AdminServices] updateProfile response:', response);
+        return response;
+    }
+
+    /**
+     * Đổi mật khẩu
+     * @param {string} currentPassword - Mật khẩu hiện tại
+     * @param {string} newPassword - Mật khẩu mới
+     * @returns {Promise<Object>} { message: "Password changed successfully" }
+     */
+    async changePassword(currentPassword, newPassword) {
+        console.log('🔐 [AdminServices] changePassword called');
+        try {
+            const response = await this.request('/api/users/change-password', {
+                method: 'PUT',
+                body: JSON.stringify({ currentPassword, newPassword })
+            });
+            console.log('📦 [AdminServices] changePassword response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] changePassword error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Yêu cầu đổi email
+     * @param {string} newEmail - Email mới
+     * @param {string} currentPassword - Mật khẩu hiện tại
+     * @returns {Promise<Object>} { success, message, old_email, new_email, expiresIn }
+     */
+    async requestEmailChange(newEmail, currentPassword) {
+        console.log('📧 [AdminServices] requestEmailChange called with:', { newEmail, currentPassword: '***' });
+        try {
+            const response = await this.request('/api/users/change-email', {
+                method: 'PUT',
+                body: JSON.stringify({ newEmail, currentPassword })
+            });
+            console.log('📦 [AdminServices] requestEmailChange response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] requestEmailChange error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Xác thực đổi email bằng OTP
+     * @param {string} oldEmailOtp - OTP từ email cũ
+     * @param {string} newEmailOtp - OTP từ email mới
+     * @returns {Promise<Object>} { success, message, data }
+     */
+    async verifyEmailChange(oldEmailOtp, newEmailOtp) {
+        console.log('📧 [AdminServices] verifyEmailChange called');
+        try {
+            const response = await this.request('/api/users/verify-email-change', {
+                method: 'POST',
+                body: JSON.stringify({ oldEmailOtp, newEmailOtp })
+            });
+            console.log('📦 [AdminServices] verifyEmailChange response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] verifyEmailChange error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Gửi email xác thực
+     * @param {string} email - Email cần xác thực
+     * @param {string} purpose - Mục đích: "registration" hoặc "email_change"
+     * @returns {Promise<Object>} { success, message, data }
+     */
+    async sendEmailVerification(email, purpose = 'registration') {
+        console.log('📧 [AdminServices] sendEmailVerification called with:', { email, purpose });
+        try {
+            const response = await this.request('/api/email-verification/send-verification', {
+                method: 'POST',
+                body: JSON.stringify({ email, purpose })
+            });
+            console.log('📦 [AdminServices] sendEmailVerification response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] sendEmailVerification error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Xác thực email bằng token
+     * @param {string} token - Verification token
+     * @param {string} type - Loại: "registration" hoặc "email_change"
+     * @returns {Promise<Object>} { success, message, data }
+     */
+    async verifyEmail(token, type = 'registration') {
+        return this.request('/api/email-verification/verify', {
+            method: 'POST',
+            body: JSON.stringify({ token, type })
+        });
+    }
+
+    /**
+     * Gửi lại email xác thực
+     * @returns {Promise<Object>} { success, message, data }
+     */
+    async resendEmailVerification() {
+        return this.request('/api/email-verification/resend', {
+            method: 'POST'
+        });
+    }
+
+    /**
+     * Kiểm tra trạng thái xác thực email
+     * @returns {Promise<Object>} { success, data: { email, isEmailVerified, emailVerifiedAt } }
+     */
+    async getEmailVerificationStatus() {
+        return this.request('/api/email-verification/status');
+    }
+
+    /**
+     * Gửi OTP SMS
+     * @param {string} phone - Số điện thoại
+     * @returns {Promise<Object>} { success: true }
+     */
+    async requestSMSOTP(phone) {
+        console.log('📱 [AdminServices] requestSMSOTP called with:', { phone });
+        try {
+            const response = await this.request('/api/users/auth/request-otp', {
+                method: 'POST',
+                body: JSON.stringify({ phone })
+            });
+            console.log('📦 [AdminServices] requestSMSOTP response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] requestSMSOTP error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Xác thực OTP SMS
+     * @param {string} phone - Số điện thoại
+     * @param {string} otp - Mã OTP
+     * @returns {Promise<Object>} { success, message, access_token, refresh_token, user }
+     */
+    async verifySMSOTP(phone, otp) {
+        console.log('📱 [AdminServices] verifySMSOTP called');
+        try {
+            const response = await this.request('/api/users/auth/verify-otp', {
+                method: 'POST',
+                body: JSON.stringify({ phone, otp })
+            });
+            console.log('📦 [AdminServices] verifySMSOTP response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] verifySMSOTP error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Validate token
+     * @returns {Promise<Object>} { success, valid, user, token_info }
+     */
+    async validateToken() {
+        console.log('🔐 [AdminServices] validateToken called');
+        try {
+            const response = await this.request('/api/users/validate-token');
+            console.log('📦 [AdminServices] validateToken response:', response);
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] validateToken error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Yêu cầu thay đổi/thêm số điện thoại
+     * POST /api/users/request-phone-change
+     * @param {string} newPhone - Số điện thoại mới
+     * @returns {Promise<Object>} { success, message, step, old_phone?, new_phone }
+     */
+    async requestPhoneChange(newPhone) {
+        console.log('📱 [AdminServices] requestPhoneChange called with:', { newPhone });
+        try {
+            const response = await this.request('/api/users/request-phone-change', {
+                method: 'POST',
+                body: JSON.stringify({ new_phone: newPhone })
+            });
+            console.log('📦 [AdminServices] requestPhoneChange response:', response);
+            
+            // Log thông tin quan trọng
+            if (response.step) {
+                console.log('📱 [AdminServices] Phone change step:', response.step);
+                if (response.step === 'verify_old_phone') {
+                    console.log('📱 [AdminServices] Need to verify old phone first:', {
+                        old_phone: response.old_phone,
+                        new_phone: response.new_phone
+                    });
+                } else if (response.step === 'verify_new_phone') {
+                    console.log('📱 [AdminServices] Need to verify new phone:', {
+                        phone: response.phone || response.new_phone
+                    });
+                }
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] requestPhoneChange error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Xác thực OTP và hoàn tất thay đổi số điện thoại
+     * POST /api/users/verify-phone-change
+     * @param {string} otp - Mã OTP
+     * @returns {Promise<Object>} { success, message, data, user }
+     */
+    async verifyPhoneChange(otp) {
+        console.log('📱 [AdminServices] verifyPhoneChange called');
+        try {
+            // Clean OTP trước khi gửi (loại bỏ spaces)
+            const cleanOTP = (otp) => {
+                if (!otp) return '';
+                return otp.toString().replace(/\s/g, '').replace(/[^0-9]/g, '').trim();
+            };
+            
+            const cleanOtp = cleanOTP(otp);
+            
+            console.log('📱 [AdminServices] OTP cleaned:', {
+                original: otp,
+                cleaned: cleanOtp
+            });
+            
+            const response = await this.request('/api/users/verify-phone-change', {
+                method: 'POST',
+                body: JSON.stringify({ otp: cleanOtp })
+            });
+            console.log('📦 [AdminServices] verifyPhoneChange response:', response);
+            
+            return response;
+        } catch (error) {
+            console.error('❌ [AdminServices] verifyPhoneChange error:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Upload avatar
+     * @param {File} file - File ảnh
+     * @returns {Promise<string>} URL của avatar
+     */
+    async uploadAvatar(file) {
+        console.log('📤 [AdminServices] uploadAvatar called with file:', file?.name, file?.size);
+        try {
+            // Validate file
+            if (!file) {
+                throw new Error('File is required');
+            }
+            
+            if (!file.type || !file.type.startsWith('image/')) {
+                throw new Error('Chỉ cho phép upload ảnh');
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                throw new Error('Kích thước ảnh không được vượt quá 5MB');
+            }
+            
+            // Sử dụng endpoint /api/user-upload/avatar
+            const formData = new FormData();
+            formData.append('avatar', file); // Field name phải là 'avatar' theo backend
+            
+            const token = this.getToken();
+            const headers = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            // Không set Content-Type, browser sẽ tự động set với boundary cho multipart/form-data
+            
+            console.log('📤 [AdminServices] Uploading to:', `${this.baseUrl}/api/user-upload/avatar`);
+            
+            const response = await fetch(`${this.baseUrl}/api/user-upload/avatar`, {
+                method: 'POST',
+                headers,
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                console.error('❌ [AdminServices] uploadAvatar error response:', error);
+                throw new Error(error.message || error.msg || `Upload avatar failed: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('📦 [AdminServices] uploadAvatar response:', result);
+            
+            // Backend trả về: { success: true, avatar: "...", user: {...} }
+            if (result.success && result.avatar) {
+                return result.avatar;
+            }
+            
+            // Fallback: thử các format khác
+            if (result.avatar) {
+                return result.avatar;
+            }
+            if (result.data && result.data.avatar) {
+                return result.data.avatar;
+            }
+            if (result.url) {
+                return result.url;
+            }
+            
+            console.warn('⚠️ [AdminServices] Unexpected response format:', result);
+            throw new Error('Không thể lấy URL avatar từ response');
+        } catch (error) {
+            console.error('❌ [AdminServices] uploadAvatar error:', error);
+            throw error;
+        }
+    }
 }
 
 // Export singleton instance

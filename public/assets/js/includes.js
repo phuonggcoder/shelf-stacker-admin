@@ -9,6 +9,43 @@
         if (!res.ok) throw new Error('Failed to load ' + url);
         const html = await res.text();
         node.innerHTML = html;
+        
+        // If this is the sidebar, reinitialize it
+        if (url.includes('sidebar.html')) {
+          // Wait a bit for DOM to settle
+          setTimeout(() => {
+            if (window.initSidebar) {
+              // Only init if not already initialized
+              const sidebar = document.getElementById('adminSidebar');
+              if (sidebar && !sidebar.dataset.initialized) {
+                // Restore collapsed state immediately to prevent flickering
+                const collapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+                if (collapsed) {
+                  sidebar.classList.add('collapsed');
+                  document.body.classList.add('sidebar-collapsed');
+                  // Immediately update main content
+                  const adminMain = document.querySelector('.admin-main');
+                  if (adminMain) {
+                    adminMain.style.setProperty('margin-left', '80px', 'important');
+                    adminMain.style.setProperty('width', 'calc(100% - 80px)', 'important');
+                  }
+                }
+                window.initSidebar();
+                sidebar.dataset.initialized = 'true';
+                
+                // Setup tooltips after sidebar is initialized
+                if (window.setupTooltips && collapsed) {
+                  setTimeout(() => {
+                    window.setupTooltips();
+                  }, 100);
+                }
+              }
+            }
+            if (window.setActiveNavigation) {
+              window.setActiveNavigation();
+            }
+          }, 50);
+        }
       } catch (err) {
         console.error(err);
       }

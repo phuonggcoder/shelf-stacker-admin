@@ -84,12 +84,18 @@ body {
     display: flex;
     flex-direction: column;
     z-index: 1000;
-    transition: transform var(--transition-base), width var(--transition-base);
+    transition: width var(--transition-base);
     box-shadow: var(--shadow-xl);
+    overflow-x: visible;
+    overflow-y: hidden;
+    will-change: width;
+    /* Prevent scroll chaining */
+    overscroll-behavior: contain;
 }
 
 .admin-sidebar.collapsed {
     width: var(--sidebar-collapsed-width);
+    overflow-x: visible;
 }
 
 .sidebar-header {
@@ -99,6 +105,9 @@ body {
     justify-content: space-between;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     min-height: var(--header-height);
+    flex-shrink: 0;
+    overflow-x: visible;
+    overflow-y: hidden;
 }
 
 .logo {
@@ -131,25 +140,159 @@ body {
     cursor: pointer;
     padding: var(--spacing-sm);
     border-radius: var(--radius-md);
-    transition: background var(--transition-fast);
+    transition: all var(--transition-fast);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.sidebar-toggle i {
+    transition: transform var(--transition-base);
+}
+
+.admin-sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
 }
 
 .sidebar-nav {
     flex: 1;
     overflow-y: auto;
+    overflow-x: visible;
     padding: var(--spacing-md) 0;
+    /* Hide scrollbar completely - use thin scrollbar that's invisible */
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    scroll-behavior: smooth;
+    /* Prevent scroll chaining to parent */
+    overscroll-behavior: contain;
+    /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 0 !important;
+    display: none !important;
+    background: transparent !important;
+    height: 0 !important;
+}
+
+.sidebar-nav::-webkit-scrollbar-track {
+    display: none !important;
+    background: transparent !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+    display: none !important;
+    background: transparent !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Hide scrollbar completely when collapsed */
+.admin-sidebar.collapsed .sidebar-nav {
+    overflow: hidden !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.admin-sidebar.collapsed .sidebar-nav::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
+.admin-sidebar.collapsed .sidebar-nav::-webkit-scrollbar-thumb {
+    display: none !important;
+}
+
+.admin-sidebar.collapsed .sidebar-nav::-webkit-scrollbar-track {
+    display: none !important;
 }
 
 .nav-menu {
     list-style: none;
+    overflow: visible !important;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.nav-menu * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.nav-menu *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .nav-item {
     margin-bottom: var(--spacing-xs);
+    overflow: visible !important;
+    width: 100%;
+    position: relative;
+    min-height: fit-content;
+    box-sizing: border-box;
+    height: auto;
+}
+
+.nav-item * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    box-sizing: border-box;
+}
+
+.nav-item *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
+.nav-item *::-webkit-scrollbar-track {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+.nav-item *::-webkit-scrollbar-thumb {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Force hide all scrollbars in sidebar */
+.admin-sidebar * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+}
+
+.admin-sidebar *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent !important;
+}
+
+.admin-sidebar *::-webkit-scrollbar-track,
+.admin-sidebar *::-webkit-scrollbar-thumb {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
 }
 
 .nav-link {
@@ -161,34 +304,218 @@ body {
     text-decoration: none;
     transition: all var(--transition-fast);
     position: relative;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-right: var(--spacing-md);
+    overflow: visible !important;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    max-height: none;
+    height: auto;
+    line-height: 1.5;
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--primary);
+    border-radius: 0 2px 2px 0;
+    transition: height var(--transition-fast);
 }
 
 .nav-link:hover {
     background: rgba(255, 255, 255, 0.1);
     color: white;
+    transform: translateX(2px);
+}
+
+.nav-link:hover::before {
+    height: 60%;
+}
+
+.admin-sidebar.collapsed .nav-link:hover {
+    transform: scale(1.05);
 }
 
 .nav-link.active {
-    background: rgba(99, 102, 241, 0.2);
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(99, 102, 241, 0.15) 100%);
     color: var(--primary-light);
+    font-weight: 600;
     border-left: 3px solid var(--primary);
+    padding-left: calc(var(--spacing-lg) - 3px);
+    box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.1);
+}
+
+.nav-link.active::before {
+    height: 80%;
+    width: 4px;
+    background: var(--primary);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+}
+
+.nav-link.active i {
+    color: var(--primary-light);
+    transform: scale(1.1);
 }
 
 .nav-link i {
     width: 20px;
+    min-width: 20px;
+    max-width: 20px;
     text-align: center;
     font-size: 1.1rem;
+    line-height: 1;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: visible;
+    box-sizing: border-box;
 }
 
 .nav-link span {
     flex: 1;
     transition: opacity var(--transition-base);
+    overflow: visible;
+    white-space: nowrap;
+    line-height: 1.5;
 }
 
 .admin-sidebar.collapsed .nav-link span {
     opacity: 0;
     width: 0;
     overflow: hidden;
+    display: none;
+}
+
+.admin-sidebar.collapsed .nav-link {
+    justify-content: center;
+    padding: var(--spacing-md);
+    position: relative;
+    margin-right: 0;
+    border-radius: var(--radius-md);
+    overflow: hidden !important;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.admin-sidebar.collapsed .nav-link::before {
+    display: none;
+}
+
+/* Enhanced Tooltip system for collapsed sidebar */
+.admin-sidebar.collapsed .nav-link,
+.admin-sidebar.collapsed .logout-btn,
+.admin-sidebar.collapsed .user-info {
+    position: relative;
+    overflow: visible;
+}
+
+.admin-sidebar.collapsed .nav-item {
+    overflow: visible;
+}
+
+/* Show tooltip on hover for all nav links */
+.admin-sidebar.collapsed .nav-link:hover .sidebar-tooltip {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateY(-50%) translateX(0) !important;
+    visibility: visible !important;
+}
+
+/* Show tooltip for logout button */
+.admin-sidebar.collapsed .logout-btn:hover .sidebar-tooltip {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateY(-50%) translateX(0) !important;
+    visibility: visible !important;
+}
+
+/* Show tooltip for user info */
+.admin-sidebar.collapsed .user-info:hover .sidebar-tooltip {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateX(-50%) translateY(0) !important;
+    visibility: visible !important;
+}
+
+.sidebar-tooltip {
+    position: fixed !important;
+    background: linear-gradient(135deg, var(--gray-900) 0%, var(--gray-800) 100%);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+    z-index: 99999 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    display: none;
+    visibility: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    min-width: max-content;
+}
+
+/* Tooltip for nav links - position to the right */
+.admin-sidebar.collapsed .nav-link .sidebar-tooltip,
+.admin-sidebar.collapsed .logout-btn .sidebar-tooltip {
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: auto !important;
+}
+
+.sidebar-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 6px solid var(--gray-900);
+    filter: drop-shadow(-2px 0 2px rgba(0, 0, 0, 0.2));
+}
+
+/* Tooltip for user info - position at bottom */
+.admin-sidebar.collapsed .user-info .sidebar-tooltip {
+    bottom: calc(100% + var(--spacing-sm));
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    margin-left: 0;
+    margin-bottom: 0;
+}
+
+.admin-sidebar.collapsed .user-info .sidebar-tooltip::before {
+    bottom: -6px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    border-right: 6px solid transparent;
+    border-left: 6px solid transparent;
+    border-top: 6px solid var(--gray-900);
+    border-bottom: none;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.2));
+}
+
+@keyframes fadeInTooltip {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .badge {
@@ -204,31 +531,146 @@ body {
     list-style: none;
     max-height: 0;
     overflow: hidden;
-    transition: max-height var(--transition-base);
+    transition: max-height var(--transition-base), opacity var(--transition-base);
     background: rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    padding-left: 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.submenu::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    background: transparent;
 }
 
 .nav-item.has-submenu.active .submenu {
     max-height: 500px;
+    opacity: 1;
 }
 
-.submenu li a {
+.submenu li {
+    margin: 0;
+}
+
+.submenu-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-lg);
     padding-left: calc(var(--spacing-lg) + 20px + var(--spacing-md));
     font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    position: relative;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-right: var(--spacing-md);
+}
+
+.submenu-link::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 0;
+    background: var(--primary);
+    border-radius: 0 2px 2px 0;
+    transition: height var(--transition-fast);
+}
+
+.submenu-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding-left: calc(var(--spacing-lg) + 20px + var(--spacing-md) + 8px);
+    transform: translateX(2px);
+}
+
+.submenu-link:hover::before {
+    height: 50%;
+}
+
+.submenu-link.active {
+    background: rgba(99, 102, 241, 0.2);
+    color: var(--primary-light);
+    font-weight: 600;
+}
+
+.submenu-link.active::before {
+    height: 70%;
+}
+
+.submenu-link i {
+    width: 16px;
+    min-width: 16px;
+    max-width: 16px;
+    text-align: center;
+    font-size: 0.9rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.submenu-link span {
+    flex: 1;
+    transition: opacity var(--transition-base);
+}
+
+.admin-sidebar.collapsed .submenu-link span {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
 }
 
 .submenu-icon {
     margin-left: auto;
-    transition: transform var(--transition-fast);
+    transition: transform var(--transition-base);
+    font-size: 0.75rem;
 }
 
 .nav-item.has-submenu.active .submenu-icon {
     transform: rotate(180deg);
 }
 
+.nav-item.has-submenu.active > .nav-link {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary-light);
+}
+
+.nav-item.has-submenu.active > .nav-link::before {
+    height: 80%;
+}
+
+.admin-sidebar.collapsed .submenu-icon {
+    display: none;
+}
+
+.admin-sidebar.collapsed .submenu {
+    display: none;
+}
+
+/* Submenu completely hidden when collapsed - no hover popup */
+.admin-sidebar.collapsed .nav-item.has-submenu {
+    position: relative;
+}
+
+.admin-sidebar.collapsed .nav-item.has-submenu:hover .submenu {
+    display: none !important;
+}
+
 .sidebar-footer {
     padding: var(--spacing-lg);
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    overflow-x: visible;
+    overflow-y: hidden;
+    flex-shrink: 0;
 }
 
 .user-info {
@@ -239,6 +681,16 @@ body {
     padding: var(--spacing-md);
     background: rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-md);
+    position: relative;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-decoration: none;
+    color: inherit;
+}
+
+.user-info:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateX(2px);
 }
 
 .user-avatar {
@@ -279,6 +731,125 @@ body {
     display: none;
 }
 
+/* User Info Tooltip */
+.user-info-tooltip {
+    position: absolute;
+    left: 100%;
+    bottom: 0;
+    margin-left: var(--spacing-md);
+    background: var(--gray-900);
+    color: white;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    z-index: 1002;
+    min-width: 250px;
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    display: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.user-info-tooltip::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    bottom: 20px;
+    width: 0;
+    height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-right: 6px solid var(--gray-900);
+}
+
+.tooltip-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.tooltip-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+}
+
+.tooltip-user-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.tooltip-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: var(--spacing-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tooltip-email {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tooltip-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 var(--spacing-lg);
+}
+
+.tooltip-actions {
+    padding: var(--spacing-sm) 0;
+}
+
+.tooltip-action-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.tooltip-action-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.tooltip-action-item i {
+    width: 20px;
+    text-align: center;
+}
+
+.tooltip-action-item:last-child {
+    color: rgba(239, 68, 68, 0.9);
+}
+
+.tooltip-action-item:last-child:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: var(--danger);
+}
+
 .logout-btn {
     width: 100%;
     padding: var(--spacing-md);
@@ -308,11 +879,44 @@ body {
 .admin-main {
     margin-left: var(--sidebar-width);
     min-height: 100vh;
-    transition: margin-left var(--transition-base);
+    transition: margin-left var(--transition-base), width var(--transition-base);
+    width: calc(100% - var(--sidebar-width));
+    will-change: margin-left, width;
 }
 
-.admin-sidebar.collapsed ~ .admin-main {
-    margin-left: var(--sidebar-collapsed-width);
+/* Fix: Use body class or direct class selector since sidebar might be in a wrapper */
+body:has(.admin-sidebar.collapsed) .admin-main,
+.admin-sidebar.collapsed ~ .admin-main,
+.admin-sidebar.collapsed + .admin-main {
+    margin-left: var(--sidebar-collapsed-width) !important;
+    width: calc(100% - var(--sidebar-collapsed-width)) !important;
+}
+
+/* Alternative: Use JavaScript to add class to body */
+body.sidebar-collapsed .admin-main {
+    margin-left: var(--sidebar-collapsed-width) !important;
+    width: calc(100% - var(--sidebar-collapsed-width)) !important;
+}
+
+/* Responsive for sidebar */
+@media (max-width: 768px) {
+    .admin-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .admin-sidebar.mobile-open {
+        transform: translateX(0);
+    }
+    
+    .admin-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    .admin-sidebar.collapsed ~ .admin-main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
 }
 
 .admin-header {
