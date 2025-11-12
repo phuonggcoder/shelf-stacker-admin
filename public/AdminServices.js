@@ -48,6 +48,17 @@ class AdminServices {
     async request(endpoint, options = {}) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
         
+        // Enhanced logging for email change endpoints
+        const isEmailChangeEndpoint = endpoint.includes('change-email') || endpoint.includes('verify-email-change');
+        if (isEmailChangeEndpoint) {
+            console.log('📧 [AdminServices] Request to email change endpoint:', {
+                endpoint,
+                method: options.method || 'GET',
+                hasBody: !!options.body,
+                timestamp: new Date().toISOString()
+            });
+        }
+        
         const config = {
             ...options,
             headers: {
@@ -57,7 +68,19 @@ class AdminServices {
         };
 
         try {
+            const requestStartTime = Date.now();
             const response = await fetch(url, config);
+            const requestDuration = Date.now() - requestStartTime;
+            
+            if (isEmailChangeEndpoint) {
+                console.log('📧 [AdminServices] Email change endpoint response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok,
+                    duration: `${requestDuration}ms`,
+                    timestamp: new Date().toISOString()
+                });
+            }
             
             // Handle 401 - Unauthorized
             if (response.status === 401) {
@@ -84,10 +107,38 @@ class AdminServices {
                 throw new Error('Không có quyền truy cập');
             }
 
-            const data = await response.json().catch(() => ({}));
+            const data = await response.json().catch((parseError) => {
+                if (isEmailChangeEndpoint) {
+                    console.error('❌ [AdminServices] Failed to parse email change response:', {
+                        error: parseError.message,
+                        status: response.status,
+                        statusText: response.statusText
+                    });
+                }
+                return {};
+            });
             
             if (!response.ok) {
-                throw new Error(data.message || data.msg || `HTTP ${response.status}: ${response.statusText}`);
+                const errorMessage = data.message || data.msg || `HTTP ${response.status}: ${response.statusText}`;
+                
+                if (isEmailChangeEndpoint) {
+                    console.error('❌ [AdminServices] Email change endpoint error:', {
+                        status: response.status,
+                        message: errorMessage,
+                        errorData: data,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+                
+                throw new Error(errorMessage);
+            }
+
+            if (isEmailChangeEndpoint) {
+                console.log('✅ [AdminServices] Email change endpoint success:', {
+                    success: data?.success,
+                    hasMessage: !!data?.message,
+                    timestamp: new Date().toISOString()
+                });
             }
 
             // Chỉ tự động extract data nếu response có format { success: true, data: {...} }
@@ -104,6 +155,15 @@ class AdminServices {
             // - { success: true, data: {...} } (đã extract ở trên)
             return data;
         } catch (error) {
+            if (isEmailChangeEndpoint) {
+                console.error('❌ [AdminServices] Email change endpoint request failed:', {
+                    endpoint,
+                    error: error.message,
+                    name: error.name,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            
             if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
                 throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
             }
@@ -1824,16 +1884,92 @@ class AdminServices {
      * @returns {Promise<Object>} { success, message, old_email, new_email, expiresIn }
      */
     async requestEmailChange(newEmail, currentPassword) {
-        console.log('📧 [AdminServices] requestEmailChange called with:', { newEmail, currentPassword: '***' });
+        console.log('📧 [AdminServices] requestEmailChange called with:', { 
+            newEmail, 
+            currentPassword: '***',
+            timestamp: new Date().toISOString()
+        });
+        
         try {
+            // Validate inputs
+            if (!newEmail || !currentPassword) {
+                const error = new Error('Email mới và mật khẩu hiện tại là bắt buộc');
+                console.error('❌ [AdminServices] requestEmailChange validation error:', error);
+                throw error;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(newEmail)) {
+                const error = new Error('Email không hợp lệ');
+                console.error('❌ [AdminServices] requestEmailChange email validation error:', error);
+                throw error;
+            }
+
+            console.log('📧 [AdminServices] Sending request to /api/users/change-email');
+            
             const response = await this.request('/api/users/change-email', {
                 method: 'PUT',
                 body: JSON.stringify({ newEmail, currentPassword })
             });
-            console.log('📦 [AdminServices] requestEmailChange response:', response);
+            
+            console.log('✅ [AdminServices] requestEmailChange response received:', {
+                success: response?.success,
+                message: response?.message,
+                old_email: response?.old_email,
+                new_email: response?.new_email,
+                expiresIn: response?.expiresIn,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Log warning if response doesn't have expected structure
+            if (!response || typeof response !== 'object') {
+                console.warn('⚠️ [AdminServices] Unexpected response format:', response);
+            }
+            
             return response;
         } catch (error) {
-            console.error('❌ [AdminServices] requestEmailChange error:', error);
+            console.error('❌ [AdminServices] requestEmailChange error:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Provide more user-friendly error messages based on backend error codes
+            const errorMessage = error.message || '';
+            
+            // Email Service Errors
+            if (errorMessage.includes('ETIMEDOUT') || errorMessage.includes('Connection timeout')) {
+                throw new Error('Kết nối email service bị timeout. Vui lòng kiểm tra cấu hình EMAIL_USER và EMAIL_PASSWORD, hoặc thử lại sau.');
+            }
+            
+            if (errorMessage.includes('EAUTH') || errorMessage.includes('Authentication failed')) {
+                throw new Error('Lỗi xác thực email. Vui lòng kiểm tra EMAIL_USER và EMAIL_PASSWORD (phải là App Password từ Gmail).');
+            }
+            
+            if (errorMessage.includes('ECONNECTION') || errorMessage.includes('Connection error')) {
+                throw new Error('Không thể kết nối đến email service. Vui lòng kiểm tra kết nối mạng và firewall.');
+            }
+            
+            // ESMS Service Errors
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('101')) {
+                throw new Error('Lỗi xác thực ESMS. Vui lòng kiểm tra ESMS_API_KEY và ESMS_SECRET_KEY trong environment variables.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('102')) {
+                throw new Error('Tài khoản ESMS không đủ số dư để gửi SMS. Vui lòng nạp tiền vào tài khoản ESMS.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('103')) {
+                throw new Error('Brandname ESMS không hợp lệ hoặc chưa được đăng ký. Vui lòng kiểm tra cấu hình ESMS_BRANDNAME.');
+            }
+            
+            // Network Errors
+            if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+                throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+            }
+            
             throw error;
         }
     }
@@ -1845,16 +1981,102 @@ class AdminServices {
      * @returns {Promise<Object>} { success, message, data }
      */
     async verifyEmailChange(oldEmailOtp, newEmailOtp) {
-        console.log('📧 [AdminServices] verifyEmailChange called');
+        console.log('📧 [AdminServices] verifyEmailChange called', {
+            oldEmailOtpLength: oldEmailOtp?.length || 0,
+            newEmailOtpLength: newEmailOtp?.length || 0,
+            timestamp: new Date().toISOString()
+        });
+        
         try {
+            // Validate inputs
+            if (!oldEmailOtp || !newEmailOtp) {
+                const error = new Error('Cả hai mã OTP (email cũ và email mới) đều là bắt buộc');
+                console.error('❌ [AdminServices] verifyEmailChange validation error:', error);
+                throw error;
+            }
+
+            // Clean OTPs (remove spaces and non-numeric characters)
+            const cleanOTP = (otp) => {
+                if (!otp) return '';
+                return otp.toString().replace(/\s/g, '').replace(/[^0-9]/g, '').trim();
+            };
+            
+            const cleanedOldOtp = cleanOTP(oldEmailOtp);
+            const cleanedNewOtp = cleanOTP(newEmailOtp);
+            
+            console.log('📧 [AdminServices] OTPs cleaned:', {
+                oldOtp: { original: oldEmailOtp?.length || 0, cleaned: cleanedOldOtp.length },
+                newOtp: { original: newEmailOtp?.length || 0, cleaned: cleanedNewOtp.length }
+            });
+            
+            if (!cleanedOldOtp || !cleanedNewOtp) {
+                const error = new Error('Mã OTP không hợp lệ');
+                console.error('❌ [AdminServices] verifyEmailChange OTP validation error:', error);
+                throw error;
+            }
+            
+            console.log('📧 [AdminServices] Sending verification request to /api/users/verify-email-change');
+            
             const response = await this.request('/api/users/verify-email-change', {
                 method: 'POST',
-                body: JSON.stringify({ oldEmailOtp, newEmailOtp })
+                body: JSON.stringify({ oldEmailOtp: cleanedOldOtp, newEmailOtp: cleanedNewOtp })
             });
-            console.log('📦 [AdminServices] verifyEmailChange response:', response);
+            
+            console.log('✅ [AdminServices] verifyEmailChange response received:', {
+                success: response?.success,
+                message: response?.message,
+                hasData: !!response?.data,
+                timestamp: new Date().toISOString()
+            });
+            
             return response;
         } catch (error) {
-            console.error('❌ [AdminServices] verifyEmailChange error:', error);
+            console.error('❌ [AdminServices] verifyEmailChange error:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Provide more user-friendly error messages based on backend error codes
+            const errorMessage = error.message || '';
+            
+            // Email Service Errors
+            if (errorMessage.includes('ETIMEDOUT') || errorMessage.includes('Connection timeout')) {
+                throw new Error('Kết nối email service bị timeout. Vui lòng kiểm tra cấu hình EMAIL_USER và EMAIL_PASSWORD, hoặc thử lại sau.');
+            }
+            
+            if (errorMessage.includes('EAUTH') || errorMessage.includes('Authentication failed')) {
+                throw new Error('Lỗi xác thực email. Vui lòng kiểm tra EMAIL_USER và EMAIL_PASSWORD (phải là App Password từ Gmail).');
+            }
+            
+            if (errorMessage.includes('ECONNECTION') || errorMessage.includes('Connection error')) {
+                throw new Error('Không thể kết nối đến email service. Vui lòng kiểm tra kết nối mạng và firewall.');
+            }
+            
+            // ESMS Service Errors
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('101')) {
+                throw new Error('Lỗi xác thực ESMS. Vui lòng kiểm tra ESMS_API_KEY và ESMS_SECRET_KEY trong environment variables.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('102')) {
+                throw new Error('Tài khoản ESMS không đủ số dư để gửi SMS. Vui lòng nạp tiền vào tài khoản ESMS.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('103')) {
+                throw new Error('Brandname ESMS không hợp lệ hoặc chưa được đăng ký. Vui lòng kiểm tra cấu hình ESMS_BRANDNAME.');
+            }
+            
+            // OTP Errors
+            if (errorMessage.includes('OTP') || errorMessage.includes('expired') || errorMessage.includes('invalid')) {
+                throw new Error('Mã OTP không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.');
+            }
+            
+            // Network Errors
+            if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+                throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+            }
+            
             throw error;
         }
     }
@@ -1917,16 +2139,61 @@ class AdminServices {
      * @returns {Promise<Object>} { success: true }
      */
     async requestSMSOTP(phone) {
-        console.log('📱 [AdminServices] requestSMSOTP called with:', { phone });
+        console.log('📱 [AdminServices] requestSMSOTP called with:', { phone, timestamp: new Date().toISOString() });
         try {
+            // Validate phone number
+            if (!phone) {
+                const error = new Error('Số điện thoại là bắt buộc');
+                console.error('❌ [AdminServices] requestSMSOTP validation error:', error);
+                throw error;
+            }
+
+            // Clean phone number (remove spaces, dashes, etc.)
+            const cleanPhone = phone.replace(/\s+/g, '').replace(/[-\s()]/g, '');
+            
+            console.log('📱 [AdminServices] Sending SMS OTP request to /api/users/auth/request-otp');
+            
             const response = await this.request('/api/users/auth/request-otp', {
                 method: 'POST',
-                body: JSON.stringify({ phone })
+                body: JSON.stringify({ phone: cleanPhone })
             });
-            console.log('📦 [AdminServices] requestSMSOTP response:', response);
+            
+            console.log('✅ [AdminServices] requestSMSOTP response received:', {
+                success: response?.success,
+                message: response?.message,
+                timestamp: new Date().toISOString()
+            });
+            
             return response;
         } catch (error) {
-            console.error('❌ [AdminServices] requestSMSOTP error:', error);
+            console.error('❌ [AdminServices] requestSMSOTP error:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+            });
+            
+            // Provide more user-friendly error messages based on backend error codes
+            const errorMessage = error.message || '';
+            
+            // ESMS Service Errors
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('101')) {
+                throw new Error('Lỗi xác thực ESMS. Vui lòng kiểm tra ESMS_API_KEY và ESMS_SECRET_KEY trong environment variables.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('102')) {
+                throw new Error('Tài khoản ESMS không đủ số dư để gửi SMS. Vui lòng nạp tiền vào tài khoản ESMS.');
+            }
+            
+            if (errorMessage.includes('CodeResult') && errorMessage.includes('103')) {
+                throw new Error('Brandname ESMS không hợp lệ hoặc chưa được đăng ký. Vui lòng kiểm tra cấu hình ESMS_BRANDNAME.');
+            }
+            
+            // Network Errors
+            if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+                throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.');
+            }
+            
             throw error;
         }
     }
