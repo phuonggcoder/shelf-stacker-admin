@@ -1185,101 +1185,10 @@ async function fetchOrdersForNotifications() {
   }
 }
 
-document.getElementById('btn-add-campaign').addEventListener('click', () => {
-  editingId = null;
-  existingImages = [];
-  newImageFiles = [];
-  deletedImageUrls = [];
-  document.getElementById('campaign-form').reset();
-  if (editorInstance) editorInstance.setData('');
-  document.getElementById('save-campaign-btn').style.display = 'block';
-  document.getElementById('update-campaign-btn').style.display = 'none';
-  document.getElementById('campaign-modal').style.display = 'flex';
-  document.getElementById('image-preview-container').innerHTML = '';
-  document.getElementById('campaign-image').value = '';
-  const select = document.getElementById('campaign-books');
-  Array.from(select.options).forEach(opt => (opt.selected = false));
-  loadBooksForSearch();
-});
-
-document.getElementById('close-campaign-modal').addEventListener('click', () => {
-  document.getElementById('campaign-modal').style.display = 'none';
-  document.getElementById('image-preview-container').innerHTML = '';
-  document.getElementById('campaign-image').value = '';
-  existingImages = [];
-  newImageFiles = [];
-  deletedImageUrls = [];
-  editingId = null;
-});
-
-document.getElementById('campaign-image').addEventListener('change', function(e) {
-  const files = e.target.files;
-  if (files.length > 0) {
-    newImageFiles = newImageFiles.concat(Array.from(files));
-    renderImagePreviews();
-    document.getElementById('campaign-image').value = '';
-  }
-});
-
-document.getElementById('save-campaign-btn').addEventListener('click', async function(e) {
-  e.preventDefault();
-  const name = document.getElementById('campaign-name').value.trim();
-  const description = editorInstance.getData();
-  const startDate = document.getElementById('campaign-start').value;
-  const endDate = document.getElementById('campaign-end').value;
-  const type = document.getElementById('campaign-type').value;
-  const books = getSelectedBooks();
-
-  if (!name || !startDate || !endDate) {
-    showNotification('error', 'Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
-    return;
-  }
-
-  // Disable button to prevent double submission
-  const saveBtn = document.getElementById('save-campaign-btn');
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Đang lưu...';
-    saveBtn.style.opacity = '0.6';
-    saveBtn.style.cursor = 'not-allowed';
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-    formData.append('type', type);
-    formData.append('bookIds', JSON.stringify(books));
-    newImageFiles.forEach(file => formData.append('imageFile', file));
-
-    const campaign = await AdminServices.createCampaign(formData);
-    
-    // Update books with campaign ID
-    await Promise.all(books.map(bookId => 
-      AdminServices.updateBook(bookId, { campaigns: [campaign._id] })
-    ));
-
-    showSuccessAddCampaignDialog();
-    document.getElementById('campaign-modal').style.display = 'none';
-    document.getElementById('image-preview-container').innerHTML = '';
-    document.getElementById('campaign-image').value = '';
-    newImageFiles = [];
-    loadCampaigns();
-  } catch (err) {
-    console.error('❌ Lỗi khi thêm chiến dịch:', err);
-    showNotification('error', `Lỗi khi thêm chiến dịch: ${err.message}`);
-  } finally {
-    // Always re-enable button
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Lưu';
-      saveBtn.style.opacity = '1';
-      saveBtn.style.cursor = 'pointer';
-    }
-  }
-});
+// Các handler cũ dùng id kiểu 'close-campaign-modal', 'campaign-image',
+// 'save-campaign-btn', 'update-campaign-btn' đã được thay thế bởi
+// cơ chế mới trong setupEventListeners + saveCampaign.
+// Để tránh lỗi phần tử null và trùng logic, khối handler legacy đã được loại bỏ.
 
 async function editCampaign(id) {
   try {
@@ -1337,69 +1246,8 @@ async function editCampaign(id) {
   }
 }
 
-document.getElementById('update-campaign-btn').addEventListener('click', async function(e) {
-  e.preventDefault();
-  const name = document.getElementById('campaign-name').value.trim();
-  const description = editorInstance.getData();
-  const status = document.getElementById('campaign-status').value;
-  const startDate = document.getElementById('campaign-start').value;
-  const endDate = document.getElementById('campaign-end').value;
-  const type = document.getElementById('campaign-type').value;
-  const books = getSelectedBooks();
-
-  if (!name || !startDate || !endDate) {
-    showNotification('error', 'Vui lòng nhập đầy đủ thông tin');
-    return;
-  }
-
-  // Disable button to prevent double submission
-  const updateBtn = document.getElementById('update-campaign-btn');
-  if (updateBtn) {
-    updateBtn.disabled = true;
-    updateBtn.textContent = 'Đang cập nhật...';
-    updateBtn.style.opacity = '0.6';
-    updateBtn.style.cursor = 'not-allowed';
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('status', status);
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-    formData.append('type', type);
-    formData.append('books', JSON.stringify(books));
-    newImageFiles.forEach(file => formData.append('imageFile', file));
-
-    await AdminServices.updateCampaign(editingId, formData);
-    
-    // Update books with campaign ID
-    await Promise.all(books.map(bookId =>
-      AdminServices.updateBook(bookId, { campaigns: [editingId] })
-    ));
-
-    showSuccessUpdateCampaignDialog();
-    document.getElementById('campaign-modal').style.display = 'none';
-    document.getElementById('image-preview-container').innerHTML = '';
-    document.getElementById('campaign-image').value = '';
-    existingImages = [];
-    newImageFiles = [];
-    deletedImageUrls = [];
-    loadCampaigns();
-  } catch (err) {
-    console.error(err);
-    showNotification('error', 'Lỗi khi cập nhật chiến dịch: ' + err.message);
-  } finally {
-    // Always re-enable button
-    if (updateBtn) {
-      updateBtn.disabled = false;
-      updateBtn.textContent = 'Cập nhật';
-      updateBtn.style.opacity = '1';
-      updateBtn.style.cursor = 'pointer';
-    }
-  }
-});
+// Khối handler legacy cho nút 'update-campaign-btn' đã bị loại bỏ vì
+// giao diện mới không còn sử dụng các id này nữa.
 
 async function deleteCampaign(id) {
   try {
@@ -1679,28 +1527,6 @@ window.viewCampaignImages = viewCampaignImages;
 window.viewCampaignBooks = viewCampaignBooks;
 window.viewCampaignDetails = viewCampaignDetails;
 
-document.getElementById('btn-search').addEventListener('click', async function() {
-  const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
-  try {
-    const data = await AdminServices.getCampaigns();
-    const filtered = data.filter(c => c.name.toLowerCase().includes(keyword));
-    if (filtered.length === 0) {
-      showNotFoundCampaignDialog();
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không tìm thấy chiến dịch nào.</td></tr>`;
-    } else {
-      renderCampaigns(filtered);
-    }
-  } catch (err) {
-    console.error('❌ Lỗi tìm kiếm:', err);
-    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
-    showNotification('error', 'Không thể tìm kiếm: ' + err.message);
-  }
-});
-
-document.getElementById('search-campaign').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('btn-search').click();
-});
-
 // Initialize page
 document.addEventListener('DOMContentLoaded', async function() {
   const pathname = window.location.pathname;
@@ -1728,10 +1554,69 @@ function initCampaignsPage() {
   console.log('📢 initCampaignsPage called');
   setupEventListeners();
   setupBookSearch();
-  setupImageUpload();
   console.log('📢 Event listeners setup, loading campaigns...');
   loadCampaigns();
   loadBooks();
+}
+
+// Thiết lập tìm kiếm & chọn sách cho chiến dịch
+function setupBookSearch() {
+  const toggleBtn = document.getElementById('toggle-book-list');
+  const searchWrap = document.getElementById('book-search-wrap');
+  const searchInput = document.getElementById('book-search-input');
+
+  if (toggleBtn && searchWrap) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = searchWrap.style.display === 'none' || !searchWrap.style.display;
+      searchWrap.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        // Khi mở panel thì reload danh sách sách gợi ý
+        loadBooksForSearch();
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const keyword = searchInput.value.trim().toLowerCase();
+      const select = document.getElementById('campaign-books');
+      if (!window.allBooks || !Array.isArray(window.allBooks)) return;
+
+      const selectedIds = select
+        ? Array.from(select.options).filter(o => o.selected).map(o => o.value)
+        : [];
+
+      const filtered = keyword
+        ? window.allBooks.filter(b => {
+            const title = (b.title || b.name || '').toLowerCase();
+            const author = (b.author || '').toLowerCase();
+            return title.includes(keyword) || author.includes(keyword);
+          })
+        : window.allBooks;
+
+      renderBookSearchList(filtered, selectedIds);
+    });
+  }
+}
+
+// Thiết lập upload & preview hình ảnh chiến dịch
+function setupImageUpload() {
+  const imagesInput = document.getElementById('campaign-images');
+  const previewContainer = document.getElementById('image-preview-container');
+
+  if (!imagesInput || !previewContainer) return;
+
+  imagesInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Gộp vào mảng newImageFiles để dùng chung với renderImagePreviews()
+    newImageFiles = newImageFiles.concat(files);
+    renderImagePreviews();
+
+    // Reset input để có thể chọn lại cùng một file nếu muốn
+    imagesInput.value = '';
+  });
 }
 
 function showSuccessUpdateCampaignDialog() {
@@ -1764,161 +1649,21 @@ function showSuccessAddCampaignDialog() {
     .then(html => document.body.insertAdjacentHTML('beforeend', html));
 }
 
-window.onload = () => {
-  const savedAvatar = localStorage.getItem('userAvatar');
-  if (savedAvatar) {
-    document.getElementById('sidebarAvatar').src = savedAvatar;
-    document.getElementById('headerAvatar').src = savedAvatar;
-  }
-  const uploadDialog = document.getElementById('uploadDialog');
-  uploadDialog.removeAttribute('open');
-};
+// Ghi đè window.onload gây lỗi (uploadDialog null) và xung đột với các trang khác
+// đã được loại bỏ. Logic avatar / upload sẽ được khởi tạo an toàn ở nơi khác nếu cần.
 
 function toggleMenu(id) {
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-document.getElementById('settingsLink').onclick = () => {
-  document.getElementById('mainSidebar').classList.add('hidden');
-  document.getElementById('settingsSidebar').classList.remove('hidden');
-};
+// Các handler sidebar/avatar/upload cũ dùng các ID không tồn tại trên trang campaigns
+// đã được loại bỏ để tránh lỗi null.onclick và không ảnh hưởng đến phần khác của admin.
 
-document.getElementById('backButton').onclick = () => {
-  document.getElementById('settingsSidebar').classList.add('hidden');
-  document.getElementById('mainSidebar').classList.remove('hidden');
-};
-
-document.getElementById('logoutButton').onclick = () => {
-  fetch('login')
-    .then(res => {
-      if (res.ok) {
-        localStorage.removeItem('userAvatar');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
-        window.location.href = 'login';
-      } else {
-        alert('Không tìm thấy file login.html, vui lòng tạo file này.');
-      }
-    })
-    .catch(() => {
-      alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
-    });
-};
-
-const uploadDialog = document.getElementById('uploadDialog');
-const uploadMessage = document.getElementById('uploadMessage');
-const uploadButton = document.getElementById('uploadButton');
-const cancelButton = document.getElementById('cancelButton');
-const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-sidebarAvatar.onclick = () => {
-  uploadDialog.showModal();
-  resetUploadDialog();
-};
-
-cancelButton.onclick = () => {
-  uploadDialog.close();
-};
-
-uploadDialog.addEventListener('close', () => {
-  resetUploadDialog();
-});
-
-function resetUploadDialog() {
-  document.getElementById('avatarUpload').value = '';
-  uploadMessage.style.display = 'none';
-  uploadMessage.textContent = '';
-  uploadMessage.className = 'notification';
-  uploadButton.disabled = false;
-  uploadButton.textContent = 'Tải lên';
+// Ngăn submit mặc định nếu form tồn tại (đã có saveCampaign xử lý)
+const campaignFormElement = document.getElementById('campaign-form');
+if (campaignFormElement) {
+  campaignFormElement.addEventListener('submit', function(e) {
+    e.preventDefault();
+  });
 }
-
-uploadButton.onclick = async () => {
-  const fileInput = document.getElementById('avatarUpload');
-  const file = fileInput.files[0];
-
-  if (!file) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  const token = localStorage.getItem('authToken');
-  const userId = localStorage.getItem('userId');
-
-  if (!token) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  if (!userId) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  uploadButton.disabled = true;
-  uploadButton.textContent = 'Đang tải...';
-
-  try {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    formData.append('userId', userId);
-
-    const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Lỗi khi tải ảnh lên';
-      try {
-        const errData = await response.json();
-        if (errData.message) errorMsg = errData.message;
-      } catch {}
-      throw new Error(errorMsg);
-    }
-
-    const data = await response.json();
-    const imageUrl = data.avatar || URL.createObjectURL(file);
-
-    document.getElementById('sidebarAvatar').src = imageUrl;
-    document.getElementById('headerAvatar').src = imageUrl;
-
-    localStorage.setItem('userAvatar', imageUrl);
-
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-    uploadMessage.className = 'notification success-message';
-
-    setTimeout(() => {
-      uploadDialog.close();
-    }, 2000);
-  } catch (error) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Lỗi: ' + error.message;
-    uploadMessage.className = 'notification error-message';
-    uploadButton.disabled = false;
-    uploadButton.textContent = 'Tải lên';
-  }
-};
-
-document.getElementById('campaign-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-});

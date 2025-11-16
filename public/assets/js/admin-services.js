@@ -38,22 +38,28 @@ class AdminServices {
 
     getAuthHeaders() {
         const token = this.getToken();
-        return {
-            'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        };
+        // Chỉ trả về header Authorization, Content-Type sẽ được set động trong request()
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
     }
 
     // ==================== Request Handler ====================
     async request(endpoint, options = {}) {
         const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
         
+        // Hợp nhất headers và tự động set Content-Type cho JSON (không áp dụng cho FormData)
+        const baseHeaders = this.getAuthHeaders();
+        const isFormData = options.body instanceof FormData;
+        const mergedHeaders = {
+            ...baseHeaders,
+            ...(options.headers || {})
+        };
+        if (options.body && !isFormData && !mergedHeaders['Content-Type']) {
+            mergedHeaders['Content-Type'] = 'application/json';
+        }
+
         const config = {
             ...options,
-            headers: {
-                ...this.getAuthHeaders(),
-                ...(options.headers || {})
-            }
+            headers: mergedHeaders
         };
 
         try {
@@ -417,7 +423,8 @@ class AdminServices {
     }
 
     async getVoucher(id) {
-        return this.request(`/api/vouchers/admin/${id}`);
+        // Sử dụng endpoint voucher chuẩn (đã dùng ở ApiClient legacy)
+        return this.request(`/api/vouchers/${id}`);
     }
 
     async createVoucher(data) {

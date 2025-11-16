@@ -96,6 +96,16 @@ function setupEventListeners() {
             
             const formElement = modal.querySelector('form');
             if (formElement) {
+                // CKEditor cho mô tả voucher (nếu có textarea description)
+                const descTextarea = formElement.querySelector('textarea[name="description"]');
+                if (descTextarea && window.ClassicEditor && !descTextarea._ckeditorInstance) {
+                    ClassicEditor.create(descTextarea)
+                        .then(editor => {
+                            descTextarea._ckeditorInstance = editor;
+                        })
+                        .catch(error => console.error('CKEditor voucher (create) error:', error));
+                }
+
                 // Handle voucher type change
                 const typeSelect = formElement.querySelector('[name="voucher_type"]');
                 if (typeSelect) {
@@ -109,6 +119,12 @@ function setupEventListeners() {
                     e.preventDefault();
                     const formData = new FormData(formElement);
                     const data = {};
+
+                    // Đồng bộ dữ liệu CKEditor vào textarea trước khi đọc FormData
+                    const descField = formElement.querySelector('textarea[name="description"]');
+                    if (descField && descField._ckeditorInstance) {
+                        descField.value = descField._ckeditorInstance.getData();
+                    }
                     
                     // Extract all form values
                     for (let [key, value] of formData.entries()) {
@@ -394,8 +410,10 @@ async function viewVoucher(id) {
     try {
         console.log('🎫 viewVoucher called with id:', id);
         showLoading();
-        const voucher = await window.AdminServices.getVoucher(id);
-        console.log('🎫 Voucher details loaded:', voucher);
+        const response = await window.AdminServices.getVoucher(id);
+        console.log('🎫 Voucher details loaded:', response);
+        // API trả về { success: true, voucher: {...} } nên cần bóc voucher ra
+        const voucher = response && response.voucher ? response.voucher : response;
         hideLoading();
         
         if (!voucher) {
@@ -482,7 +500,8 @@ function escapeHtml(text) {
 async function editVoucher(id) {
     try {
         AdminUIComponents.showLoading('Đang tải...');
-        const voucher = await window.AdminServices.getVoucher(id);
+        const response = await window.AdminServices.getVoucher(id);
+        const voucher = response && response.voucher ? response.voucher : response;
         AdminUIComponents.hideLoading();
         
         const form = AdminCRUDForms.createVoucherForm(voucher);
@@ -507,6 +526,16 @@ async function editVoucher(id) {
         
         const formElement = modal.querySelector('form');
         if (formElement) {
+            // CKEditor cho mô tả voucher khi chỉnh sửa
+            const descTextarea = formElement.querySelector('textarea[name="description"]');
+            if (descTextarea && window.ClassicEditor && !descTextarea._ckeditorInstance) {
+                ClassicEditor.create(descTextarea)
+                    .then(editor => {
+                        descTextarea._ckeditorInstance = editor;
+                    })
+                    .catch(error => console.error('CKEditor voucher (edit) error:', error));
+            }
+
             // Handle voucher type change
             const typeSelect = formElement.querySelector('[name="voucher_type"]');
             if (typeSelect) {
@@ -519,7 +548,13 @@ async function editVoucher(id) {
             
             formElement.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(formElement);
+                    // Đồng bộ dữ liệu CKEditor vào textarea trước khi đọc FormData
+                    const descField = formElement.querySelector('textarea[name="description"]');
+                    if (descField && descField._ckeditorInstance) {
+                        descField.value = descField._ckeditorInstance.getData();
+                    }
+
+                    const formData = new FormData(formElement);
                 const data = {};
                 
                 // Extract all form values
