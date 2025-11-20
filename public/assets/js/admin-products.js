@@ -40,6 +40,117 @@ let currentViewMode = 'active'; // 'active' or 'deleted'
 let currentSortColumn = null; // Cột đang được sắp xếp
 let currentSortDirection = null; // Hướng sắp xếp hiện tại (asc/desc)
 
+// ==================== CKEditor cho mô tả sách ====================
+let bookDescEditor = null;
+
+const BOOK_DESC_UPLOAD_URL = `${(window.AdminServices && window.AdminServices.baseUrl) || 'https://server-shelf-stacker-w1ds.onrender.com'}/api/upload/smart`;
+
+class AdminCKEditorUploadAdapter {
+    constructor(loader) {
+        this.loader = loader;
+    }
+
+    async upload() {
+        const file = await this.loader.file;
+        const token =
+            (window.AdminServices && window.AdminServices.getToken && window.AdminServices.getToken()) ||
+            localStorage.getItem('admin_token') ||
+            localStorage.getItem('authToken');
+
+        if (!token) {
+            console.error('Không tìm thấy token xác thực cho CKEditor upload.');
+            return Promise.reject('Không tìm thấy token xác thực.');
+        }
+
+        const formData = new FormData();
+        formData.append('imageFile', file);
+        formData.append('folder', 'admin_ckeditor5_Uploads');
+        formData.append('type', 'book');
+
+        try {
+            const response = await fetch(BOOK_DESC_UPLOAD_URL, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: response.statusText }));
+                throw new Error(errorData.message || `Lỗi server: ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!data.success || !data.url) {
+                throw new Error(data.message || 'Không nhận được URL ảnh.');
+            }
+
+            return { default: data.url };
+        } catch (error) {
+            console.error('Lỗi upload CKEditor:', error);
+            if (typeof showToast === 'function') {
+                showToast('Không thể upload ảnh trong mô tả: ' + error.message, 'error');
+            }
+            return Promise.reject(error);
+        }
+    }
+
+    abort() {
+        // Có thể thêm logic hủy upload nếu cần
+    }
+}
+
+function initBookDescEditor(textarea) {
+    if (!textarea) return;
+    if (!window.ClassicEditor) {
+        console.error('ClassicEditor không được định nghĩa. Đảm bảo đã load script CKEditor trên trang.');
+        return;
+    }
+
+    // Nếu editor đã gắn cho textarea này thì không khởi tạo lại
+    if (textarea._ckeditorInstance) {
+        bookDescEditor = textarea._ckeditorInstance;
+        return;
+    }
+
+    ClassicEditor.create(textarea, {
+        toolbar: [
+            'heading',
+            '|',
+            'bold',
+            'italic',
+            'link',
+            'bulletedList',
+            'numberedList',
+            '|',
+            'blockQuote',
+            'insertTable',
+            'undo',
+            'redo'
+        ]
+    })
+        .then(editor => {
+            bookDescEditor = editor;
+            textarea._ckeditorInstance = editor;
+            // Tăng chiều cao, khoảng cách – cho cảm giác nhập liệu “thoáng” hơn
+            editor.editing.view.change(writer => {
+                const root = editor.editing.view.document.getRoot();
+                writer.setStyle('min-height', '220px', root);
+                writer.setStyle('padding', '14px 16px', root);
+                writer.setStyle('font-size', '14px', root);
+                writer.setStyle('line-height', '1.6', root);
+            });
+
+            // Nếu sau này bật tính năng upload ảnh thì mới gắn UploadAdapter
+            if (editor.plugins.has('FileRepository')) {
+                editor.plugins.get('FileRepository').createUploadAdapter = loader =>
+                    new AdminCKEditorUploadAdapter(loader);
+            }
+        })
+        .catch(error => {
+            console.error('Lỗi khởi tạo CKEditor mô tả sách:', error);
+        });
+}
+
 // Autocomplete variables
 let autocompleteTimeout = null;
 let autocompleteAbortController = null;
@@ -1526,7 +1637,10 @@ async function viewBook(id) {
         const price = window.AdminServices.formatCurrency(book.price || 0);
         const stock = book.stock || 0;
         const categories = book.categories?.map(c => escapeHtml(c.name || c)).join(', ') || 'N/A';
-        const description = escapeHtml(book.description || 'Chưa có mô tả');
+        // Không escape mô tả để có thể hiển thị HTML từ CKEditor
+        const descriptionHtml = book.description && book.description.trim()
+            ? book.description
+            : '<em>Chưa có mô tả</em>';
         const imageUrl = safeImageUrl(book.thumbnail || book.cover_images?.[0]);
         const placeholderSvg = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'300\'%3E%3Crect width=\'200\' height=\'300\' fill=\'%23e5e7eb\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%239ca3af\' font-size=\'14\'%3ENo Image%3C/text%3E%3C/svg%3E';
         const featured = book.featured ? '<span class="badge" style="background: #f59e0b; color: white; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; margin-top: 0.5rem; display: inline-block;">Nổi bật</span>' : '';
@@ -1554,7 +1668,9 @@ async function viewBook(id) {
                     </div>
                     <div style="margin-top: 1.5rem;">
                         <h3 style="margin: 0 0 1rem 0; color: #1f2937;">Mô tả</h3>
-                        <p style="color: #4b5563; line-height: 1.6; white-space: pre-wrap;">${description}</p>
+                        <div style="color: #4b5563; line-height: 1.6;" class="book-description">
+                            ${descriptionHtml}
+                        </div>
                     </div>
                 </div>
             `,
@@ -1635,10 +1751,17 @@ async function showAddBookModal() {
             categoriesField.className = 'form-group';
             categoriesField.innerHTML = `
                 <label class="form-label">Danh mục</label>
-                <select name="categories" class="form-select" multiple style="min-height: 100px;">
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                  <input type="text" class="form-input" id="bookCategorySearch"
+                         placeholder="Tìm kiếm danh mục..." style="max-width: 320px;">
+                  <select name="categories" id="bookCategorySelect" class="form-select" multiple
+                          style="min-height: 120px;">
                     ${categoriesList.map(cat => `<option value="${cat._id}">${cat.name}</option>`).join('')}
-                </select>
-                <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">Giữ Ctrl/Cmd để chọn nhiều danh mục</small>
+                  </select>
+                  <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">
+                    Gõ để lọc nhanh, giữ Ctrl/Cmd để chọn nhiều danh mục
+                  </small>
+                </div>
             `;
             form.insertBefore(categoriesField, form.querySelector('.form-group:last-child'));
         }
@@ -1664,9 +1787,33 @@ async function showAddBookModal() {
         
         // Re-attach form submit handler
         const formElement = modal.querySelector('form');
-    if (formElement) {
+        if (formElement) {
+        // Tìm kiếm trong danh mục (thêm sách)
+        const categorySelect = formElement.querySelector('#bookCategorySelect');
+        const categorySearch = formElement.querySelector('#bookCategorySearch');
+        if (categorySelect && categorySearch) {
+            categorySearch.addEventListener('input', () => {
+                const keyword = categorySearch.value.trim().toLowerCase();
+                Array.from(categorySelect.options).forEach(opt => {
+                    const match = !keyword || opt.textContent.toLowerCase().includes(keyword);
+                    opt.style.display = match ? '' : 'none';
+                });
+            });
+        }
+        // Gắn CKEditor cho textarea mô tả (nếu có)
+        const descTextarea = formElement.querySelector('textarea[name="description"]');
+        if (descTextarea) {
+            initBookDescEditor(descTextarea);
+        }
+
         formElement.addEventListener('submit', async (e) => {
             e.preventDefault();
+            // Đồng bộ dữ liệu CKEditor vào textarea trước khi lấy FormData
+            const descField = formElement.querySelector('textarea[name="description"]');
+            if (descField && descField._ckeditorInstance) {
+                descField.value = descField._ckeditorInstance.getData();
+            }
+
             const formData = new FormData(formElement);
             
             // Handle checkbox - FormData needs string values
@@ -1810,10 +1957,17 @@ function showEditBookModal(bookId) {
             categoriesField.className = 'form-group';
             categoriesField.innerHTML = `
                 <label class="form-label">Danh mục</label>
-                <select name="categories" class="form-select" multiple style="min-height: 100px;">
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                  <input type="text" class="form-input" id="bookCategorySearchEdit"
+                         placeholder="Tìm kiếm danh mục..." style="max-width: 320px;">
+                  <select name="categories" id="bookCategorySelectEdit" class="form-select" multiple
+                          style="min-height: 120px;">
                     ${categoriesList.map(cat => `<option value="${cat._id}" ${bookCategories.includes(cat._id) ? 'selected' : ''}>${cat.name}</option>`).join('')}
-                </select>
-                <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">Giữ Ctrl/Cmd để chọn nhiều danh mục</small>
+                  </select>
+                  <small class="form-help-text" style="color: #6b7280; font-size: 0.85rem;">
+                    Gõ để lọc nhanh, giữ Ctrl/Cmd để chọn nhiều danh mục
+                  </small>
+                </div>
             `;
             form.insertBefore(categoriesField, form.querySelector('.form-group:last-child'));
         }
@@ -1856,15 +2010,39 @@ function showEditBookModal(bookId) {
         });
         
         if (formElement) {
+            // Tìm kiếm trong danh mục (sửa sách)
+            const categorySelectEdit = formElement.querySelector('#bookCategorySelectEdit');
+            const categorySearchEdit = formElement.querySelector('#bookCategorySearchEdit');
+            if (categorySelectEdit && categorySearchEdit) {
+                categorySearchEdit.addEventListener('input', () => {
+                    const keyword = categorySearchEdit.value.trim().toLowerCase();
+                    Array.from(categorySelectEdit.options).forEach(opt => {
+                        const match = !keyword || opt.textContent.toLowerCase().includes(keyword);
+                        opt.style.display = match ? '' : 'none';
+                    });
+                });
+            }
+            // Gắn CKEditor cho textarea mô tả (nếu có)
+            const descTextarea = formElement.querySelector('textarea[name="description"]');
+            if (descTextarea) {
+                initBookDescEditor(descTextarea);
+            }
+
             // Handle form submission
             const handleSubmit = async (e) => {
                 if (e) {
                     e.preventDefault();
                     e.stopPropagation();
                 }
-                
+
                 console.log('📚 Form submit triggered for book:', bookId);
-                
+
+                // Đồng bộ dữ liệu CKEditor vào textarea trước khi lấy FormData
+                const descField = formElement.querySelector('textarea[name="description"]');
+                if (descField && descField._ckeditorInstance) {
+                    descField.value = descField._ckeditorInstance.getData();
+                }
+
                 const formData = new FormData(formElement);
                 
                 // Handle checkbox - FormData needs string values

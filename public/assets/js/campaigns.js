@@ -40,6 +40,26 @@ let newImageFiles = [];
 let deletedImageUrls = [];
 const tableBody = document.getElementById('campaign-table-body');
 
+// Chuẩn hóa URL hình ảnh: bỏ dấu quote thừa và khoảng trắng
+function normalizeImageUrl(url) {
+  if (!url || typeof url !== 'string') {
+    return 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
+  }
+  let cleaned = url.trim();
+  // Nếu string dạng "\"https://...\"" thì bỏ leading/trailing quote
+  if (cleaned.startsWith('"') && cleaned.endsWith('"')) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  if (cleaned.startsWith("'") && cleaned.endsWith("'")) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  // Nếu sau khi làm sạch mà không phải http(s) thì fallback
+  if (!/^https?:\/\//.test(cleaned)) {
+    return 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
+  }
+  return cleaned;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A';
   const d = new Date(dateStr);
@@ -105,9 +125,10 @@ function renderCampaigns(campaigns) {
 
   setTimeout(() => {
     tableBody.innerHTML = campaigns.map(c => {
-      const imageUrl = Array.isArray(c.image) && c.image.length > 0 
+      const imageUrlRaw = Array.isArray(c.image) && c.image.length > 0 
         ? c.image[0] 
         : 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png';
+      const imageUrl = normalizeImageUrl(imageUrlRaw);
       
       const typeDisplay = {
         'promotion': 'Khuyến mãi',
@@ -119,7 +140,48 @@ function renderCampaigns(campaigns) {
       
       const statusInfo = getCampaignStatus(c);
       const images = Array.isArray(c.image) ? c.image : (c.image ? [c.image] : []);
-      const books = Array.isArray(c.books) ? c.books : [];
+
+      // Chuẩn hóa danh sách sách để tránh hiển thị text dài / JSON trong bảng (legacy data)
+      let books = [];
+      let bookIds = []; // Chỉ lưu các ID để dùng cho modal
+      
+      if (Array.isArray(c.books)) {
+        // Nếu là array, lọc lấy các ID
+        books = c.books;
+        bookIds = books.map(b => {
+          if (typeof b === 'object' && b._id) return b._id;
+          if (typeof b === 'string' && b.length < 50) return b; // Chỉ lấy string ngắn (có thể là ID)
+          return null;
+        }).filter(Boolean);
+      } else if (c.books && typeof c.books === 'object' && c.books._id) {
+        // Một object đơn lẻ có _id => coi như 1 sách
+        books = [c.books];
+        bookIds = [c.books._id];
+      } else if (typeof c.books === 'string') {
+        // Dữ liệu cũ dạng string (thường là JSON hoặc text rất dài)
+        // Thử parse JSON nếu có thể
+        try {
+          const parsed = JSON.parse(c.books);
+          if (Array.isArray(parsed)) {
+            bookIds = parsed.map(b => {
+              if (typeof b === 'object' && b._id) return b._id;
+              if (typeof b === 'string' && b.length < 50) return b;
+              return null;
+            }).filter(Boolean);
+            books = parsed;
+          } else if (parsed && parsed._id) {
+            bookIds = [parsed._id];
+            books = [parsed];
+          }
+        } catch (e) {
+          // Không phải JSON hợp lệ, bỏ qua
+          books = [];
+          bookIds = [];
+        }
+      }
+      
+      // Đảm bảo booksCount chỉ là số, không bao giờ hiển thị nội dung
+      const booksCount = bookIds.length > 0 ? bookIds.length : (books.length > 0 ? books.length : 0);
       
       // Highlight search terms
       const highlightedName = highlightSearchText(c.name, searchTerm);
@@ -132,9 +194,10 @@ function renderCampaigns(campaigns) {
                  alt="Campaign image"
                  data-campaign-id="${c._id}"
                  data-campaign-name="${escapeHtml(c.name || '')}"
-                 data-images='${JSON.stringify(images)}'
+                 data-images='${JSON.stringify(images.map(normalizeImageUrl))}'
                  class="campaign-image-view"
                  title="Click để xem hình ảnh"
+                 onerror="this.src='https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'"
                  onmouseover="this.style.borderColor='#4f46e5'"
                  onmouseout="this.style.borderColor='#ddd'">
           </td>
@@ -153,16 +216,16 @@ function renderCampaigns(campaigns) {
               ${statusInfo.label}
             </span>
           </td>
-          <td style="vertical-align: middle;">
-            <span style="cursor: pointer; color: #4f46e5; text-decoration: underline; font-weight: 600; font-size: 0.9rem;" 
+          <td style="vertical-align: middle; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            <span style="cursor: pointer; color: #4f46e5; text-decoration: underline; font-weight: 600; font-size: 0.9rem; display: inline-block; max-width: 100%;" 
                   data-campaign-id="${c._id}"
                   data-campaign-name="${escapeHtml(c.name || '')}"
-                  data-books='${JSON.stringify(books)}'
+                  data-books='${JSON.stringify(bookIds)}'
                   class="campaign-books-view"
-                  title="Click để xem danh sách sách"
+                  title="Click để xem danh sách sách (${booksCount} sách)"
                   onmouseover="this.style.color='#4338ca'"
                   onmouseout="this.style.color='#4f46e5'">
-              ${books.length} sách
+              ${booksCount} sách
             </span>
           </td>
           <td style="vertical-align: middle;">
@@ -537,6 +600,11 @@ function setupEventListeners() {
 
 // Show campaign modal
 function showCampaignModal() {
+  // Đóng tất cả modal view trước khi mở modal form
+  document.querySelectorAll('.campaign-modal-overlay').forEach(m => {
+    if (m && m.parentNode) m.remove();
+  });
+  
   const modal = document.getElementById('campaign-modal');
   if (modal) {
     modal.style.display = 'flex';
@@ -565,6 +633,9 @@ function hideCampaignModal() {
   if (modal) {
     modal.style.display = 'none';
     editingId = null;
+    // Reset form
+    const form = document.getElementById('campaign-form');
+    if (form) form.reset();
   }
 }
 
@@ -1185,101 +1256,10 @@ async function fetchOrdersForNotifications() {
   }
 }
 
-document.getElementById('btn-add-campaign').addEventListener('click', () => {
-  editingId = null;
-  existingImages = [];
-  newImageFiles = [];
-  deletedImageUrls = [];
-  document.getElementById('campaign-form').reset();
-  if (editorInstance) editorInstance.setData('');
-  document.getElementById('save-campaign-btn').style.display = 'block';
-  document.getElementById('update-campaign-btn').style.display = 'none';
-  document.getElementById('campaign-modal').style.display = 'flex';
-  document.getElementById('image-preview-container').innerHTML = '';
-  document.getElementById('campaign-image').value = '';
-  const select = document.getElementById('campaign-books');
-  Array.from(select.options).forEach(opt => (opt.selected = false));
-  loadBooksForSearch();
-});
-
-document.getElementById('close-campaign-modal').addEventListener('click', () => {
-  document.getElementById('campaign-modal').style.display = 'none';
-  document.getElementById('image-preview-container').innerHTML = '';
-  document.getElementById('campaign-image').value = '';
-  existingImages = [];
-  newImageFiles = [];
-  deletedImageUrls = [];
-  editingId = null;
-});
-
-document.getElementById('campaign-image').addEventListener('change', function(e) {
-  const files = e.target.files;
-  if (files.length > 0) {
-    newImageFiles = newImageFiles.concat(Array.from(files));
-    renderImagePreviews();
-    document.getElementById('campaign-image').value = '';
-  }
-});
-
-document.getElementById('save-campaign-btn').addEventListener('click', async function(e) {
-  e.preventDefault();
-  const name = document.getElementById('campaign-name').value.trim();
-  const description = editorInstance.getData();
-  const startDate = document.getElementById('campaign-start').value;
-  const endDate = document.getElementById('campaign-end').value;
-  const type = document.getElementById('campaign-type').value;
-  const books = getSelectedBooks();
-
-  if (!name || !startDate || !endDate) {
-    showNotification('error', 'Vui lòng nhập đầy đủ tên, ngày bắt đầu và ngày kết thúc');
-    return;
-  }
-
-  // Disable button to prevent double submission
-  const saveBtn = document.getElementById('save-campaign-btn');
-  if (saveBtn) {
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Đang lưu...';
-    saveBtn.style.opacity = '0.6';
-    saveBtn.style.cursor = 'not-allowed';
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-    formData.append('type', type);
-    formData.append('bookIds', JSON.stringify(books));
-    newImageFiles.forEach(file => formData.append('imageFile', file));
-
-    const campaign = await AdminServices.createCampaign(formData);
-    
-    // Update books with campaign ID
-    await Promise.all(books.map(bookId => 
-      AdminServices.updateBook(bookId, { campaigns: [campaign._id] })
-    ));
-
-    showSuccessAddCampaignDialog();
-    document.getElementById('campaign-modal').style.display = 'none';
-    document.getElementById('image-preview-container').innerHTML = '';
-    document.getElementById('campaign-image').value = '';
-    newImageFiles = [];
-    loadCampaigns();
-  } catch (err) {
-    console.error('❌ Lỗi khi thêm chiến dịch:', err);
-    showNotification('error', `Lỗi khi thêm chiến dịch: ${err.message}`);
-  } finally {
-    // Always re-enable button
-    if (saveBtn) {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Lưu';
-      saveBtn.style.opacity = '1';
-      saveBtn.style.cursor = 'pointer';
-    }
-  }
-});
+// Các handler cũ dùng id kiểu 'close-campaign-modal', 'campaign-image',
+// 'save-campaign-btn', 'update-campaign-btn' đã được thay thế bởi
+// cơ chế mới trong setupEventListeners + saveCampaign.
+// Để tránh lỗi phần tử null và trùng logic, khối handler legacy đã được loại bỏ.
 
 async function editCampaign(id) {
   try {
@@ -1337,73 +1317,15 @@ async function editCampaign(id) {
   }
 }
 
-document.getElementById('update-campaign-btn').addEventListener('click', async function(e) {
-  e.preventDefault();
-  const name = document.getElementById('campaign-name').value.trim();
-  const description = editorInstance.getData();
-  const status = document.getElementById('campaign-status').value;
-  const startDate = document.getElementById('campaign-start').value;
-  const endDate = document.getElementById('campaign-end').value;
-  const type = document.getElementById('campaign-type').value;
-  const books = getSelectedBooks();
-
-  if (!name || !startDate || !endDate) {
-    showNotification('error', 'Vui lòng nhập đầy đủ thông tin');
-    return;
-  }
-
-  // Disable button to prevent double submission
-  const updateBtn = document.getElementById('update-campaign-btn');
-  if (updateBtn) {
-    updateBtn.disabled = true;
-    updateBtn.textContent = 'Đang cập nhật...';
-    updateBtn.style.opacity = '0.6';
-    updateBtn.style.cursor = 'not-allowed';
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('status', status);
-    formData.append('startDate', startDate);
-    formData.append('endDate', endDate);
-    formData.append('type', type);
-    formData.append('books', JSON.stringify(books));
-    newImageFiles.forEach(file => formData.append('imageFile', file));
-
-    await AdminServices.updateCampaign(editingId, formData);
-    
-    // Update books with campaign ID
-    await Promise.all(books.map(bookId =>
-      AdminServices.updateBook(bookId, { campaigns: [editingId] })
-    ));
-
-    showSuccessUpdateCampaignDialog();
-    document.getElementById('campaign-modal').style.display = 'none';
-    document.getElementById('image-preview-container').innerHTML = '';
-    document.getElementById('campaign-image').value = '';
-    existingImages = [];
-    newImageFiles = [];
-    deletedImageUrls = [];
-    loadCampaigns();
-  } catch (err) {
-    console.error(err);
-    showNotification('error', 'Lỗi khi cập nhật chiến dịch: ' + err.message);
-  } finally {
-    // Always re-enable button
-    if (updateBtn) {
-      updateBtn.disabled = false;
-      updateBtn.textContent = 'Cập nhật';
-      updateBtn.style.opacity = '1';
-      updateBtn.style.cursor = 'pointer';
-    }
-  }
-});
+// Khối handler legacy cho nút 'update-campaign-btn' đã bị loại bỏ vì
+// giao diện mới không còn sử dụng các id này nữa.
 
 async function deleteCampaign(id) {
   try {
-    const campaign = await AdminServices.getCampaign(id);
+    if (!window.AdminServices) {
+      throw new Error('AdminServices is not loaded');
+    }
+    const campaign = await window.AdminServices.getCampaign(id);
 
     showConfirmDeleteCampaignDialog();
 
@@ -1416,22 +1338,56 @@ async function deleteCampaign(id) {
         cancelBtn.addEventListener('click', () => dialog.remove());
         confirmBtn.addEventListener('click', async () => {
           dialog.remove();
+          if (typeof showLoading === 'function') {
+            showLoading();
+          }
+          
           try {
-            await AdminServices.deleteCampaign(id);
-
-            // Update books to remove campaign reference
-            if (Array.isArray(campaign.books) && campaign.books.length > 0) {
-              await Promise.all(campaign.books.map(book => {
-                const bookId = typeof book === 'object' ? book._id : book;
-                return AdminServices.updateBook(bookId, { campaigns: [] });
-              }));
+            // Xóa campaign trước
+            await window.AdminServices.deleteCampaign(id);
+            
+            // Chỉ update books nếu xóa campaign thành công
+            // Lưu ý: Nếu việc update books thất bại, campaign đã bị xóa rồi nên không rollback
+            try {
+              if (Array.isArray(campaign.books) && campaign.books.length > 0) {
+                await Promise.all(campaign.books.map(book => {
+                  const bookId = typeof book === 'object' ? book._id : book;
+                  if (bookId) {
+                    return window.AdminServices.updateBook(bookId, { campaigns: [] }).catch(err => {
+                      console.warn('⚠️ Không thể cập nhật sách sau khi xóa campaign:', err);
+                      // Không throw error, chỉ log warning
+                    });
+                  }
+                }));
+              }
+            } catch (bookUpdateErr) {
+              console.warn('⚠️ Một số sách không thể cập nhật sau khi xóa campaign:', bookUpdateErr);
+              // Không throw error, campaign đã xóa thành công
             }
 
+            if (typeof hideLoading === 'function') {
+              hideLoading();
+            }
+            
             showSuccessDeleteCampaignDialog();
             loadCampaigns();
           } catch (err) {
+            if (typeof hideLoading === 'function') {
+              hideLoading();
+            }
+            
             console.error('❌ Lỗi khi xóa chiến dịch:', err);
-            showNotification('error', 'Lỗi khi xóa chiến dịch: ' + err.message);
+            const errorMsg = err.message || err.toString() || 'Lỗi không xác định';
+            // Hiển thị thông báo lỗi chi tiết hơn
+            if (errorMsg.includes('500') || errorMsg.includes('Internal Server Error')) {
+              showNotification('error', 'Lỗi server khi xóa chiến dịch. Vui lòng thử lại sau hoặc liên hệ admin.');
+            } else if (errorMsg.includes('404') || errorMsg.includes('Not Found')) {
+              showNotification('error', 'Không tìm thấy chiến dịch để xóa. Có thể đã bị xóa trước đó.');
+              // Reload để cập nhật danh sách
+              loadCampaigns();
+            } else {
+              showNotification('error', 'Không thể xóa chiến dịch: ' + errorMsg);
+            }
           }
         }, { once: true });
       }
@@ -1444,27 +1400,32 @@ async function deleteCampaign(id) {
   }
 }
 
-// Export deleteCampaign function
+// Export functions to window for inline onclick handlers
 window.deleteCampaign = deleteCampaign;
+window.editCampaign = editCampaign;
 
 // View campaign images
 async function viewCampaignImages(campaignId, campaignName, imagesJson) {
-  const images = typeof imagesJson === 'string' ? JSON.parse(imagesJson.replace(/&quot;/g, '"')) : imagesJson;
+  const imagesRaw = typeof imagesJson === 'string' ? JSON.parse(imagesJson.replace(/&quot;/g, '"')) : imagesJson;
+  const images = Array.isArray(imagesRaw) ? imagesRaw.map(normalizeImageUrl) : [];
   if (!images || images.length === 0) {
     showNotification('info', 'Chiến dịch này chưa có hình ảnh');
     return;
   }
 
   const modal = document.createElement('div');
+  modal.className = 'campaign-modal-overlay';
   modal.style.cssText = `
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.9); z-index: 10000; display: flex;
+    background: rgba(0,0,0,0.3); z-index: 10000; display: flex;
     flex-direction: column; align-items: center; justify-content: center;
     padding: 20px; overflow-y: auto;
+    backdrop-filter: blur(2px);
+    pointer-events: auto;
   `;
   
   modal.innerHTML = `
-    <div style="background: white; border-radius: 8px; padding: 20px; max-width: 90%; max-height: 90%; overflow-y: auto;">
+    <div style="background: white; border-radius: 8px; padding: 20px; max-width: 90%; max-height: 90%; overflow-y: auto; pointer-events: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2 style="margin: 0; color: #333;">Hình ảnh chiến dịch: ${campaignName}</h2>
         <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
@@ -1473,11 +1434,14 @@ async function viewCampaignImages(campaignId, campaignName, imagesJson) {
         </button>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
-        ${images.map((img, index) => `
+        ${images.map((img, index) => {
+          const normalizedImg = normalizeImageUrl(img);
+          return `
           <div style="position: relative;">
-            <img src="${img}" 
+            <img src="${normalizedImg}" 
                  style="width: 100%; height: 250px; object-fit: cover; border-radius: 8px; cursor: pointer; border: 2px solid #ddd;"
-                 onclick="window.open('${img}', '_blank')"
+                 onclick="window.open('${normalizedImg}', '_blank')"
+                 onerror="this.src='https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'"
                  onmouseover="this.style.borderColor='#007bff'"
                  onmouseout="this.style.borderColor='#ddd'"
                  alt="Hình ảnh ${index + 1}">
@@ -1485,47 +1449,87 @@ async function viewCampaignImages(campaignId, campaignName, imagesJson) {
               ${index + 1}/${images.length}
             </div>
           </div>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     </div>
   `;
   
   document.body.appendChild(modal);
   
-  // Close on click outside
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
+  // Close on click outside or ESC key
+  const closeModal = () => {
+    if (modal && modal.parentNode) {
       modal.remove();
     }
+  };
+  
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      closeModal();
+    }
   });
+  
+  // Close on ESC key
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+  
+  // Store close function for button
+  modal._close = closeModal;
 }
 
 // View campaign books
 async function viewCampaignBooks(campaignId, campaignName, bookIdsJson) {
-  const bookIds = typeof bookIdsJson === 'string' ? JSON.parse(bookIdsJson.replace(/&quot;/g, '"')) : bookIdsJson;
+  const bookIdsRaw = typeof bookIdsJson === 'string' ? JSON.parse(bookIdsJson.replace(/&quot;/g, '"')) : bookIdsJson;
+  const bookIds = Array.isArray(bookIdsRaw)
+    ? bookIdsRaw.map(b => (typeof b === 'object' ? b._id : b)).filter(Boolean)
+    : [];
+
   if (!bookIds || bookIds.length === 0) {
     showNotification('info', 'Chiến dịch này chưa có sách nào');
     return;
   }
 
   try {
+    if (!window.AdminServices) {
+      throw new Error('AdminServices is not loaded');
+    }
+    
     // Load book details
-    const allBooks = await AdminServices.getBooks({ limit: 1000 });
+    const allBooksResponse = await window.AdminServices.getBooks({ limit: 1000 });
+    // Extract books array from response
+    const extractDataFunc = window.extractData || function(resp, key) {
+      if (!resp) return [];
+      if (Array.isArray(resp)) return resp;
+      if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+      if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+      if (resp.books) return Array.isArray(resp.books) ? resp.books : [];
+      return [];
+    };
+    const allBooks = extractDataFunc(allBooksResponse, 'books');
     const books = allBooks.filter(book => bookIds.includes(book._id));
     
     const modal = document.createElement('div');
+    modal.className = 'campaign-modal-overlay';
     modal.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9); z-index: 10000; display: flex;
+      background: rgba(0,0,0,0.3); z-index: 10000; display: flex;
       flex-direction: column; align-items: center; justify-content: center;
       padding: 20px; overflow-y: auto;
+      backdrop-filter: blur(2px);
+      pointer-events: auto;
     `;
     
     modal.innerHTML = `
-      <div style="background: white; border-radius: 8px; padding: 20px; max-width: 90%; max-height: 90%; overflow-y: auto; width: 1000px;">
+      <div style="background: white; border-radius: 8px; padding: 20px; max-width: 90%; max-height: 90%; overflow-y: auto; width: 1000px; pointer-events: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0; color: #333;">Sách trong chiến dịch: ${campaignName}</h2>
-          <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
+          <button onclick="if(this.closest('.campaign-modal-overlay')) this.closest('.campaign-modal-overlay').remove(); else if(this.closest('div[style*=\"position: fixed\"]')) this.closest('div[style*=\"position: fixed\"]').remove();" 
                   style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 18px;">
             ✕
           </button>
@@ -1533,7 +1537,7 @@ async function viewCampaignBooks(campaignId, campaignName, bookIdsJson) {
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px;">
           ${books.map(book => `
             <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; text-align: center; background: #f9f9f9;">
-              <img src="${book.thumbnail || book.cover_images?.[0] || 'https://server-shelf-stacker-w1ds.onrender.com/assets/images/default-thumbnail.png'}" 
+              <img src="${normalizeImageUrl(book.thumbnail || (Array.isArray(book.cover_images) ? book.cover_images[0] : book.cover_images) || '')}" 
                    style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 10px; cursor: pointer;"
                    onclick="window.open('${book.thumbnail || book.cover_images?.[0] || ''}', '_blank')"
                    alt="${(book.title || 'N/A').replace(/"/g, '&quot;')}">
@@ -1557,12 +1561,30 @@ async function viewCampaignBooks(campaignId, campaignName, bookIdsJson) {
     
     document.body.appendChild(modal);
     
-    // Close on click outside
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
+    // Close on click outside or ESC key
+    const closeModal = () => {
+      if (modal && modal.parentNode) {
         modal.remove();
       }
+    };
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
     });
+    
+    // Close on ESC key
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Store close function for button
+    modal._close = closeModal;
   } catch (error) {
     console.error('❌ Lỗi tải sách:', error);
     showNotification('error', 'Không thể tải danh sách sách: ' + error.message);
@@ -1572,23 +1594,43 @@ async function viewCampaignBooks(campaignId, campaignName, bookIdsJson) {
 // View campaign details
 async function viewCampaignDetails(campaignId) {
   try {
-    const campaign = await AdminServices.getCampaign(campaignId);
-    const images = Array.isArray(campaign.image) ? campaign.image : (campaign.image ? [campaign.image] : []);
+    if (!window.AdminServices) {
+      throw new Error('AdminServices is not loaded');
+    }
+    
+    const campaign = await window.AdminServices.getCampaign(campaignId);
+    const images = Array.isArray(campaign.image)
+      ? campaign.image.map(normalizeImageUrl)
+      : (campaign.image ? [normalizeImageUrl(campaign.image)] : []);
     const books = Array.isArray(campaign.books) ? campaign.books : [];
     
     // Load book details if there are books
     let bookDetails = [];
     if (books.length > 0) {
-      const allBooks = await AdminServices.getBooks({ limit: 1000 });
-      bookDetails = allBooks.filter(book => books.includes(book._id));
+      const allBooksResponse = await window.AdminServices.getBooks({ limit: 1000 });
+      // Extract books array from response
+      const extractDataFunc = window.extractData || function(resp, key) {
+        if (!resp) return [];
+        if (Array.isArray(resp)) return resp;
+        if (key && resp[key]) return Array.isArray(resp[key]) ? resp[key] : [];
+        if (resp.data) return Array.isArray(resp.data) ? resp.data : [];
+        if (resp.books) return Array.isArray(resp.books) ? resp.books : [];
+        return [];
+      };
+      const allBooks = extractDataFunc(allBooksResponse, 'books');
+      // Extract book IDs from campaign.books (could be objects or IDs)
+      const bookIds = books.map(b => typeof b === 'object' ? b._id : b).filter(Boolean);
+      bookDetails = allBooks.filter(book => bookIds.includes(book._id));
     }
     
     const modal = document.createElement('div');
+    modal.className = 'campaign-modal-overlay';
     modal.style.cssText = `
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.9); z-index: 10000; display: flex;
+      background: rgba(0,0,0,0.3); z-index: 10000; display: flex;
       flex-direction: column; align-items: center; justify-content: center;
       padding: 20px; overflow-y: auto;
+      backdrop-filter: blur(2px);
     `;
     
     const typeDisplay = {
@@ -1600,10 +1642,10 @@ async function viewCampaignDetails(campaignId) {
     }[campaign.type] || campaign.type;
     
     modal.innerHTML = `
-      <div style="background: white; border-radius: 8px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; width: 1200px;">
+      <div style="background: white; border-radius: 8px; padding: 30px; max-width: 90%; max-height: 90%; overflow-y: auto; width: 1200px; pointer-events: auto;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
           <h2 style="margin: 0; color: #333;">Chi tiết chiến dịch</h2>
-          <button onclick="this.closest('div[style*=\"position: fixed\"]').remove()" 
+          <button onclick="if(this.closest('.campaign-modal-overlay')) this.closest('.campaign-modal-overlay').remove(); else if(this.closest('div[style*=\"position: fixed\"]')) this.closest('div[style*=\"position: fixed\"]').remove();" 
                   style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 18px;">
             ✕
           </button>
@@ -1662,12 +1704,30 @@ async function viewCampaignDetails(campaignId) {
     
     document.body.appendChild(modal);
     
-    // Close on click outside
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
+    // Close on click outside or ESC key
+    const closeModal = () => {
+      if (modal && modal.parentNode) {
         modal.remove();
       }
+    };
+    
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
     });
+    
+    // Close on ESC key
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+    
+    // Store close function for button
+    modal._close = closeModal;
   } catch (error) {
     console.error('❌ Lỗi tải chi tiết chiến dịch:', error);
     showNotification('error', 'Không thể tải chi tiết chiến dịch: ' + error.message);
@@ -1678,28 +1738,6 @@ async function viewCampaignDetails(campaignId) {
 window.viewCampaignImages = viewCampaignImages;
 window.viewCampaignBooks = viewCampaignBooks;
 window.viewCampaignDetails = viewCampaignDetails;
-
-document.getElementById('btn-search').addEventListener('click', async function() {
-  const keyword = document.getElementById('search-campaign').value.trim().toLowerCase();
-  try {
-    const data = await AdminServices.getCampaigns();
-    const filtered = data.filter(c => c.name.toLowerCase().includes(keyword));
-    if (filtered.length === 0) {
-      showNotFoundCampaignDialog();
-      tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không tìm thấy chiến dịch nào.</td></tr>`;
-    } else {
-      renderCampaigns(filtered);
-    }
-  } catch (err) {
-    console.error('❌ Lỗi tìm kiếm:', err);
-    tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;">Không thể tìm kiếm dữ liệu.</td></tr>`;
-    showNotification('error', 'Không thể tìm kiếm: ' + err.message);
-  }
-});
-
-document.getElementById('search-campaign').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('btn-search').click();
-});
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', async function() {
@@ -1728,10 +1766,69 @@ function initCampaignsPage() {
   console.log('📢 initCampaignsPage called');
   setupEventListeners();
   setupBookSearch();
-  setupImageUpload();
   console.log('📢 Event listeners setup, loading campaigns...');
   loadCampaigns();
   loadBooks();
+}
+
+// Thiết lập tìm kiếm & chọn sách cho chiến dịch
+function setupBookSearch() {
+  const toggleBtn = document.getElementById('toggle-book-list');
+  const searchWrap = document.getElementById('book-search-wrap');
+  const searchInput = document.getElementById('book-search-input');
+
+  if (toggleBtn && searchWrap) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = searchWrap.style.display === 'none' || !searchWrap.style.display;
+      searchWrap.style.display = isHidden ? 'block' : 'none';
+      if (isHidden) {
+        // Khi mở panel thì reload danh sách sách gợi ý
+        loadBooksForSearch();
+      }
+    });
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      const keyword = searchInput.value.trim().toLowerCase();
+      const select = document.getElementById('campaign-books');
+      if (!window.allBooks || !Array.isArray(window.allBooks)) return;
+
+      const selectedIds = select
+        ? Array.from(select.options).filter(o => o.selected).map(o => o.value)
+        : [];
+
+      const filtered = keyword
+        ? window.allBooks.filter(b => {
+            const title = (b.title || b.name || '').toLowerCase();
+            const author = (b.author || '').toLowerCase();
+            return title.includes(keyword) || author.includes(keyword);
+          })
+        : window.allBooks;
+
+      renderBookSearchList(filtered, selectedIds);
+    });
+  }
+}
+
+// Thiết lập upload & preview hình ảnh chiến dịch
+function setupImageUpload() {
+  const imagesInput = document.getElementById('campaign-images');
+  const previewContainer = document.getElementById('image-preview-container');
+
+  if (!imagesInput || !previewContainer) return;
+
+  imagesInput.addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    // Gộp vào mảng newImageFiles để dùng chung với renderImagePreviews()
+    newImageFiles = newImageFiles.concat(files);
+    renderImagePreviews();
+
+    // Reset input để có thể chọn lại cùng một file nếu muốn
+    imagesInput.value = '';
+  });
 }
 
 function showSuccessUpdateCampaignDialog() {
@@ -1764,161 +1861,21 @@ function showSuccessAddCampaignDialog() {
     .then(html => document.body.insertAdjacentHTML('beforeend', html));
 }
 
-window.onload = () => {
-  const savedAvatar = localStorage.getItem('userAvatar');
-  if (savedAvatar) {
-    document.getElementById('sidebarAvatar').src = savedAvatar;
-    document.getElementById('headerAvatar').src = savedAvatar;
-  }
-  const uploadDialog = document.getElementById('uploadDialog');
-  uploadDialog.removeAttribute('open');
-};
+// Ghi đè window.onload gây lỗi (uploadDialog null) và xung đột với các trang khác
+// đã được loại bỏ. Logic avatar / upload sẽ được khởi tạo an toàn ở nơi khác nếu cần.
 
 function toggleMenu(id) {
   const el = document.getElementById(id);
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-document.getElementById('settingsLink').onclick = () => {
-  document.getElementById('mainSidebar').classList.add('hidden');
-  document.getElementById('settingsSidebar').classList.remove('hidden');
-};
+// Các handler sidebar/avatar/upload cũ dùng các ID không tồn tại trên trang campaigns
+// đã được loại bỏ để tránh lỗi null.onclick và không ảnh hưởng đến phần khác của admin.
 
-document.getElementById('backButton').onclick = () => {
-  document.getElementById('settingsSidebar').classList.add('hidden');
-  document.getElementById('mainSidebar').classList.remove('hidden');
-};
-
-document.getElementById('logoutButton').onclick = () => {
-  fetch('login')
-    .then(res => {
-      if (res.ok) {
-        localStorage.removeItem('userAvatar');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('userId');
-        alert('Đã đăng xuất, chuyển hướng đến trang đăng nhập.');
-        window.location.href = 'login';
-      } else {
-        alert('Không tìm thấy file login.html, vui lòng tạo file này.');
-      }
-    })
-    .catch(() => {
-      alert('Không thể kiểm tra file login. Có thể đường dẫn sai hoặc server chưa chạy.');
-    });
-};
-
-const uploadDialog = document.getElementById('uploadDialog');
-const uploadMessage = document.getElementById('uploadMessage');
-const uploadButton = document.getElementById('uploadButton');
-const cancelButton = document.getElementById('cancelButton');
-const sidebarAvatar = document.getElementById('sidebarAvatar');
-
-sidebarAvatar.onclick = () => {
-  uploadDialog.showModal();
-  resetUploadDialog();
-};
-
-cancelButton.onclick = () => {
-  uploadDialog.close();
-};
-
-uploadDialog.addEventListener('close', () => {
-  resetUploadDialog();
-});
-
-function resetUploadDialog() {
-  document.getElementById('avatarUpload').value = '';
-  uploadMessage.style.display = 'none';
-  uploadMessage.textContent = '';
-  uploadMessage.className = 'notification';
-  uploadButton.disabled = false;
-  uploadButton.textContent = 'Tải lên';
+// Ngăn submit mặc định nếu form tồn tại (đã có saveCampaign xử lý)
+const campaignFormElement = document.getElementById('campaign-form');
+if (campaignFormElement) {
+  campaignFormElement.addEventListener('submit', function(e) {
+    e.preventDefault();
+  });
 }
-
-uploadButton.onclick = async () => {
-  const fileInput = document.getElementById('avatarUpload');
-  const file = fileInput.files[0];
-
-  if (!file) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Vui lòng chọn một ảnh.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  if (!file.type.startsWith('image/')) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Vui lòng chọn một file ảnh hợp lệ.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  const token = localStorage.getItem('authToken');
-  const userId = localStorage.getItem('userId');
-
-  if (!token) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Bạn chưa đăng nhập hoặc token không hợp lệ.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  if (!userId) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Thiếu userId. Vui lòng đăng nhập lại.';
-    uploadMessage.className = 'notification error-message';
-    return;
-  }
-
-  uploadButton.disabled = true;
-  uploadButton.textContent = 'Đang tải...';
-
-  try {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    formData.append('userId', userId);
-
-    const response = await fetch('https://server-shelf-stacker-w1ds.onrender.com/api/user-upload/avatar', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Lỗi khi tải ảnh lên';
-      try {
-        const errData = await response.json();
-        if (errData.message) errorMsg = errData.message;
-      } catch {}
-      throw new Error(errorMsg);
-    }
-
-    const data = await response.json();
-    const imageUrl = data.avatar || URL.createObjectURL(file);
-
-    document.getElementById('sidebarAvatar').src = imageUrl;
-    document.getElementById('headerAvatar').src = imageUrl;
-
-    localStorage.setItem('userAvatar', imageUrl);
-
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Đã cập nhật ảnh đại diện thành công!';
-    uploadMessage.className = 'notification success-message';
-
-    setTimeout(() => {
-      uploadDialog.close();
-    }, 2000);
-  } catch (error) {
-    uploadMessage.style.display = 'block';
-    uploadMessage.textContent = 'Lỗi: ' + error.message;
-    uploadMessage.className = 'notification error-message';
-    uploadButton.disabled = false;
-    uploadButton.textContent = 'Tải lên';
-  }
-};
-
-document.getElementById('campaign-form').addEventListener('submit', function(e) {
-  e.preventDefault();
-});

@@ -99,7 +99,10 @@ class AdminUIComponents {
                     break;
                 case 'file':
                     inputHTML = `
-                        <input type="file" name="${name}" class="form-input" ${required ? 'required' : ''} accept="${field.accept || '*/*'}">
+                        <input type="file" name="${name}" class="form-input"
+                               ${required ? 'required' : ''}
+                               accept="${field.accept || '*/*'}"
+                               ${field.multiple ? 'multiple' : ''}>
                         ${value ? `<div class="form-file-preview"><img src="${value}" alt="Preview" style="max-width: 200px; margin-top: 0.5rem;"></div>` : ''}
                     `;
                     break;
