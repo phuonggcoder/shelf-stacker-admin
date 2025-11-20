@@ -559,8 +559,11 @@ async function viewOrder(id) {
     try {
         console.log('📦 viewOrder called with id:', id);
         showLoading();
-        const order = await window.AdminServices.getOrder(id);
-        console.log('📦 Order details loaded:', order);
+        const response = await window.AdminServices.getOrder(id);
+        console.log('📦 Order details loaded:', response);
+        // API trả về { success: true, order: {...}, payment: {...}, ... }
+        const order = response && response.order ? response.order : response;
+        const payment = response && response.payment ? response.payment : {};
         hideLoading();
         
         if (!order) {
@@ -570,18 +573,63 @@ async function viewOrder(id) {
         
         // Escape values
         const orderId = escapeHtml(order.order_id || order._id || 'N/A');
-        const userEmail = escapeHtml(order.user?.email || order.user?.username || 'N/A');
-        const userName = escapeHtml(order.user?.full_name || order.shipping_address?.name || 'N/A');
-        const phone = escapeHtml(order.shipping_address?.phone || 'N/A');
-        const address = escapeHtml(order.shipping_address?.address || 'N/A');
-        const totalAmount = window.AdminServices.formatCurrency(order.total_amount || 0);
-        const paymentMethod = getPaymentMethodText(order.payment_method);
-        const status = getStatusText(order.status);
-        const createdAt = window.AdminServices.formatDate(order.createdAt);
+
+        // Thông tin khách hàng: ưu tiên user, sau đó user_id, cuối cùng shipping_address
+        const userObj = order.user || order.user_id || {};
+        const shipping = order.shipping_address || {};
+
+        const userEmail = escapeHtml(
+            userObj.email ||
+            userObj.username ||
+            'N/A'
+        );
+        const userName = escapeHtml(
+            userObj.full_name ||
+            userObj.username ||
+            shipping.name ||
+            'N/A'
+        );
+        const phone = escapeHtml(
+            shipping.phone ||
+            userObj.phone_number ||
+            userObj.phone ||
+            'N/A'
+        );
+        const address = escapeHtml(
+            response.formattedAddress ||
+            shipping.address ||
+            shipping.street ||
+            shipping.detail ||
+            'N/A'
+        );
+
+        // Tổng tiền: hỗ trợ nhiều schema
+        const totalAmount = window.AdminServices.formatCurrency(
+            order.total_amount ||
+            payment.amount ||
+            order.amount ||
+            0
+        );
+
+        // Phương thức thanh toán
+        const paymentMethodCode = order.payment_method || payment.payment_method || '';
+        const paymentMethod = paymentMethodCode
+            ? getPaymentMethodText(paymentMethodCode)
+            : (response.paymentMethodText || 'N/A');
+
+        // Trạng thái đơn: hỗ trợ status và order_status
+        const status = getStatusText(order.status || order.order_status);
+
+        // Ngày tạo: hỗ trợ createdAt và order_date
+        const createdAt = window.AdminServices.formatDate(
+            order.createdAt || order.order_date
+        );
         
         // Items
-        const itemsHtml = order.items?.map(item => {
-            const itemTitle = escapeHtml(item.book?.title || 'N/A');
+        const rawItems = order.items || order.order_items || [];
+        const itemsHtml = rawItems.map(item => {
+            const book = item.book || item.book_id || {};
+            const itemTitle = escapeHtml(book.title || 'N/A');
             const itemPrice = window.AdminServices.formatCurrency(item.price || 0);
             const quantity = item.quantity || 0;
             const subtotal = window.AdminServices.formatCurrency((item.price || 0) * quantity);

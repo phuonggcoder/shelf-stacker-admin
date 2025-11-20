@@ -332,8 +332,9 @@ async function viewUser(id) {
     try {
         console.log('👥 viewUser called with id:', id);
         showLoading();
-        const user = await window.AdminServices.getUser(id);
-        console.log('👥 User details loaded:', user);
+        const response = await window.AdminServices.getUser(id);
+        console.log('👥 User details loaded:', response);
+        const user = response && response.user ? response.user : response;
         hideLoading();
         
         if (!user) {
